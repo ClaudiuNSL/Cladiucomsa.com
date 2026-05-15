@@ -15,6 +15,7 @@ import TextReveal from './components/TextReveal';
 import AuroraBackground from './components/AuroraBackground';
 import SpotlightCard from './components/SpotlightCard';
 import TestimonialsCarousel from './components/TestimonialsCarousel';
+import ScrollScale from './components/ScrollScale';
 
 const serviceIcons: Record<string, React.ReactNode> = {
   'Web Development': <Monitor className="w-8 h-8" aria-hidden="true" />,
@@ -251,6 +252,7 @@ export default function Home() {
                 },
               ].map((project, i) => (
                 <AnimatedSection key={project.key} delay={i * 0.1}>
+                  <ScrollScale fromX={i % 2 === 0 ? -80 : 80}>
                   <article className={`grid lg:grid-cols-2 gap-10 items-center ${i % 2 === 1 ? 'lg:direction-rtl' : ''}`}>
                     {/* Screenshot side */}
                     <div className={`${i % 2 === 1 ? 'lg:order-2' : ''}`}>
@@ -319,6 +321,7 @@ export default function Home() {
                       </div>
                     </div>
                   </article>
+                  </ScrollScale>
                 </AnimatedSection>
               ))}
             </div>
