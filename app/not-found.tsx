@@ -279,7 +279,7 @@ export default function NotFound() {
           <div className="fade-slide-up fade-slide-up-d5">
             <Link
               href="/"
-              className="btn-glow inline-block bg-[#06B6D4] hover:bg-[#0891B2] text-white font-semibold px-10 py-3.5 rounded-full focus:outline-none focus:ring-2 focus:ring-[#06B6D4]/50 focus:ring-offset-2 focus:ring-offset-slate-900"
+              className="btn-glow inline-block bg-[#06B6D4] hover:bg-[#0891B2] text-white font-semibold px-10 py-3.5 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
             >
               Back to Home &rarr;
             </Link>

@@ -36,14 +36,14 @@ export default function Navbar() {
   }, []);
 
   const desktopLinkClass = (section: string) =>
-    `relative font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-[#06B6D4]/50 rounded px-1 pb-1 ${
+    `relative font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50 rounded px-1 pb-1 ${
       activeSection === section
         ? 'text-[#06B6D4] after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-[#06B6D4] after:rounded-full'
         : 'text-gray-300 hover:text-white'
     }`;
 
   const mobileLinkClass = (section: string) =>
-    `block font-medium px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-[#06B6D4]/50 ${
+    `block font-medium px-4 py-2 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50 ${
       activeSection === section
         ? 'text-[#06B6D4] border-l-2 border-[#06B6D4]'
         : 'text-gray-300 hover:text-white'
@@ -60,7 +60,7 @@ export default function Navbar() {
     >
       <div className="max-w-6xl mx-auto px-6">
         <div className={`flex justify-between items-center transition-all duration-300 ${scrolled ? 'py-2' : 'py-4'}`}>
-          <a href="/#home" className="group flex items-center gap-3 focus:outline-none focus:ring-2 focus:ring-[#06B6D4]/50 rounded-lg pr-2" aria-label="Comsa Claudiu — Home">
+          <a href="/#home" className="group flex items-center gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50 rounded-lg pr-2" aria-label="Comsa Claudiu — Home">
             <NavLogo />
             <span className="text-sm text-gray-500 hidden sm:block font-medium tracking-wide group-hover:text-gray-300 transition-colors">Comsa Claudiu</span>
           </a>
@@ -76,14 +76,14 @@ export default function Navbar() {
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Contact me on WhatsApp"
-              className="bg-[#06B6D4] hover:bg-[#0891B2] text-white font-semibold px-6 py-2.5 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#06B6D4]/50 focus:ring-offset-2 focus:ring-offset-slate-900"
+              className="bg-[#06B6D4] hover:bg-[#0891B2] text-white font-semibold px-6 py-2.5 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
             >
               Get in Touch
             </a>
           </div>
 
           <button
-            className="md:hidden text-white p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#06B6D4]/50"
+            className="md:hidden text-white p-2 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             aria-expanded={isMobileMenuOpen}
             aria-controls="mobile-menu"
@@ -106,7 +106,7 @@ export default function Navbar() {
                 {section.charAt(0).toUpperCase() + section.slice(1)}
               </a>
             ))}
-            <a href="https://wa.me/40761880406" target="_blank" rel="noopener noreferrer" role="menuitem" aria-label="Contact me on WhatsApp" className="block bg-[#06B6D4] hover:bg-[#0891B2] text-white font-semibold px-6 py-2.5 rounded-full text-center mx-4 transition-colors focus:outline-none focus:ring-2 focus:ring-[#06B6D4]/50" onClick={() => setIsMobileMenuOpen(false)}>Get in Touch</a>
+            <a href="https://wa.me/40761880406" target="_blank" rel="noopener noreferrer" role="menuitem" aria-label="Contact me on WhatsApp" className="block bg-[#06B6D4] hover:bg-[#0891B2] text-white font-semibold px-6 py-2.5 rounded-full text-center mx-4 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50" onClick={() => setIsMobileMenuOpen(false)}>Get in Touch</a>
           </div>
         )}
       </div>

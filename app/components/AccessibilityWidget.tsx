@@ -128,7 +128,7 @@ export default function AccessibilityWidget() {
         aria-expanded={isOpen}
         aria-controls="a11y-panel"
         aria-label={isOpen ? 'Close accessibility settings' : 'Open accessibility settings'}
-        className="fixed bottom-6 right-6 z-[60] w-12 h-12 sm:w-14 sm:h-14 bg-[#06B6D4] hover:bg-[#0891B2] text-white rounded-full shadow-lg flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-[#06B6D4]/50 focus:ring-offset-2 focus:ring-offset-slate-900"
+        className="fixed bottom-6 right-6 z-[60] w-12 h-12 sm:w-14 sm:h-14 bg-[#06B6D4] hover:bg-[#0891B2] text-white rounded-full shadow-lg flex items-center justify-center transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
       >
         <svg
           className="w-6 h-6 sm:w-7 sm:h-7"
@@ -160,7 +160,7 @@ export default function AccessibilityWidget() {
             <button
               onClick={() => setIsOpen(false)}
               aria-label="Close accessibility settings"
-              className="text-gray-400 hover:text-white p-1 rounded focus:outline-none focus:ring-2 focus:ring-[#06B6D4]/50"
+              className="text-gray-400 hover:text-white p-1 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -177,7 +177,7 @@ export default function AccessibilityWidget() {
                   onClick={() => update({ fontSize: Math.max(-2, settings.fontSize - 1) })}
                   disabled={settings.fontSize <= -2}
                   aria-label="Decrease text size"
-                  className="min-w-[44px] min-h-[44px] flex items-center justify-center bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed text-white rounded-lg text-lg font-bold transition-colors focus:outline-none focus:ring-2 focus:ring-[#06B6D4]/50"
+                  className="min-w-[44px] min-h-[44px] flex items-center justify-center bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed text-white rounded-lg text-lg font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50"
                 >
                   A-
                 </button>
@@ -188,7 +188,7 @@ export default function AccessibilityWidget() {
                   onClick={() => update({ fontSize: Math.min(2, settings.fontSize + 1) })}
                   disabled={settings.fontSize >= 2}
                   aria-label="Increase text size"
-                  className="min-w-[44px] min-h-[44px] flex items-center justify-center bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed text-white rounded-lg text-lg font-bold transition-colors focus:outline-none focus:ring-2 focus:ring-[#06B6D4]/50"
+                  className="min-w-[44px] min-h-[44px] flex items-center justify-center bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed text-white rounded-lg text-lg font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50"
                 >
                   A+
                 </button>
@@ -226,7 +226,7 @@ export default function AccessibilityWidget() {
           {hasChanges && (
             <button
               onClick={reset}
-              className="w-full mt-4 min-h-[44px] bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white rounded-xl text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-[#06B6D4]/50"
+              className="w-full mt-4 min-h-[44px] bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white rounded-xl text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50"
             >
               Reset to Default
             </button>
@@ -254,7 +254,7 @@ function ToggleButton({
       role="switch"
       aria-checked={active}
       aria-label={`${label}: ${active ? 'on' : 'off'}`}
-      className={`w-full min-h-[44px] flex items-center justify-between rounded-xl p-4 border transition-colors focus:outline-none focus:ring-2 focus:ring-[#06B6D4]/50 ${
+      className={`w-full min-h-[44px] flex items-center justify-between rounded-xl p-4 border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50 ${
         active
           ? 'bg-[#06B6D4]/20 border-[#06B6D4]/40 text-white'
           : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'

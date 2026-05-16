@@ -113,7 +113,7 @@ export default function ProjectsPage() {
                               href={btn.href}
                               target={btn.href.startsWith("http") ? "_blank" : undefined}
                               rel={btn.href.startsWith("http") ? "noopener noreferrer" : undefined}
-                              className="px-5 py-2.5 rounded-lg text-sm font-medium bg-[#06B6D4] text-white hover:bg-[#0891B2] transition-colors focus:outline-none focus:ring-2 focus:ring-[#06B6D4]/50"
+                              className="px-5 py-2.5 rounded-lg text-sm font-medium bg-[#06B6D4] text-white hover:bg-[#0891B2] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50"
                               aria-label={`${btn.label}: ${project.title}`}
                             >
                               {btn.label}
@@ -124,7 +124,7 @@ export default function ProjectsPage() {
                               href={btn.href}
                               target={btn.href.startsWith("http") ? "_blank" : undefined}
                               rel={btn.href.startsWith("http") ? "noopener noreferrer" : undefined}
-                              className="px-5 py-2.5 rounded-lg text-sm font-medium border border-gray-600 text-gray-200 hover:border-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400/50"
+                              className="px-5 py-2.5 rounded-lg text-sm font-medium border border-gray-600 text-gray-200 hover:border-gray-400 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400/50"
                               aria-label={`${btn.label}: ${project.title}`}
                             >
                               {btn.label}
@@ -149,7 +149,7 @@ export default function ProjectsPage() {
               </p>
               <Link
                 href="/#contact"
-                className="inline-block px-8 py-3 rounded-lg text-sm font-medium bg-[#06B6D4] text-white hover:bg-[#0891B2] transition-colors focus:outline-none focus:ring-2 focus:ring-[#06B6D4]/50 focus:ring-offset-2 focus:ring-offset-slate-900"
+                className="inline-block px-8 py-3 rounded-lg text-sm font-medium bg-[#06B6D4] text-white hover:bg-[#0891B2] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
               >
                 Let&apos;s Talk &rarr;
               </Link>

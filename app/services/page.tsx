@@ -110,7 +110,7 @@ export default function ServicesPage() {
                   </ul>
                   <a
                     href="/#contact"
-                    className="inline-block bg-[#06B6D4] text-white font-semibold px-6 py-3 rounded-full hover:bg-[#0891B2] transition-colors focus:outline-none focus:ring-2 focus:ring-[#06B6D4]/50 focus:ring-offset-2 focus:ring-offset-slate-900"
+                    className="inline-block bg-[#06B6D4] text-white font-semibold px-6 py-3 rounded-full hover:bg-[#0891B2] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
                   >
                     Get Started
                   </a>
@@ -129,7 +129,7 @@ export default function ServicesPage() {
               </p>
               <a
                 href="/#contact"
-                className="inline-block bg-[#06B6D4] text-white font-semibold px-8 py-3 rounded-full hover:bg-[#0891B2] transition-colors focus:outline-none focus:ring-2 focus:ring-[#06B6D4]/50 focus:ring-offset-2 focus:ring-offset-slate-900"
+                className="inline-block bg-[#06B6D4] text-white font-semibold px-8 py-3 rounded-full hover:bg-[#0891B2] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
               >
                 Get in Touch &rarr;
               </a>

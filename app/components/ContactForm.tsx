@@ -73,7 +73,7 @@ export default function ContactForm() {
                 name="name"
                 required
                 autoComplete="name"
-                className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 focus:border-[#06B6D4] focus:ring-2 focus:ring-[#06B6D4]/50 focus:outline-none transition-colors text-white placeholder-gray-400"
+                className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 focus:border-[#06B6D4] focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50 focus:outline-none transition-colors text-white placeholder-gray-400"
                 placeholder="Your name"
               />
             </div>
@@ -87,7 +87,7 @@ export default function ContactForm() {
                 name="email"
                 required
                 autoComplete="email"
-                className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 focus:border-[#06B6D4] focus:ring-2 focus:ring-[#06B6D4]/50 focus:outline-none transition-colors text-white placeholder-gray-400"
+                className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 focus:border-[#06B6D4] focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50 focus:outline-none transition-colors text-white placeholder-gray-400"
                 placeholder="email@example.com"
               />
             </div>
@@ -102,7 +102,7 @@ export default function ContactForm() {
               type="text"
               name="subject"
               required
-              className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 focus:border-[#06B6D4] focus:ring-2 focus:ring-[#06B6D4]/50 focus:outline-none transition-colors text-white placeholder-gray-400"
+              className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 focus:border-[#06B6D4] focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50 focus:outline-none transition-colors text-white placeholder-gray-400"
               placeholder="What do you want to discuss?"
             />
           </div>
@@ -116,7 +116,7 @@ export default function ContactForm() {
               rows={5}
               name="message"
               required
-              className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 focus:border-[#06B6D4] focus:ring-2 focus:ring-[#06B6D4]/50 focus:outline-none transition-colors resize-none text-white placeholder-gray-400"
+              className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 focus:border-[#06B6D4] focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50 focus:outline-none transition-colors resize-none text-white placeholder-gray-400"
               placeholder="Tell me more about your project..."
             />
           </div>
@@ -130,7 +130,7 @@ export default function ContactForm() {
           <button
             type="submit"
             disabled={status === 'submitting'}
-            className="w-full bg-[#06B6D4] hover:bg-[#0891B2] disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-8 py-4 rounded-lg font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-[#06B6D4]/50 focus:ring-offset-2 focus:ring-offset-slate-900"
+            className="w-full bg-[#06B6D4] hover:bg-[#0891B2] disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-8 py-4 rounded-lg font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
           >
             {status === 'submitting' ? 'Sending...' : 'Send Message'}
           </button>
@@ -142,7 +142,7 @@ export default function ContactForm() {
           Or email me directly at{' '}
           <a
             href="mailto:claudiucomsa29@gmail.com"
-            className="font-semibold text-white hover:text-[#0891B2] transition-colors focus:outline-none focus:ring-2 focus:ring-[#06B6D4]/50 rounded"
+            className="font-semibold text-white hover:text-[#0891B2] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50 rounded"
           >
             claudiucomsa29@gmail.com
           </a>

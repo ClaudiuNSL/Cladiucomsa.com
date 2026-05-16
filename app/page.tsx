@@ -64,7 +64,7 @@ export default function Home() {
                   <MagneticButton>
                     <a
                       href="#projects"
-                      className="bg-[#06B6D4] hover:bg-[#0891B2] text-white font-semibold px-8 py-3 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#06B6D4]/50 focus:ring-offset-2 focus:ring-offset-slate-900 inline-block"
+                      className="bg-[#06B6D4] hover:bg-[#0891B2] text-white font-semibold px-8 py-3 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 inline-block"
                     >
                       View Projects &rarr;
                     </a>
@@ -72,7 +72,7 @@ export default function Home() {
                   <MagneticButton>
                     <a
                       href="#contact"
-                      className="border-2 border-gray-600 hover:border-gray-400 text-gray-200 px-8 py-3 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400/50 focus:ring-offset-2 focus:ring-offset-slate-900 inline-block"
+                      className="border-2 border-gray-600 hover:border-gray-400 text-gray-200 px-8 py-3 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400/50 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 inline-block"
                     >
                       Contact Me &rarr;
                     </a>
@@ -174,7 +174,7 @@ export default function Home() {
               <div className="text-center mt-10">
                 <a
                   href="/services"
-                  className="inline-flex items-center gap-2 text-gray-200 font-semibold hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-[#06B6D4]/50 rounded-lg px-2 py-1"
+                  className="inline-flex items-center gap-2 text-gray-200 font-semibold hover:text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50 rounded-lg px-2 py-1"
                 >
                   View All Services
                   <span aria-hidden="true">&rarr;</span>
@@ -259,7 +259,7 @@ export default function Home() {
                             href={project.liveUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 bg-[#06B6D4] hover:bg-[#0891B2] text-white font-semibold px-6 py-3 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-[#06B6D4]/50"
+                            className="inline-flex items-center gap-2 bg-[#06B6D4] hover:bg-[#0891B2] text-white font-semibold px-6 py-3 rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50"
                             aria-label={`View live site: ${project.title}`}
                           >
                             <Monitor className="w-4 h-4" />
@@ -270,7 +270,7 @@ export default function Home() {
                           href={project.githubUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-2 bg-gray-700 hover:bg-gray-600 text-gray-200 font-semibold px-6 py-3 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400/50"
+                          className="inline-flex items-center gap-2 bg-gray-700 hover:bg-gray-600 text-gray-200 font-semibold px-6 py-3 rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400/50"
                           aria-label={`View ${project.title} source code`}
                         >
                           Source code
@@ -287,7 +287,7 @@ export default function Home() {
               <div className="text-center mt-10">
                 <a
                   href="/projects"
-                  className="inline-flex items-center gap-2 text-gray-200 font-semibold hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-[#06B6D4]/50 rounded-lg px-2 py-1"
+                  className="inline-flex items-center gap-2 text-gray-200 font-semibold hover:text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50 rounded-lg px-2 py-1"
                 >
                   View All Projects
                   <span aria-hidden="true">&rarr;</span>
@@ -335,7 +335,7 @@ export default function Home() {
                     <p className="text-gray-300 mb-3">claudiucomsa29@gmail.com</p>
                     <a
                       href="mailto:claudiucomsa29@gmail.com"
-                      className="inline-block bg-[#06B6D4] hover:bg-[#0891B2] text-white font-semibold px-4 py-2 rounded-lg text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#06B6D4]/50"
+                      className="inline-block bg-[#06B6D4] hover:bg-[#0891B2] text-white font-semibold px-4 py-2 rounded-lg text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50"
                     >
                       Send Email
                     </a>
@@ -346,7 +346,7 @@ export default function Home() {
                     <p className="text-gray-300 mb-3">0761 880 406</p>
                     <a
                       href="tel:+40761880406"
-                      className="inline-block bg-[#06B6D4] hover:bg-[#0891B2] text-white font-semibold px-4 py-2 rounded-lg text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[#06B6D4]/50"
+                      className="inline-block bg-[#06B6D4] hover:bg-[#0891B2] text-white font-semibold px-4 py-2 rounded-lg text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50"
                     >
                       Call Now
                     </a>
@@ -368,7 +368,7 @@ export default function Home() {
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label="GitHub profile"
-                        className="flex-1 bg-[#06B6D4] hover:bg-[#0891B2] text-white font-semibold px-4 py-2 rounded-lg text-sm text-center transition-colors focus:outline-none focus:ring-2 focus:ring-[#06B6D4]/50"
+                        className="flex-1 bg-[#06B6D4] hover:bg-[#0891B2] text-white font-semibold px-4 py-2 rounded-lg text-sm text-center transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50"
                       >
                         GitHub
                       </a>
@@ -377,7 +377,7 @@ export default function Home() {
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label="LinkedIn profile"
-                        className="flex-1 bg-[#06B6D4] hover:bg-[#0891B2] text-white font-semibold px-4 py-2 rounded-lg text-sm text-center transition-colors focus:outline-none focus:ring-2 focus:ring-[#06B6D4]/50"
+                        className="flex-1 bg-[#06B6D4] hover:bg-[#0891B2] text-white font-semibold px-4 py-2 rounded-lg text-sm text-center transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50"
                       >
                         LinkedIn
                       </a>

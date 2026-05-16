@@ -58,7 +58,7 @@ export default function TestimonialsCarousel() {
           <button
             key={i}
             onClick={() => goTo(i)}
-            className={`w-2.5 h-2.5 rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#06B6D4]/50 ${
+            className={`w-2.5 h-2.5 rounded-full transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50 ${
               i === current
                 ? 'bg-[#06B6D4] w-8'
                 : 'bg-white/20 hover:bg-white/40'
@@ -71,14 +71,14 @@ export default function TestimonialsCarousel() {
       {/* Navigation arrows */}
       <button
         onClick={() => goTo((current - 1 + testimonials.length) % testimonials.length)}
-        className="absolute top-1/2 -translate-y-1/2 -left-4 md:-left-12 w-10 h-10 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-[#06B6D4]/50"
+        className="absolute top-1/2 -translate-y-1/2 -left-4 md:-left-12 w-10 h-10 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50"
         aria-label="Previous testimonial"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
       </button>
       <button
         onClick={() => goTo((current + 1) % testimonials.length)}
-        className="absolute top-1/2 -translate-y-1/2 -right-4 md:-right-12 w-10 h-10 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-[#06B6D4]/50"
+        className="absolute top-1/2 -translate-y-1/2 -right-4 md:-right-12 w-10 h-10 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50"
         aria-label="Next testimonial"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
