@@ -26,20 +26,7 @@ export const metadata: Metadata = {
     default: "Comsa Claudiu — Web Developer & Freelancer",
   },
   description:
-    "Programator web freelancer din Constanța, Romania. Web developer specializat în creare site-uri, aplicații web moderne cu React și Next.js. Creare site-uri Constanta.",
-  keywords: [
-    "programator web",
-    "web developer Romania",
-    "creare site-uri Constanta",
-    "dezvoltator web",
-    "freelancer Romania",
-    "React developer",
-    "Next.js developer",
-    "frontend developer",
-    "creare site-uri web",
-    "web design Constanta",
-    "Comsa Claudiu",
-  ],
+    "Programator web freelancer în Constanța. Creare site-uri și aplicații web moderne cu React, Next.js și integrări AI. Soluții pentru afaceri locale.",
   openGraph: {
     title: "Comsa Claudiu — Web Developer & Freelancer",
     description:
