@@ -5,7 +5,6 @@ import Footer from './components/Footer';
 import AnimatedSection from './components/AnimatedSection';
 import ContactForm from './components/ContactForm';
 import ScrollProgress from './components/ScrollProgress';
-import AnimatedCounter from './components/AnimatedCounter';
 import TiltCard from './components/TiltCard';
 import TypeWriter from './components/TypeWriter';
 import FloatingParticles from './components/FloatingParticles';
@@ -61,20 +60,6 @@ export default function Home() {
                 <p className="text-lg text-gray-300 mb-8 leading-relaxed">
                   From innovative web applications to AI-powered solutions, I provide expert development to help your business grow, scale, and thrive.
                 </p>
-                <div className="flex items-center gap-8 mb-8" aria-label="Key statistics">
-                  <div>
-                    <div className="text-3xl font-bold text-gradient"><AnimatedCounter target={50} suffix="+" /></div>
-                    <div className="text-sm text-gray-400">Expert Solutions</div>
-                  </div>
-                  <div>
-                    <div className="text-3xl font-bold text-gradient"><AnimatedCounter target={3} suffix="+" duration={1500} /></div>
-                    <div className="text-sm text-gray-400">Years Experience</div>
-                  </div>
-                  <div>
-                    <div className="text-3xl font-bold text-gradient"><AnimatedCounter target={100} suffix="%" /></div>
-                    <div className="text-sm text-gray-400">Client Dedication</div>
-                  </div>
-                </div>
                 <div className="flex gap-4">
                   <MagneticButton>
                     <a
@@ -153,18 +138,6 @@ export default function Home() {
                   <TechStack />
                 </AnimatedSection>
 
-                <AnimatedSection delay={0.25}>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-[#06B6D4]/80 backdrop-blur-xl text-white p-6 rounded-xl text-center">
-                      <div className="text-3xl font-bold mb-1"><AnimatedCounter target={50} suffix="+" /></div>
-                      <div className="text-sm font-semibold">Projects</div>
-                    </div>
-                    <div className="bg-[#06B6D4]/80 backdrop-blur-xl text-white p-6 rounded-xl text-center">
-                      <div className="text-3xl font-bold mb-1"><AnimatedCounter target={3} suffix="+" duration={1500} /></div>
-                      <div className="text-sm font-semibold">Years</div>
-                    </div>
-                  </div>
-                </AnimatedSection>
               </div>
             </div>
           </div>
