@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import { Monitor, Bot, Zap, Palette, Globe, Briefcase, Rocket } from 'lucide-react';
+import { Monitor, Bot, Zap, Palette, Globe, Briefcase } from 'lucide-react';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import AnimatedSection from './components/AnimatedSection';
@@ -26,8 +26,8 @@ const serviceIcons: Record<string, React.ReactNode> = {
 
 const projectIcons: Record<string, React.ReactNode> = {
   'Banciu Costin': <Globe className="w-14 h-14" aria-hidden="true" />,
-  'Interactive Portfolio': <Briefcase className="w-14 h-14" aria-hidden="true" />,
-  'Custom Web Solutions': <Rocket className="w-14 h-14" aria-hidden="true" />,
+  'Aurasjobs': <Bot className="w-14 h-14" aria-hidden="true" />,
+  'Stereocad': <Briefcase className="w-14 h-14" aria-hidden="true" />,
 };
 
 export default function Home() {
@@ -233,22 +233,21 @@ export default function Home() {
                   githubUrl: 'https://github.com/ClaudiuNSL',
                 },
                 {
-                  key: 'Interactive Portfolio',
-                  title: 'Interactive Portfolio',
-                  desc: 'Modern personal portfolio with advanced animations, 3D effects, and responsive design. Features cinematic loading screen, aurora background, and interactive components.',
-                  tech: 'Next.js, TypeScript, Tailwind CSS, Framer Motion, Three.js',
-                  image: '',
-                  disabled: true,
-                  githubUrl: 'https://github.com/ClaudiuNSL',
+                  key: 'Aurasjobs',
+                  title: 'Aurasjobs — Agent AI pentru recrutare',
+                  desc: 'Agent AI care procesează automat email-urile candidaților, generează răspunsuri personalizate și gestionează fluxul propunere → aprobare → trimitere. Dashboard cu statistici live, programări de interviu și statusuri. Construit pentru o companie de recrutare din industria cruise ship.',
+                  tech: 'Next.js, TypeScript, Tailwind CSS, integrare LLM, automatizare email',
+                  image: '/projects/aurasjobs-preview.png',
+                  liveUrl: 'https://aurasjobs-automations.vercel.app/',
+                  githubUrl: 'https://github.com/cristianCeamatuAssist/aurasjobs-automations',
                 },
                 {
-                  key: 'Custom Web Solutions',
-                  title: 'Custom Web Solutions',
-                  desc: 'I develop custom web solutions for businesses: landing pages, web applications, and management systems tailored to your specific needs.',
-                  tech: 'React, Node.js, MongoDB, REST API, Tailwind CSS',
-                  image: '',
-                  contactUrl: '#contact',
-                  githubUrl: 'https://github.com/ClaudiuNSL',
+                  key: 'Stereocad',
+                  title: 'Stereocad — Platformă automatizări cadastrale',
+                  desc: 'Platformă internă care generează automat documente cadastrale pentru o firmă din domeniu. Autentificare passwordless cu magic link pe email, monitorizare etape în timp real și acces securizat fără parolă.',
+                  tech: 'Next.js, TypeScript, Tailwind CSS, magic link auth, generare documente',
+                  image: '/projects/stereocad-preview.png',
+                  githubUrl: 'https://github.com/cristianCeamatuAssist/stereocad-automations',
                 },
               ].map((project, i) => (
                 <AnimatedSection key={project.key} delay={i * 0.1}>
@@ -292,21 +291,6 @@ export default function Home() {
                           >
                             <Monitor className="w-4 h-4" />
                             Live demo
-                          </a>
-                        )}
-                        {project.disabled && (
-                          <span className="inline-flex items-center gap-2 bg-gray-700 text-gray-400 px-6 py-3 rounded-lg cursor-not-allowed">
-                            <Monitor className="w-4 h-4" />
-                            In Development
-                          </span>
-                        )}
-                        {project.contactUrl && (
-                          <a
-                            href={project.contactUrl}
-                            className="inline-flex items-center gap-2 bg-[#06B6D4] hover:bg-[#0891B2] text-white font-semibold px-6 py-3 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-[#06B6D4]/50"
-                          >
-                            <Monitor className="w-4 h-4" />
-                            Discuss Project
                           </a>
                         )}
                         <a
