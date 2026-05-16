@@ -89,6 +89,7 @@ export default function Home() {
                     width={600}
                     height={600}
                     priority
+                    sizes="(max-width: 1024px) 90vw, 500px"
                     className="relative w-full h-auto rounded-2xl object-cover shadow-2xl ring-1 ring-white/10"
                   />
                 </div>
@@ -237,6 +238,7 @@ export default function Home() {
                               alt={`${project.title} preview`}
                               width={700}
                               height={450}
+                              sizes="(max-width: 1024px) 90vw, 600px"
                               className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-[1.02]"
                             />
                           ) : (
