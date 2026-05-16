@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import AccessibilityWidget from "./components/AccessibilityWidget";
 import LoadingScreen from "./components/LoadingScreen";
@@ -55,6 +55,17 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://www.claudiucomsa.com",
   },
+  icons: {
+    icon: "/icon",
+    apple: "/logo-cc.png",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#06B6D4" },
+    { media: "(prefers-color-scheme: dark)", color: "#0f172a" },
+  ],
 };
 
 const jsonLd = {
