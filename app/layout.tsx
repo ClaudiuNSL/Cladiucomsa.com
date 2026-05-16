@@ -62,6 +62,7 @@ const jsonLd = {
   "@graph": [
     {
       "@type": "Person",
+      "@id": "https://www.claudiucomsa.com/#person",
       name: "Comsa Claudiu",
       jobTitle: "Web Developer",
       url: "https://www.claudiucomsa.com",
@@ -79,6 +80,7 @@ const jsonLd = {
     },
     {
       "@type": "LocalBusiness",
+      "@id": "https://www.claudiucomsa.com/#business",
       name: "Comsa Claudiu",
       description:
         "Web Developer & Freelancer specializat în creare site-uri și aplicații web moderne.",
@@ -94,6 +96,42 @@ const jsonLd = {
         "https://github.com/ClaudiuNSL",
         "https://www.linkedin.com/in/claudiu-comsa-72b552364/",
       ],
+    },
+    {
+      "@type": "Service",
+      name: "Web Development",
+      serviceType: "Web Development",
+      description:
+        "Site-uri și aplicații web moderne, responsive și optimizate (SEO, performanță). Construite cu React și Next.js.",
+      provider: { "@id": "https://www.claudiucomsa.com/#person" },
+      areaServed: { "@type": "Country", name: "Romania" },
+    },
+    {
+      "@type": "Service",
+      name: "AI Integration",
+      serviceType: "AI Integration",
+      description:
+        "Integrare AI în aplicații existente: chatbots, generare de conținut, agenți de email, automatizări inteligente.",
+      provider: { "@id": "https://www.claudiucomsa.com/#person" },
+      areaServed: { "@type": "Country", name: "Romania" },
+    },
+    {
+      "@type": "Service",
+      name: "Custom Solutions",
+      serviceType: "Custom Web Solutions",
+      description:
+        "Soluții web custom: dashboard-uri, sisteme de management, platforme interne și tool-uri pentru workflow-uri specifice.",
+      provider: { "@id": "https://www.claudiucomsa.com/#person" },
+      areaServed: { "@type": "Country", name: "Romania" },
+    },
+    {
+      "@type": "Service",
+      name: "UI/UX Design",
+      serviceType: "UI/UX Design",
+      description:
+        "Design de interfețe intuitive cu focus pe experiența utilizatorului, accesibilitate și consistență vizuală.",
+      provider: { "@id": "https://www.claudiucomsa.com/#person" },
+      areaServed: { "@type": "Country", name: "Romania" },
     },
   ],
 };
