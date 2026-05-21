@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Globe, Briefcase, Rocket } from "lucide-react";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
-import AnimatedSection from "../components/AnimatedSection";
-import TiltCard from "../components/TiltCard";
+import Navbar from "../../components/Navbar";
+import Footer from "../../components/Footer";
+import AnimatedSection from "../../components/AnimatedSection";
+import TiltCard from "../../components/TiltCard";
 
 export const metadata: Metadata = {
   title: "Projects",
