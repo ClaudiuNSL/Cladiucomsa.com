@@ -4,7 +4,6 @@
 // singur Canvas, cu crossfade pe opacitate citita din MotionValue.
 import { Canvas, useFrame } from '@react-three/fiber';
 import {
-  Environment,
   Float,
   MeshTransmissionMaterial,
   RoundedBox,
@@ -206,7 +205,6 @@ export default function HeroScene3D({ scrollProgress }: Props) {
       {!reduced && (
         <Sparkles count={60} scale={4} size={2} speed={0.4} color="#06B6D4" />
       )}
-      <Environment preset="studio" background={false} />
       <MorphMeshes scrollProgress={scrollProgress} reduced={reduced} />
     </Canvas>
   );
