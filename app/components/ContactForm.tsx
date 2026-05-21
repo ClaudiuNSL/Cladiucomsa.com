@@ -43,7 +43,7 @@ export default function ContactForm() {
         className="border-b border-green-500/40 py-6"
       >
         <p className="text-green-300 font-semibold text-lg">Message sent!</p>
-        <p className="text-zinc-400 text-sm mt-1">I&apos;ll get back to you as soon as possible.</p>
+        <p className="text-zinc-600 text-sm mt-1">I&apos;ll get back to you as soon as possible.</p>
         <button
           onClick={() => setStatus('idle')}
           className="mt-4 text-sm text-[#06B6D4] hover:text-[#0891B2] underline transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50 rounded"
@@ -57,7 +57,7 @@ export default function ContactForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-6" noValidate>
       <div>
-        <label htmlFor="contact-name" className="block text-sm font-medium text-zinc-400 mb-1">
+        <label htmlFor="contact-name" className="block text-sm font-medium text-zinc-600 mb-1">
           {t('formName')}
         </label>
         <input
@@ -66,12 +66,12 @@ export default function ContactForm() {
           name="name"
           required
           autoComplete="name"
-          className="w-full bg-transparent border-b border-white/15 py-3 text-white placeholder-zinc-500 focus:border-[#06B6D4] focus:outline-none transition-colors"
+          className="w-full bg-transparent border-b border-black/15 py-3 text-zinc-900 placeholder-zinc-500 focus:border-[#06B6D4] focus:outline-none transition-colors"
         />
       </div>
 
       <div>
-        <label htmlFor="contact-email" className="block text-sm font-medium text-zinc-400 mb-1">
+        <label htmlFor="contact-email" className="block text-sm font-medium text-zinc-600 mb-1">
           {t('formEmail')}
         </label>
         <input
@@ -80,12 +80,12 @@ export default function ContactForm() {
           name="email"
           required
           autoComplete="email"
-          className="w-full bg-transparent border-b border-white/15 py-3 text-white placeholder-zinc-500 focus:border-[#06B6D4] focus:outline-none transition-colors"
+          className="w-full bg-transparent border-b border-black/15 py-3 text-zinc-900 placeholder-zinc-500 focus:border-[#06B6D4] focus:outline-none transition-colors"
         />
       </div>
 
       <div>
-        <label htmlFor="contact-message" className="block text-sm font-medium text-zinc-400 mb-1">
+        <label htmlFor="contact-message" className="block text-sm font-medium text-zinc-600 mb-1">
           {t('formMessage')}
         </label>
         <textarea
@@ -93,7 +93,7 @@ export default function ContactForm() {
           rows={4}
           name="message"
           required
-          className="w-full bg-transparent border-b border-white/15 py-3 text-white placeholder-zinc-500 focus:border-[#06B6D4] focus:outline-none transition-colors resize-none"
+          className="w-full bg-transparent border-b border-black/15 py-3 text-zinc-900 placeholder-zinc-500 focus:border-[#06B6D4] focus:outline-none transition-colors resize-none"
         />
       </div>
 

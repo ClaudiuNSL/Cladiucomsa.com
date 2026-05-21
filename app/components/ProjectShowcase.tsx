@@ -37,7 +37,7 @@ export default function ProjectShowcase({
     >
       <div className="lg:col-span-7 lg:[direction:ltr]">
         {image && (
-          <div className="group relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.02]">
+          <div className="group relative overflow-hidden rounded-2xl border border-black/[0.08] bg-white">
             <Image
               src={image}
               alt={`${title} — preview`}
@@ -52,13 +52,13 @@ export default function ProjectShowcase({
       </div>
       <div className="lg:col-span-5 lg:[direction:ltr]">
         <p className="mb-3 text-sm font-medium uppercase tracking-wider text-[#06B6D4]">{kicker}</p>
-        <h3 className="mb-5 text-4xl font-bold text-white lg:text-5xl">{title}</h3>
-        <p className="mb-6 text-lg leading-relaxed text-zinc-400">{body}</p>
+        <h3 className="mb-5 text-4xl font-bold text-zinc-900 lg:text-5xl">{title}</h3>
+        <p className="mb-6 text-lg leading-relaxed text-zinc-600">{body}</p>
         <ul className="mb-8 flex flex-wrap gap-2">
           {tech.map((t) => (
             <li
               key={t}
-              className="rounded-full border border-white/10 px-3 py-1 text-xs text-zinc-400"
+              className="rounded-full border border-black/10 px-3 py-1 text-xs text-zinc-600"
             >
               {t}
             </li>
@@ -80,7 +80,7 @@ export default function ProjectShowcase({
               href={sourceUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-full border border-white/15 px-6 py-3 font-medium text-zinc-200 transition-colors hover:border-white/30 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+              className="inline-flex items-center gap-2 rounded-full border border-black/15 px-6 py-3 font-medium text-zinc-800 transition-colors hover:border-black/30 hover:text-zinc-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50"
             >
               {viewSourceLabel}
             </a>

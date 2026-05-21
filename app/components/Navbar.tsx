@@ -24,7 +24,7 @@ export default function Navbar() {
       aria-label="Main navigation"
       className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
         scrolled
-          ? 'border-b border-white/[0.08] bg-[#0A0A0B]/80 backdrop-blur-xl'
+          ? 'border-b border-black/[0.06] bg-[#F5F5F7]/80 backdrop-blur-md'
           : 'border-b border-transparent'
       }`}
     >
@@ -35,7 +35,7 @@ export default function Navbar() {
           className="group flex items-center gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50 rounded-lg pr-2"
         >
           <NavLogo />
-          <span className="hidden text-sm font-medium tracking-wide text-zinc-500 transition-colors group-hover:text-zinc-300 sm:block">
+          <span className="hidden text-sm font-medium tracking-wide text-zinc-500 transition-colors group-hover:text-zinc-700 sm:block">
             Comsa Claudiu
           </span>
         </Link>
@@ -45,7 +45,7 @@ export default function Navbar() {
             <a
               key={s}
               href={`#${s}`}
-              className="text-sm font-medium text-zinc-400 transition-colors hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50 rounded"
+              className="text-sm font-medium text-zinc-600 transition-colors hover:text-zinc-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50 rounded"
             >
               {t(s)}
             </a>
@@ -65,7 +65,7 @@ export default function Navbar() {
           <LanguageSwitcher />
           <button
             type="button"
-            className="rounded-lg p-2 text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50"
+            className="rounded-lg p-2 text-zinc-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50"
             onClick={() => setOpen((o) => !o)}
             aria-expanded={open}
             aria-controls="mobile-menu"
@@ -83,7 +83,7 @@ export default function Navbar() {
       </div>
 
       {open && (
-        <div id="mobile-menu" role="menu" className="md:hidden border-t border-white/[0.08] bg-[#0A0A0B]/95 backdrop-blur-xl">
+        <div id="mobile-menu" role="menu" className="md:hidden border-t border-black/[0.08] bg-white/95 backdrop-blur-xl">
           <div className="space-y-1 px-6 py-4">
             {sections.map((s) => (
               <a
@@ -91,7 +91,7 @@ export default function Navbar() {
                 href={`#${s}`}
                 role="menuitem"
                 onClick={() => setOpen(false)}
-                className="block rounded px-2 py-3 text-base font-medium text-zinc-300 transition-colors hover:text-white"
+                className="block rounded px-2 py-3 text-base font-medium text-zinc-700 transition-colors hover:text-zinc-900"
               >
                 {t(s)}
               </a>

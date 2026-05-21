@@ -19,7 +19,7 @@ export default function Hero() {
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-          className="max-w-[18ch] text-5xl font-bold leading-[1.05] tracking-tight text-white sm:text-6xl lg:text-7xl xl:text-8xl"
+          className="max-w-[18ch] text-5xl font-bold leading-[1.05] tracking-tight text-zinc-900 sm:text-6xl lg:text-7xl xl:text-8xl"
         >
           {t('title')}
         </motion.h1>
@@ -27,7 +27,7 @@ export default function Hero() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-8 max-w-2xl text-lg leading-relaxed text-zinc-400 lg:text-xl"
+          className="mt-8 max-w-2xl text-lg leading-relaxed text-zinc-600 lg:text-xl"
         >
           {t('subtitle')}
         </motion.p>
@@ -45,15 +45,15 @@ export default function Hero() {
           </a>
           <a
             href="#contact"
-            className="rounded-full border border-white/15 px-7 py-3.5 font-medium text-zinc-200 transition-colors hover:border-white/30 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+            className="rounded-full border border-black/15 px-7 py-3.5 font-medium text-zinc-800 transition-colors hover:border-black/30 hover:text-zinc-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50"
           >
             {t('ctaSecondary')}
           </a>
         </motion.div>
       </div>
-      <div aria-hidden="true" className="absolute bottom-8 right-8 hidden flex-col items-center gap-3 text-xs uppercase tracking-widest text-zinc-600 lg:flex">
+      <div aria-hidden="true" className="absolute bottom-8 right-8 hidden flex-col items-center gap-3 text-xs uppercase tracking-widest text-zinc-500 lg:flex">
         <span>{t('scrollIndicator')}</span>
-        <span className="h-12 w-px bg-gradient-to-b from-zinc-700 to-transparent" />
+        <span className="h-12 w-px bg-gradient-to-b from-zinc-400 to-transparent" />
       </div>
     </section>
   );

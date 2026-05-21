@@ -38,10 +38,10 @@ export default function Projects() {
     <section id="projects" aria-labelledby="projects-heading" className="relative px-6 py-32 lg:px-8">
       <div className="mx-auto max-w-[1400px]">
         <div className="mb-16 max-w-2xl">
-          <h2 id="projects-heading" className="text-4xl font-bold tracking-tight text-white lg:text-6xl">
+          <h2 id="projects-heading" className="text-4xl font-bold tracking-tight text-zinc-900 lg:text-6xl">
             {t('sectionTitle')}
           </h2>
-          <p className="mt-4 text-lg text-zinc-400">{t('sectionSubtitle')}</p>
+          <p className="mt-4 text-lg text-zinc-600">{t('sectionSubtitle')}</p>
         </div>
         <div className="space-y-32">
           {projects.map((p, i) => (
