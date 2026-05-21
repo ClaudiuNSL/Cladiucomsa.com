@@ -1,10 +1,12 @@
-// Locale-aware JSON-LD @graph: Person, LocalBusiness, and 4 Service entries.
-// Task 20 will reduce Services to 3 with bilingual descriptions; for now we
-// keep the original 4 entries from the pre-i18n root layout, with locale-aware
-// @id and inLanguage so /ro and /en each emit their own canonical graph.
+// JSON-LD @graph generat per-locale: Person, LocalBusiness și 3 Service-uri.
+// Descrierile pentru servicii și business sunt trase din mesajele next-intl,
+// deci /ro și /en emit fiecare un graf canonic propriu, în limba potrivită.
 import type { Locale } from '@/i18n/routing';
+import { getTranslations } from 'next-intl/server';
 
-export function getJsonLd(locale: Locale) {
+export async function getJsonLd(locale: Locale) {
+  const tServices = await getTranslations({ locale, namespace: 'services.items' });
+  const tMeta = await getTranslations({ locale, namespace: 'meta' });
   const baseUrl = 'https://www.claudiucomsa.com';
   const localeUrl = `${baseUrl}/${locale}`;
   const personId = `${localeUrl}/#person`;
@@ -22,7 +24,6 @@ export function getJsonLd(locale: Locale) {
         url: localeUrl,
         email: 'claudiucomsa29@gmail.com',
         telephone: '+40761880406',
-        inLanguage,
         address: {
           '@type': 'PostalAddress',
           addressLocality: 'Constanța',
@@ -32,17 +33,16 @@ export function getJsonLd(locale: Locale) {
           'https://github.com/ClaudiuNSL',
           'https://www.linkedin.com/in/claudiu-comsa-72b552364/',
         ],
+        inLanguage,
       },
       {
         '@type': 'LocalBusiness',
         '@id': businessId,
         name: 'Comsa Claudiu',
-        description:
-          'Web Developer & Freelancer specializat în creare site-uri și aplicații web moderne.',
+        description: tMeta('description'),
         url: localeUrl,
         email: 'claudiucomsa29@gmail.com',
         telephone: '+40761880406',
-        inLanguage,
         address: {
           '@type': 'PostalAddress',
           addressLocality: 'Constanța',
@@ -52,40 +52,29 @@ export function getJsonLd(locale: Locale) {
           'https://github.com/ClaudiuNSL',
           'https://www.linkedin.com/in/claudiu-comsa-72b552364/',
         ],
+        inLanguage,
       },
       {
         '@type': 'Service',
-        name: 'Web Development',
+        name: tServices('websites.title'),
         serviceType: 'Web Development',
-        description:
-          'Site-uri și aplicații web moderne, responsive și optimizate (SEO, performanță). Construite cu React și Next.js.',
+        description: tServices('websites.body'),
         provider: { '@id': personId },
         areaServed: { '@type': 'Country', name: 'Romania' },
       },
       {
         '@type': 'Service',
-        name: 'AI Integration',
+        name: tServices('ai.title'),
         serviceType: 'AI Integration',
-        description:
-          'Integrare AI în aplicații existente: chatbots, generare de conținut, agenți de email, automatizări inteligente.',
+        description: tServices('ai.body'),
         provider: { '@id': personId },
         areaServed: { '@type': 'Country', name: 'Romania' },
       },
       {
         '@type': 'Service',
-        name: 'Custom Solutions',
-        serviceType: 'Custom Web Solutions',
-        description:
-          'Soluții web custom: dashboard-uri, sisteme de management, platforme interne și tool-uri pentru workflow-uri specifice.',
-        provider: { '@id': personId },
-        areaServed: { '@type': 'Country', name: 'Romania' },
-      },
-      {
-        '@type': 'Service',
-        name: 'UI/UX Design',
-        serviceType: 'UI/UX Design',
-        description:
-          'Design de interfețe intuitive cu focus pe experiența utilizatorului, accesibilitate și consistență vizuală.',
+        name: tServices('internal.title'),
+        serviceType: 'Internal Applications',
+        description: tServices('internal.body'),
         provider: { '@id': personId },
         areaServed: { '@type': 'Country', name: 'Romania' },
       },

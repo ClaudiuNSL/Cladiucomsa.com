@@ -73,6 +73,7 @@ export default async function LocaleLayout({
   const typedLocale = locale as Locale;
   setRequestLocale(typedLocale);
   const messages = await getMessages();
+  const jsonLd = await getJsonLd(typedLocale);
 
   return (
     <NextIntlClientProvider messages={messages} locale={typedLocale}>
@@ -80,7 +81,7 @@ export default async function LocaleLayout({
         <GradientOrbs />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(getJsonLd(typedLocale)) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
         <PageTransition>{children}</PageTransition>
         <BackToTop />
