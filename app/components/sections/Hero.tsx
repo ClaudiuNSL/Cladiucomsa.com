@@ -2,6 +2,7 @@
 import { motion } from 'framer-motion';
 import { useTranslations } from 'next-intl';
 import FallingLettersButton from '@/app/components/FallingLettersButton';
+import HeroTagChips from '@/app/components/HeroTagChips';
 
 export default function Hero() {
   const t = useTranslations('hero');
@@ -32,6 +33,13 @@ export default function Hero() {
         >
           {t('subtitle')}
         </motion.p>
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.38, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <HeroTagChips chips={t.raw('chips') as string[]} />
+        </motion.div>
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}

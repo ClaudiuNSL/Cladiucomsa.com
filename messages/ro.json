@@ -18,6 +18,7 @@
     "eyebrow": "Web · AI · Automation",
     "title": "Construim site-uri și automatizări AI care chiar livrează.",
     "subtitle": "Dashboard-uri, agenți AI, integrări. Pentru afaceri care vor mai mult decât un site de prezentare.",
+    "chips": ["WEB", "AI", "INTERNAL APPS"],
     "ctaPrimary": "Vezi proiecte",
     "ctaSecondary": "Hai să vorbim",
     "scrollIndicator": "Scroll"

@@ -18,6 +18,7 @@
     "eyebrow": "Web · AI · Automation",
     "title": "We build websites and AI automations that actually deliver.",
     "subtitle": "Dashboards, AI agents, integrations. For businesses that want more than a brochure site.",
+    "chips": ["WEB", "AI", "INTERNAL APPS"],
     "ctaPrimary": "See projects",
     "ctaSecondary": "Let's talk",
     "scrollIndicator": "Scroll"
