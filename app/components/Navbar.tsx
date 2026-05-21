@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import NavLogo from './NavLogo';
 import LanguageSwitcher from './LanguageSwitcher';
+import FallingLettersButton from './FallingLettersButton';
 
 const sections = ['services', 'projects', 'contact'] as const;
 
@@ -48,14 +49,14 @@ export default function Navbar() {
             </a>
           ))}
           <LanguageSwitcher />
-          <a
+          <FallingLettersButton
             href="https://wa.me/40761880406"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rounded-full bg-[#06B6D4] px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0891B2] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50"
+            external
+            variant="primary"
+            className="px-5 py-2 text-sm"
           >
             {t('cta')}
-          </a>
+          </FallingLettersButton>
         </div>
 
         <div className="md:hidden flex items-center gap-3">
@@ -93,16 +94,15 @@ export default function Navbar() {
                 {t(s)}
               </a>
             ))}
-            <a
+            <FallingLettersButton
               href="https://wa.me/40761880406"
-              target="_blank"
-              rel="noopener noreferrer"
-              role="menuitem"
+              external
+              variant="primary"
+              className="mt-2 w-full justify-center"
               onClick={() => setOpen(false)}
-              className="mt-2 block rounded-full bg-[#06B6D4] px-5 py-3 text-center text-sm font-semibold text-white transition-colors hover:bg-[#0891B2]"
             >
               {t('cta')}
-            </a>
+            </FallingLettersButton>
           </div>
         </div>
       )}

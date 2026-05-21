@@ -3,6 +3,7 @@
 // Formular de contact — stilizare flat (fără card), traduceri prin next-intl
 import { useState, FormEvent } from 'react';
 import { useTranslations } from 'next-intl';
+import FallingLettersButton from './FallingLettersButton';
 
 type FormStatus = 'idle' | 'submitting' | 'success' | 'error';
 
@@ -104,13 +105,13 @@ export default function ContactForm() {
       )}
 
       <div className="pt-2">
-        <button
+        <FallingLettersButton
           type="submit"
+          variant="primary"
           disabled={status === 'submitting'}
-          className="rounded-full bg-[#06B6D4] hover:bg-[#0891B2] px-7 py-3 font-semibold text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {status === 'submitting' ? 'Sending...' : t('formSubmit')}
-        </button>
+        </FallingLettersButton>
       </div>
     </form>
   );

@@ -1,6 +1,7 @@
 'use client';
 import { motion } from 'framer-motion';
 import { useTranslations } from 'next-intl';
+import FallingLettersButton from '@/app/components/FallingLettersButton';
 
 export default function Hero() {
   const t = useTranslations('hero');
@@ -37,18 +38,12 @@ export default function Hero() {
           transition={{ duration: 0.6, delay: 0.45, ease: [0.22, 1, 0.36, 1] }}
           className="mt-12 flex flex-wrap gap-4"
         >
-          <a
-            href="#projects"
-            className="rounded-full bg-[#06B6D4] px-7 py-3.5 font-semibold text-white transition-colors hover:bg-[#0891B2] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50"
-          >
-            {t('ctaPrimary')} <span aria-hidden="true">→</span>
-          </a>
-          <a
-            href="#contact"
-            className="rounded-full border border-black/15 px-7 py-3.5 font-medium text-zinc-800 transition-colors hover:border-black/30 hover:text-zinc-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50"
-          >
+          <FallingLettersButton href="#projects" variant="primary" trailing={<span aria-hidden="true">→</span>}>
+            {t('ctaPrimary')}
+          </FallingLettersButton>
+          <FallingLettersButton href="#contact" variant="secondary">
             {t('ctaSecondary')}
-          </a>
+          </FallingLettersButton>
         </motion.div>
       </div>
       <div aria-hidden="true" className="absolute bottom-8 right-8 hidden flex-col items-center gap-3 text-xs uppercase tracking-widest text-zinc-500 lg:flex">
