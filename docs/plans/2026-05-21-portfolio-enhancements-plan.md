@@ -822,7 +822,7 @@ git commit -m "chore(deps): add three + react-three-fiber + drei for 3D hero"
 
 ---
 
-### Task E9: Build `HeroScene3D` component + integrate into Hero
+### Task E9: Build `HeroScene3D` component with sphere→DNA→cube scroll morph + integrate into Hero
 
 **Files:**
 - Create: `app/components/HeroScene3D.tsx`
@@ -904,7 +904,28 @@ export default function HeroScene3D() {
 }
 ```
 
-NOTE on the morph: a full sphere → DNA → cube scroll-driven morph with vertex shaders is a 4-6h task by itself. For v1 we ship an **iridescent floating glass icosahedron** with sparkles and internal cyan point light — already a strong wow moment, and dramatically less effort. The shape morph sequence can be a follow-up enhancement.
+**FULL MORPH UPGRADE (user requested):** Instead of a single icosahedron, render three meshes (sphere, DNA helix, rounded cube) with crossfade transitions driven by hero scroll progress. Approach: multi-mesh opacity blend, not vertex-shader morph (the shapes are too different topologically for a clean vertex tween, and crossfade looks more polished). Scroll progress tracked via framer-motion's `useScroll({ target: heroRef, offset: ['start start', 'end start'] })`, passed into the Canvas as a ref/MotionValue.
+
+**Scroll mapping:**
+- 0.00 — 0.33 progress: **sphere** at full opacity (other two hidden)
+- 0.30 — 0.40: sphere fades out, DNA fades in (10% crossfade window)
+- 0.33 — 0.66: **DNA** at full opacity
+- 0.63 — 0.73: DNA fades out, cube fades in
+- 0.66 — 1.00: **cube** at full opacity
+
+**Geometries:**
+- **Sphere**: `SphereGeometry(1, 64, 64)` — organic, smooth
+- **DNA**: two `TubeGeometry` instances along helical `CatmullRomCurve3` curves (sampled from `Math.sin/cos(t)` + linear z), offset by 180°. Curves: 100 sample points, tube radius 0.08, radial segments 16
+- **Cube**: drei's `<RoundedBox>` with `radius={0.15}`, `smoothness={4}`, 1.6 units wide
+
+**Shared per mesh:**
+- Same `MeshTransmissionMaterial` (frosted glass, IOR 1.5, transmission 1)
+- Internal cyan point light (`#06B6D4`, intensity 5, decay 2)
+- All three wrapped in `<Float>` for idle motion
+- Cube + sphere slowly rotate via `useFrame`
+- DNA spirals rotate around their long axis (Y) for the helix tumbling effect
+
+Material opacity controlled via `transmissionMaterial.transparent = true` + animated `opacity` value (or wrap each mesh in a `<group>` with `visible` toggle + scale fade).
 
 **Step 2: Modify `app/components/sections/Hero.tsx`** to split the layout into 2 columns on `lg+` and slot the 3D scene on the right.
 
