@@ -5,6 +5,7 @@ import { getMessages, setRequestLocale } from "next-intl/server";
 import { routing, type Locale } from "@/i18n/routing";
 import BackToTop from "@/app/components/BackToTop";
 import AccessibilityWidget from "@/app/components/AccessibilityWidget";
+import CustomCursor from "@/app/components/CustomCursor";
 import PageTransition from "@/app/components/PageTransition";
 import GradientOrbs from "@/app/components/GradientOrbs";
 import { getJsonLd } from "./_lib/jsonLd";
@@ -79,6 +80,7 @@ export default async function LocaleLayout({
     <NextIntlClientProvider messages={messages} locale={typedLocale}>
       <div lang={typedLocale}>
         <GradientOrbs />
+        <CustomCursor />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
