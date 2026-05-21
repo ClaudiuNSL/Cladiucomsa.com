@@ -4,6 +4,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { getMessages, setRequestLocale } from "next-intl/server";
 import { routing, type Locale } from "@/i18n/routing";
 import BackToTop from "@/app/components/BackToTop";
+import CinematicScene3DLoader from "@/app/components/CinematicScene3DLoader";
 import LenisProvider from "@/app/components/LenisProvider";
 import PageTransition from "@/app/components/PageTransition";
 import { getJsonLd } from "./_lib/jsonLd";
@@ -82,6 +83,7 @@ export default async function LocaleLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
         <LenisProvider>
+          <CinematicScene3DLoader />
           <PageTransition>{children}</PageTransition>
           <BackToTop />
         </LenisProvider>
