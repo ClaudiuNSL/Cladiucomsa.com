@@ -6,6 +6,7 @@ import { routing, type Locale } from "@/i18n/routing";
 import BackToTop from "@/app/components/BackToTop";
 import AccessibilityWidget from "@/app/components/AccessibilityWidget";
 import PageTransition from "@/app/components/PageTransition";
+import GradientOrbs from "@/app/components/GradientOrbs";
 import { getJsonLd } from "./_lib/jsonLd";
 
 export function generateStaticParams() {
@@ -76,6 +77,7 @@ export default async function LocaleLayout({
   return (
     <NextIntlClientProvider messages={messages} locale={typedLocale}>
       <div lang={typedLocale}>
+        <GradientOrbs />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(getJsonLd(typedLocale)) }}
