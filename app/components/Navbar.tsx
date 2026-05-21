@@ -32,12 +32,9 @@ export default function Navbar() {
         <Link
           href="/"
           aria-label="Comsa Claudiu — Home"
-          className="group flex items-center gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50 rounded-lg pr-2"
+          className="group flex items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4]/50 rounded-lg pr-2"
         >
           <NavLogo />
-          <span className="hidden text-sm font-medium tracking-wide text-zinc-500 transition-colors group-hover:text-zinc-700 sm:block">
-            Comsa Claudiu
-          </span>
         </Link>
 
         <div className="hidden md:flex items-center gap-10">
