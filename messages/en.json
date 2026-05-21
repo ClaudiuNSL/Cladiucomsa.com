@@ -5,86 +5,39 @@
     "description": "We build websites and AI automations for businesses. Dashboards, AI agents, integrations. Constanța · Romania · Remote."
   },
   "nav": {
-    "home": "Home",
-    "services": "Services",
-    "projects": "Projects",
-    "contact": "Contact",
-    "cta": "Let's talk",
     "langSwitcherLabel": "Language",
     "openMenu": "Open menu",
     "closeMenu": "Close menu"
   },
-  "hero": {
-    "eyebrow": "Web · AI · Automation",
-    "title": "We build websites and AI automations that actually deliver.",
-    "subtitle": "Dashboards, AI agents, integrations. For businesses that want more than a brochure site.",
-    "chips": ["WEB", "AI", "INTERNAL APPS"],
-    "ctaPrimary": "See projects",
-    "ctaSecondary": "Let's talk",
-    "scrollIndicator": "Scroll"
-  },
-  "services": {
-    "sectionTitle": "What we build",
-    "sectionSubtitle": "Three directions. Three concrete outcomes.",
-    "items": {
-      "websites": {
-        "number": "01",
-        "title": "Professional websites",
-        "body": "Fast, SEO-optimized, responsive websites. For clients who need a real digital presence — not another template.",
-        "linkLabel": "See example"
-      },
-      "ai": {
-        "number": "02",
-        "title": "AI agents & automations",
-        "body": "Automated email processing, content generation, decision-making agents. We integrate OpenAI, Anthropic, Gemini — we pick what fits.",
-        "linkLabel": "See example"
-      },
-      "internal": {
-        "number": "03",
-        "title": "Internal apps & dashboards",
-        "body": "Internal platforms that replace hours of manual work. Secure auth, real-time monitoring, exports in any format you need.",
-        "linkLabel": "See example"
-      }
+  "cinematic": {
+    "rails": {
+      "menu": "Menu",
+      "work": "Work",
+      "studio": "Studio",
+      "network": "Network"
+    },
+    "s1": {
+      "counter": "Intro",
+      "eyebrow": "Web · AI · Cinematic",
+      "title": "Claudiu Comsa",
+      "body": "We build websites and AI automations for businesses that want more than a brochure site."
+    },
+    "s2": {
+      "counter": "Work",
+      "eyebrow": "Immersive · Digital · Experiences",
+      "title": "Immersive digital experiences.",
+      "body": "We combine design, animation, and performance to create websites that hold attention.",
+      "cta": "View work",
+      "ctaHref": "claudiucomsaa@gmail.com"
+    },
+    "s3": {
+      "counter": "Studio",
+      "eyebrow": "Clean · Fast · Impactful",
+      "title": "Clean. Fast. Impactful.",
+      "body": "Every detail matters. Every interaction designed for speed, clarity, and emotion.",
+      "cta": "Let's talk",
+      "ctaHref": "https://wa.me/40761880406"
     }
-  },
-  "projects": {
-    "sectionTitle": "Recent projects",
-    "sectionSubtitle": "Things we've shipped for real clients.",
-    "viewLive": "View live",
-    "viewSource": "Source code",
-    "items": {
-      "banciuCostin": {
-        "title": "Banciu Costin",
-        "kicker": "Professional website",
-        "body": "Digital presence for a legal industry specialist. Optimized for performance, SEO, and conversion — visitors become contact requests.",
-        "tech": ["HTML5", "CSS3", "JavaScript", "SEO"]
-      },
-      "aurasjobs": {
-        "title": "Aurasjobs",
-        "kicker": "AI agent for recruitment",
-        "body": "Processes candidate emails automatically, generates personalized responses, manages the proposal → approval → send flow. Built for a cruise ship recruitment firm.",
-        "tech": ["Next.js", "TypeScript", "LLM Integration", "Email Automation"]
-      },
-      "stereocad": {
-        "title": "Stereocad",
-        "kicker": "Cadastral automation platform",
-        "body": "Auto-generates cadastral documents for a specialist firm. Passwordless magic-link auth, real-time stage monitoring, no passwords to manage.",
-        "tech": ["Next.js", "TypeScript", "Magic Link Auth", "Document Generation"]
-      }
-    }
-  },
-  "contact": {
-    "sectionTitle": "Let's talk about your project.",
-    "sectionSubtitle": "I respond within 24 business hours. Constanța · Remote · Worldwide.",
-    "formName": "Your name",
-    "formEmail": "Email",
-    "formMessage": "Tell me about your project",
-    "formSubmit": "Send message",
-    "directContactLabel": "Or directly:",
-    "emailLabel": "Email",
-    "phoneLabel": "Phone",
-    "linkedinLabel": "LinkedIn",
-    "githubLabel": "GitHub"
   },
   "footer": {
     "rights": "All rights reserved.",

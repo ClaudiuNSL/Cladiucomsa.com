@@ -5,86 +5,39 @@
     "description": "Construim site-uri și automatizări AI pentru afaceri. Dashboard-uri, agenți AI, integrări. Constanța · România · Remote."
   },
   "nav": {
-    "home": "Acasă",
-    "services": "Servicii",
-    "projects": "Proiecte",
-    "contact": "Contact",
-    "cta": "Hai să vorbim",
     "langSwitcherLabel": "Limba",
     "openMenu": "Deschide meniul",
     "closeMenu": "Închide meniul"
   },
-  "hero": {
-    "eyebrow": "Web · AI · Automation",
-    "title": "Construim site-uri și automatizări AI care chiar livrează.",
-    "subtitle": "Dashboard-uri, agenți AI, integrări. Pentru afaceri care vor mai mult decât un site de prezentare.",
-    "chips": ["WEB", "AI", "INTERNAL APPS"],
-    "ctaPrimary": "Vezi proiecte",
-    "ctaSecondary": "Hai să vorbim",
-    "scrollIndicator": "Scroll"
-  },
-  "services": {
-    "sectionTitle": "Ce construim",
-    "sectionSubtitle": "Trei direcții. Trei rezultate concrete.",
-    "items": {
-      "websites": {
-        "number": "01",
-        "title": "Site-uri web profesionale",
-        "body": "Site-uri rapide, optimizate SEO, responsive. Pentru clienți care au nevoie de prezență digitală solidă — nu de încă un template.",
-        "linkLabel": "Vezi exemplu"
-      },
-      "ai": {
-        "number": "02",
-        "title": "Agenți AI & automatizări",
-        "body": "Procesare automată email, generare conținut, agenți care iau decizii. Integrăm OpenAI, Anthropic, Gemini — alegem ce se potrivește.",
-        "linkLabel": "Vezi exemplu"
-      },
-      "internal": {
-        "number": "03",
-        "title": "Aplicații interne & dashboard-uri",
-        "body": "Platforme interne care înlocuiesc ore de muncă manuală. Autentificare securizată, monitoring în timp real, export pe ce format ai nevoie.",
-        "linkLabel": "Vezi exemplu"
-      }
+  "cinematic": {
+    "rails": {
+      "menu": "Menu",
+      "work": "Work",
+      "studio": "Studio",
+      "network": "Network"
+    },
+    "s1": {
+      "counter": "Intro",
+      "eyebrow": "Web · AI · Cinematic",
+      "title": "Claudiu Comsa",
+      "body": "Construim site-uri și automatizări AI pentru afaceri care vor mai mult decât un site de prezentare."
+    },
+    "s2": {
+      "counter": "Work",
+      "eyebrow": "Immersive · Digital · Experiences",
+      "title": "Immersive digital experiences.",
+      "body": "Combinăm design, animație și performanță ca să creăm site-uri care țin atenția.",
+      "cta": "Vezi proiectele",
+      "ctaHref": "claudiucomsaa@gmail.com"
+    },
+    "s3": {
+      "counter": "Studio",
+      "eyebrow": "Clean · Fast · Impactful",
+      "title": "Clean. Fast. Impactful.",
+      "body": "Fiecare detaliu contează. Fiecare interacțiune e gândită pentru viteză, claritate și emoție.",
+      "cta": "Hai să vorbim",
+      "ctaHref": "https://wa.me/40761880406"
     }
-  },
-  "projects": {
-    "sectionTitle": "Proiecte recente",
-    "sectionSubtitle": "Lucruri pe care le-am livrat clienților reali.",
-    "viewLive": "Vezi live",
-    "viewSource": "Cod sursă",
-    "items": {
-      "banciuCostin": {
-        "title": "Banciu Costin",
-        "kicker": "Site web profesional",
-        "body": "Prezență digitală pentru un specialist din domeniul juridic. Optimizat pentru performanță, SEO și conversie — vizitatorii devin solicitări de contact.",
-        "tech": ["HTML5", "CSS3", "JavaScript", "SEO"]
-      },
-      "aurasjobs": {
-        "title": "Aurasjobs",
-        "kicker": "Agent AI pentru recrutare",
-        "body": "Procesează automat email-urile candidaților, generează răspunsuri personalizate și gestionează fluxul propunere → aprobare → trimitere. Construit pentru o firmă de recrutare cruise ship.",
-        "tech": ["Next.js", "TypeScript", "LLM Integration", "Email Automation"]
-      },
-      "stereocad": {
-        "title": "Stereocad",
-        "kicker": "Platformă automatizări cadastrale",
-        "body": "Generează automat documente cadastrale pentru o firmă din domeniu. Autentificare passwordless cu magic link, monitorizare etape în timp real, fără parole.",
-        "tech": ["Next.js", "TypeScript", "Magic Link Auth", "Document Generation"]
-      }
-    }
-  },
-  "contact": {
-    "sectionTitle": "Hai să discutăm proiectul tău.",
-    "sectionSubtitle": "Răspund în maxim 24 de ore lucrătoare. Constanța · Remote · Worldwide.",
-    "formName": "Numele tău",
-    "formEmail": "Email",
-    "formMessage": "Spune-mi despre proiect",
-    "formSubmit": "Trimite mesajul",
-    "directContactLabel": "Sau direct:",
-    "emailLabel": "Email",
-    "phoneLabel": "Telefon",
-    "linkedinLabel": "LinkedIn",
-    "githubLabel": "GitHub"
   },
   "footer": {
     "rights": "Toate drepturile rezervate.",
