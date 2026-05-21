@@ -1,20 +1,20 @@
 import Image from 'next/image';
 import { Monitor, Bot, Zap, Palette, Globe, Briefcase } from 'lucide-react';
-import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
-import AnimatedSection from '../components/AnimatedSection';
-import ContactForm from '../components/ContactForm';
-import ScrollProgress from '../components/ScrollProgress';
-import TiltCard from '../components/TiltCard';
-import TypeWriter from '../components/TypeWriter';
-import FloatingParticles from '../components/FloatingParticles';
-import TechStack from '../components/TechStack';
-import MagneticButton from '../components/MagneticButton';
-import TextReveal from '../components/TextReveal';
-import AuroraBackground from '../components/AuroraBackground';
-import SpotlightCard from '../components/SpotlightCard';
-import TestimonialsCarousel from '../components/TestimonialsCarousel';
-import ScrollScale from '../components/ScrollScale';
+import Navbar from '@/app/components/Navbar';
+import Footer from '@/app/components/Footer';
+import AnimatedSection from '@/app/components/AnimatedSection';
+import ContactForm from '@/app/components/ContactForm';
+import ScrollProgress from '@/app/components/ScrollProgress';
+import TiltCard from '@/app/components/TiltCard';
+import TypeWriter from '@/app/components/TypeWriter';
+import FloatingParticles from '@/app/components/FloatingParticles';
+import TechStack from '@/app/components/TechStack';
+import MagneticButton from '@/app/components/MagneticButton';
+import TextReveal from '@/app/components/TextReveal';
+import AuroraBackground from '@/app/components/AuroraBackground';
+import SpotlightCard from '@/app/components/SpotlightCard';
+import TestimonialsCarousel from '@/app/components/TestimonialsCarousel';
+import ScrollScale from '@/app/components/ScrollScale';
 
 const serviceIcons: Record<string, React.ReactNode> = {
   'Web Development': <Monitor className="w-8 h-8" aria-hidden="true" />,

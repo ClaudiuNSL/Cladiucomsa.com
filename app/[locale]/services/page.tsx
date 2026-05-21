@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Monitor, Bot, Zap, Palette } from "lucide-react";
-import Navbar from "../../components/Navbar";
-import Footer from "../../components/Footer";
-import AnimatedSection from "../../components/AnimatedSection";
+import Navbar from "@/app/components/Navbar";
+import Footer from "@/app/components/Footer";
+import AnimatedSection from "@/app/components/AnimatedSection";
 
 export const metadata: Metadata = {
   title: "Services",
