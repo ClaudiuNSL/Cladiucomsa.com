@@ -10,6 +10,7 @@
     "closeMenu": "Închide meniul"
   },
   "cinematic": {
+    "scrollHint": "Scroll",
     "rails": {
       "menu": "Menu",
       "work": "Work",
@@ -25,6 +26,7 @@
     "s2": {
       "counter": "Work",
       "eyebrow": "Immersive · Digital · Experiences",
+      "subtitle": "Construit din React, GSAP și WebGL.",
       "title": "Immersive digital experiences.",
       "body": "Combinăm design, animație și performanță ca să creăm site-uri care țin atenția.",
       "cta": "Vezi proiectele",
@@ -33,6 +35,7 @@
     "s3": {
       "counter": "Studio",
       "eyebrow": "Clean · Fast · Impactful",
+      "subtitle": "Următorul proiect e o conversație departe.",
       "title": "Clean. Fast. Impactful.",
       "body": "Fiecare detaliu contează. Fiecare interacțiune e gândită pentru viteză, claritate și emoție.",
       "cta": "Hai să vorbim",

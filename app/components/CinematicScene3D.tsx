@@ -2,10 +2,12 @@
 // Scena 3D cinematica fixata in spatele continutului paginii.
 // Morphing: asteroid -> ADN -> cub, condus de progresul de scroll
 // al documentului prin GSAP ScrollTrigger. Vibe mdx.so: dark, minimal,
-// rim-lights subtile, bloom subtil. Fara cyan, fara neon, fara glass.
+// rim-lights subtile, bloom subtil, vignette, contact shadows.
+// Iluminare cinematica in 3 puncte (key + blue rim + fill) + glow point
+// in spatele obiectului. Rotatii continue conduse prin GSAP.
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Float, RoundedBox, Sparkles } from '@react-three/drei';
-import { EffectComposer, Bloom } from '@react-three/postprocessing';
+import { Float, RoundedBox, Sparkles, ContactShadows } from '@react-three/drei';
+import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import { useReducedMotion } from 'framer-motion';
 import { useEffect, useMemo, useRef, Suspense } from 'react';
 import * as THREE from 'three';
@@ -27,17 +29,19 @@ function buildHelixCurve(phaseShift: number) {
   return new THREE.CatmullRomCurve3(points);
 }
 
-// Geometrie asteroid: icosaedru subdivizat cu displacement noise per-vertex
-// pentru a obtine forma neregulata, stancoasa.
+// Geometrie asteroid: icosaedru subdivizat la 8 cu displacement noise
+// dual-octava per-vertex pentru o forma mai detaliata, neregulata, stancoasa.
 function buildAsteroidGeometry() {
-  const geometry = new THREE.IcosahedronGeometry(1.2, 6);
+  const geometry = new THREE.IcosahedronGeometry(1.2, 8);
   const noise3D = createNoise3D();
   const positionAttr = geometry.attributes.position as THREE.BufferAttribute;
   const v = new THREE.Vector3();
   for (let i = 0; i < positionAttr.count; i++) {
     v.fromBufferAttribute(positionAttr, i);
-    const n = noise3D(v.x * 1.5, v.y * 1.5, v.z * 1.5);
-    v.multiplyScalar(1 + n * 0.18);
+    // Doua octave de noise: prima da silueta, a doua adauga detaliu fin.
+    const n1 = noise3D(v.x * 1.5, v.y * 1.5, v.z * 1.5) * 0.15;
+    const n2 = noise3D(v.x * 4.0, v.y * 4.0, v.z * 4.0) * 0.04;
+    v.multiplyScalar(1 + n1 + n2);
     positionAttr.setXYZ(i, v.x, v.y, v.z);
   }
   positionAttr.needsUpdate = true;
@@ -82,6 +86,45 @@ function MorphMeshes({ progressRef, reduced }: MorphMeshesProps) {
     };
   }, [asteroidGeometry, dnaGeometryA, dnaGeometryB]);
 
+  // Rotatii continue conduse prin GSAP — viata vizuala constanta.
+  // Tweens sunt inrolate intr-un context scoped pentru cleanup automat.
+  useEffect(() => {
+    if (reduced) return;
+    const ctx = gsap.context(() => {
+      if (asteroidRef.current) {
+        gsap.to(asteroidRef.current.rotation, {
+          y: '+=6.28',
+          duration: 30,
+          repeat: -1,
+          ease: 'none',
+        });
+      }
+      if (dnaGroupRef.current) {
+        gsap.to(dnaGroupRef.current.rotation, {
+          y: '+=6.28',
+          duration: 18,
+          repeat: -1,
+          ease: 'none',
+        });
+      }
+      if (cubeRef.current) {
+        gsap.to(cubeRef.current.rotation, {
+          y: '+=6.28',
+          duration: 35,
+          repeat: -1,
+          ease: 'none',
+        });
+        gsap.to(cubeRef.current.rotation, {
+          x: '+=6.28',
+          duration: 50,
+          repeat: -1,
+          ease: 'none',
+        });
+      }
+    });
+    return () => ctx.revert();
+  }, [reduced]);
+
   useFrame((state, delta) => {
     const p = progressRef.current;
     const camera = state.camera;
@@ -103,38 +146,51 @@ function MorphMeshes({ progressRef, reduced }: MorphMeshesProps) {
     if (cubeMatRef.current) cubeMatRef.current.opacity = cubeOpacity;
     if (cubeRef.current) cubeRef.current.visible = cubeOpacity > 0.01;
 
-    // Dolly subtil tied to scroll: 5 -> 4.5 (DNA) -> 5.2 (cub).
+    // Dolly subtil tied to scroll: 5 -> 4.4 (DNA) -> 5.3 (cub). Smooth = delta*1.5.
     let targetZ = 5;
     if (p < 0.5) {
-      targetZ = THREE.MathUtils.lerp(5, 4.5, p / 0.5);
+      targetZ = THREE.MathUtils.lerp(5, 4.4, p / 0.5);
     } else {
-      targetZ = THREE.MathUtils.lerp(4.5, 5.2, (p - 0.5) / 0.5);
+      targetZ = THREE.MathUtils.lerp(4.4, 5.3, (p - 0.5) / 0.5);
     }
-    camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetZ, delta * 2);
+    camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetZ, delta * 1.5);
+    // Drift subtil pe Y pentru senzatie de parallax — camera coboara putin pe scroll.
+    camera.position.y = THREE.MathUtils.lerp(camera.position.y, p * -0.4, delta * 1.5);
 
-    // Rotatii auto, sarite cand utilizatorul prefera reduced motion.
-    if (!reduced) {
-      if (asteroidRef.current) asteroidRef.current.rotation.y += delta * 0.08;
-      if (dnaGroupRef.current) {
-        dnaGroupRef.current.rotation.y += delta * 0.2;
-      }
-      if (cubeRef.current) {
-        cubeRef.current.rotation.y += delta * 0.06;
-        cubeRef.current.rotation.x += delta * 0.04;
-      }
+    // Mesh-urile dau drift subtil cu scroll-ul — "obiectul se misca cu scroll".
+    if (asteroidRef.current) {
+      asteroidRef.current.position.x = THREE.MathUtils.lerp(
+        asteroidRef.current.position.x,
+        p * -0.5,
+        delta * 1.5
+      );
+    }
+    if (dnaGroupRef.current) {
+      dnaGroupRef.current.position.y = THREE.MathUtils.lerp(
+        dnaGroupRef.current.position.y,
+        (p - 0.5) * 0.3,
+        delta * 1.5
+      );
+    }
+    if (cubeRef.current) {
+      cubeRef.current.position.x = THREE.MathUtils.lerp(
+        cubeRef.current.position.x,
+        (1 - p) * 0.4,
+        delta * 1.5
+      );
     }
   });
 
-  // Float-ul aplica miscare idle; cu reduced motion dezactivam complet.
+  // Float-ul aplica miscare idle "vie"; cu reduced motion dezactivam complet.
   const asteroidFloat = reduced
     ? { speed: 0, rot: 0, pos: 0 }
-    : { speed: 0.6, rot: 0.25, pos: 0.3 };
+    : { speed: 1.0, rot: 0.4, pos: 0.55 };
   const dnaFloat = reduced
     ? { speed: 0, rot: 0, pos: 0 }
-    : { speed: 0.8, rot: 0.15, pos: 0.25 };
+    : { speed: 1.2, rot: 0.2, pos: 0.45 };
   const cubeFloat = reduced
     ? { speed: 0, rot: 0, pos: 0 }
-    : { speed: 0.5, rot: 0.2, pos: 0.2 };
+    : { speed: 0.8, rot: 0.3, pos: 0.35 };
 
   return (
     <>
@@ -145,12 +201,13 @@ function MorphMeshes({ progressRef, reduced }: MorphMeshesProps) {
         floatIntensity={asteroidFloat.pos}
       >
         <group>
-          <mesh ref={asteroidRef} geometry={asteroidGeometry}>
+          <mesh ref={asteroidRef} geometry={asteroidGeometry} castShadow receiveShadow>
             <meshStandardMaterial
               ref={asteroidMatRef}
               color="#1a1a1a"
-              roughness={0.85}
-              metalness={0.3}
+              roughness={0.7}
+              metalness={0.4}
+              envMapIntensity={1}
               transparent
               opacity={1}
             />
@@ -168,7 +225,7 @@ function MorphMeshes({ progressRef, reduced }: MorphMeshesProps) {
         floatIntensity={dnaFloat.pos}
       >
         <group ref={dnaGroupRef} rotation={[Math.PI / 2, 0, 0]}>
-          <mesh ref={dnaMesh1Ref} geometry={dnaGeometryA}>
+          <mesh ref={dnaMesh1Ref} geometry={dnaGeometryA} castShadow>
             <meshStandardMaterial
               ref={dnaMat1Ref}
               color="#2a2a2a"
@@ -178,7 +235,7 @@ function MorphMeshes({ progressRef, reduced }: MorphMeshesProps) {
               opacity={0}
             />
           </mesh>
-          <mesh ref={dnaMesh2Ref} geometry={dnaGeometryB}>
+          <mesh ref={dnaMesh2Ref} geometry={dnaGeometryB} castShadow>
             <meshStandardMaterial
               ref={dnaMat2Ref}
               color="#2a2a2a"
@@ -206,7 +263,7 @@ function MorphMeshes({ progressRef, reduced }: MorphMeshesProps) {
         rotationIntensity={cubeFloat.rot}
         floatIntensity={cubeFloat.pos}
       >
-        <RoundedBox ref={cubeRef} args={[1.6, 1.6, 1.6]} radius={0.06} smoothness={6}>
+        <RoundedBox ref={cubeRef} args={[1.6, 1.6, 1.6]} radius={0.06} smoothness={6} castShadow>
           <meshStandardMaterial
             ref={cubeMatRef}
             color="#0d0d0d"
@@ -250,23 +307,54 @@ export default function CinematicScene3D() {
       <Canvas
         camera={{ position: [0, 0, 5], fov: 35 }}
         dpr={[1, 1.75]}
+        shadows
         gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
       >
         <fog attach="fog" args={['#050505', 6, 12]} />
-        <ambientLight intensity={0.15} />
-        <directionalLight position={[5, 8, 6]} intensity={1.2} color="#ffffff" />
-        {/* Rim subtil blue-gray, fara cyan. */}
-        <directionalLight position={[-6, -2, -4]} intensity={0.4} color="#8aa0c0" />
+        {/* Iluminare cinematica in 3 puncte. */}
+        {/* Ambient foarte slab — doar pentru a evita negru perfect. */}
+        <ambientLight intensity={0.08} color="#ffffff" />
+        {/* Key light — directionalul principal. */}
+        <directionalLight
+          position={[6, 8, 6]}
+          intensity={1.8}
+          color="#ffffff"
+          castShadow
+        />
+        {/* Rim subtil blue-gray — accent rece pe partea opusa cheii. */}
+        <directionalLight position={[-7, 2, -5]} intensity={0.9} color="#6b8aa8" />
+        {/* Fill de jos — bounce moale pentru a evita umbrele dure. */}
+        <directionalLight position={[0, -4, 4]} intensity={0.25} color="#9aa0b0" />
+        {/* Hemisfera — gradient cer/sol pentru ambianta. */}
+        <hemisphereLight args={['#1a2030', '#050505', 0.35]} />
+        {/* Glow subtil in spatele obiectului — punctul de "respiratie" cald-rece. */}
+        <pointLight
+          position={[0, 0.5, -3]}
+          intensity={1.5}
+          distance={6}
+          decay={2}
+          color="#5a708a"
+        />
         <Suspense fallback={null}>
           <MorphMeshes progressRef={progressRef} reduced={reduced} />
+          {/* Umbre de contact moi sub obiect — ancorare vizuala. */}
+          <ContactShadows
+            position={[0, -1.6, 0]}
+            opacity={0.55}
+            scale={6}
+            blur={2.8}
+            far={4}
+            color="#000000"
+          />
         </Suspense>
         <EffectComposer>
           <Bloom
-            intensity={0.4}
-            luminanceThreshold={0.7}
-            luminanceSmoothing={0.4}
+            intensity={0.55}
+            luminanceThreshold={0.55}
+            luminanceSmoothing={0.6}
             mipmapBlur
           />
+          <Vignette offset={0.3} darkness={0.8} />
         </EffectComposer>
       </Canvas>
     </div>

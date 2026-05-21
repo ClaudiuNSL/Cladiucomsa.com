@@ -10,6 +10,7 @@
     "closeMenu": "Close menu"
   },
   "cinematic": {
+    "scrollHint": "Scroll",
     "rails": {
       "menu": "Menu",
       "work": "Work",
@@ -25,6 +26,7 @@
     "s2": {
       "counter": "Work",
       "eyebrow": "Immersive · Digital · Experiences",
+      "subtitle": "Built with React, GSAP, and WebGL.",
       "title": "Immersive digital experiences.",
       "body": "We combine design, animation, and performance to create websites that hold attention.",
       "cta": "View work",
@@ -33,6 +35,7 @@
     "s3": {
       "counter": "Studio",
       "eyebrow": "Clean · Fast · Impactful",
+      "subtitle": "The next project is a conversation away.",
       "title": "Clean. Fast. Impactful.",
       "body": "Every detail matters. Every interaction designed for speed, clarity, and emotion.",
       "cta": "Let's talk",
