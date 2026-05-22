@@ -23,9 +23,9 @@ const TECH = [
 ];
 
 const SOCIAL = [
-  { label: 'LinkedIn', href: 'https://www.linkedin.com/in/claudiu-comsa/', Icon: FaLinkedin },
+  { label: 'LinkedIn', href: 'https://www.linkedin.com/in/claudiu-comsa-72b552364/', Icon: FaLinkedin },
   { label: 'GitHub', href: 'https://github.com/ClaudiuNSL', Icon: SiGithub },
-  { label: 'Instagram', href: 'https://www.instagram.com/claudiu.comsa/', Icon: SiInstagram },
+  { label: 'Instagram', href: 'https://www.instagram.com/claudiu77004/', Icon: SiInstagram },
 ];
 
 export default function Footer() {
