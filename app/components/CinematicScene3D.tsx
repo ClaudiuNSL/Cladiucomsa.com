@@ -686,7 +686,9 @@ function MorphMeshes({ progressRef, mouseRef, reduced }: MorphMeshesProps) {
     if (asteroidMatRef.current) {
       asteroidMatRef.current.opacity = asteroidAlpha;
       // Emissive base + scroll-driven intensification + idle pulse.
-      if (!reduced) {
+      // Gate: doar daca emissiveMap exista — altfel ar emite alb pe toata
+      // suprafata (cutout luminos).
+      if (!reduced && asteroidMatRef.current.emissiveMap) {
         const baseIntensity = 0.45 + Math.sin(t * 0.8) * 0.15;
         // Boost emissive aggressively as we approach explosion (p=0.22).
         const explosionBoost = p < 0.22 ? Math.pow(p / 0.22, 3) * 1.5 : 0;
@@ -737,7 +739,8 @@ function MorphMeshes({ progressRef, mouseRef, reduced }: MorphMeshesProps) {
 
     // === STAGE 0.20+: Fragments (explozie -> float -> atragere -> solid) ===
     // Calculam emissive shared pe materialul fragmentelor (hot -> cool -> solid).
-    if (fragmentMatRef.current) {
+    // Gate: doar daca emissiveMap e incarcat — altfel cutout luminos.
+    if (fragmentMatRef.current && fragmentMatRef.current.emissiveMap) {
       if (!reduced) {
         let fragEmissive = 0;
         if (p > 0.18 && p < 0.40) {
@@ -884,7 +887,11 @@ function MorphMeshes({ progressRef, mouseRef, reduced }: MorphMeshesProps) {
           <mesh ref={asteroidRef} geometry={asteroidGeometry} castShadow receiveShadow>
             <meshStandardMaterial
               ref={asteroidMatRef}
-              color="#2e2e2e"
+              // Cand mapele lipsesc (texturile inca se genereaza), folosim
+              // un fallback foarte intunecat ca silueta sa nu paleasca alb.
+              // Cand mapele incarca, color devine alb (= no tint) ca textura
+              // sa fie vizibila in culoarea ei reala (multiplicare color × map).
+              color={surfaceMaps?.diffuseMap ? '#ffffff' : '#0a0a0a'}
               map={surfaceMaps?.diffuseMap ?? null}
               normalMap={surfaceMaps?.normalMap ?? null}
               normalScale={new THREE.Vector2(2.0, 2.0)}
@@ -896,8 +903,10 @@ function MorphMeshes({ progressRef, mouseRef, reduced }: MorphMeshesProps) {
               displacementMap={surfaceMaps?.displacementMap ?? null}
               displacementScale={0.04}
               emissiveMap={surfaceMaps?.emissiveMap ?? null}
-              emissive="#ffffff"
-              emissiveIntensity={0.55}
+              // Cand emissiveMap lipseste, dezactivam emissive complet
+              // ca sa nu emite alb pe TOATA suprafata (= cutout luminos).
+              emissive={surfaceMaps?.emissiveMap ? '#ffffff' : '#000000'}
+              emissiveIntensity={surfaceMaps?.emissiveMap ? 0.55 : 0}
               envMapIntensity={0.3}
               transparent
               opacity={1}
@@ -950,7 +959,7 @@ function MorphMeshes({ progressRef, mouseRef, reduced }: MorphMeshesProps) {
       >
         <meshStandardMaterial
           ref={fragmentMatRef}
-          color="#2e2e2e"
+          color={surfaceMaps?.diffuseMap ? '#ffffff' : '#0a0a0a'}
           map={surfaceMaps?.diffuseMap ?? null}
           normalMap={surfaceMaps?.normalMap ?? null}
           normalScale={new THREE.Vector2(1.5, 1.5)}
@@ -960,7 +969,7 @@ function MorphMeshes({ progressRef, mouseRef, reduced }: MorphMeshesProps) {
           aoMap={surfaceMaps?.aoMap ?? null}
           aoMapIntensity={0.8}
           emissiveMap={surfaceMaps?.emissiveMap ?? null}
-          emissive="#ffffff"
+          emissive={surfaceMaps?.emissiveMap ? '#ffffff' : '#000000'}
           emissiveIntensity={0}
         />
       </instancedMesh>
