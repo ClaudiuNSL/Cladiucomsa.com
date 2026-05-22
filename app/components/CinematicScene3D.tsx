@@ -147,9 +147,12 @@ function buildAsteroidSurfaceMaps() {
     diffuseCtx.fill();
 
     const rimGradient = diffuseCtx.createRadialGradient(x, y, radius * 0.7, x, y, radius * 1.1);
-    rimGradient.addColorStop(0, 'rgba(80, 80, 85, 0)');
-    rimGradient.addColorStop(0.5, 'rgba(70, 70, 75, 0.3)');
-    rimGradient.addColorStop(1, 'rgba(60, 60, 65, 0)');
+    // Rim-uri cratere mai inchise — anterior RGB(70-80) saturau suprafata
+    // si o transformau in alb pe lighting. Acum RGB(28-38) — usor mai luminat
+    // ca baza #121417 dar nu mai pop.
+    rimGradient.addColorStop(0, 'rgba(38, 38, 42, 0)');
+    rimGradient.addColorStop(0.5, 'rgba(32, 32, 36, 0.25)');
+    rimGradient.addColorStop(1, 'rgba(28, 28, 32, 0)');
     diffuseCtx.fillStyle = rimGradient;
     diffuseCtx.beginPath();
     diffuseCtx.arc(x, y, radius * 1.1, 0, Math.PI * 2);
@@ -632,9 +635,10 @@ function MorphMeshes({ progressRef, mouseRef, reduced }: MorphMeshesProps) {
       // Gate: doar daca emissiveMap exista — altfel ar emite alb pe toata
       // suprafata (cutout luminos).
       if (!reduced && asteroidMatRef.current.emissiveMap) {
-        const baseIntensity = 0.45 + Math.sin(t * 0.8) * 0.15;
-        // Boost emissive aggressively as we approach explosion (p=0.22).
-        const explosionBoost = p < 0.22 ? Math.pow(p / 0.22, 3) * 1.5 : 0;
+        // Emissive intensity redus — anterior 0.45+1.5 boost satura asteroidul.
+        const baseIntensity = 0.25 + Math.sin(t * 0.8) * 0.08;
+        // Boost emissive moderat catre momentul exploziei (p=0.22).
+        const explosionBoost = p < 0.22 ? Math.pow(p / 0.22, 3) * 0.7 : 0;
         asteroidMatRef.current.emissiveIntensity = baseIntensity + explosionBoost;
       }
     }
@@ -849,7 +853,7 @@ function MorphMeshes({ progressRef, mouseRef, reduced }: MorphMeshesProps) {
               // Cand emissiveMap lipseste, dezactivam emissive complet
               // ca sa nu emite alb pe TOATA suprafata (= cutout luminos).
               emissive={surfaceMaps?.emissiveMap ? '#ffffff' : '#000000'}
-              emissiveIntensity={surfaceMaps?.emissiveMap ? 0.55 : 0}
+              emissiveIntensity={surfaceMaps?.emissiveMap ? 0.3 : 0}
               envMapIntensity={0.3}
               transparent
               opacity={1}
@@ -1002,7 +1006,15 @@ export default function CinematicScene3D() {
         camera={{ position: [0, 0, 5], fov: 35 }}
         dpr={[1, 1.75]}
         shadows
-        gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
+        gl={{
+          antialias: true,
+          alpha: true,
+          powerPreference: 'high-performance',
+          // Linear tone mapping — ACES (default) boost mid-grays spre alb,
+          // saturand asteroidul. Linear pastreaza culorile fidele.
+          toneMapping: THREE.LinearToneMapping,
+          toneMappingExposure: 0.9,
+        }}
       >
         <fog attach="fog" args={['#050505', 6, 12]} />
         {/* Iluminare cinematica balansata — toate intensitatile reduse
