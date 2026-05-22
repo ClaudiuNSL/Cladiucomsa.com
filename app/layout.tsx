@@ -24,6 +24,9 @@ export const viewport: Viewport = {
   ],
 };
 
+// Default ro: lang dinamic ar face root-layout async și ar pierde SSG pentru
+// /ro și /en. Semnalizarea limbii se face prin <div lang> din [locale]/layout.tsx
+// + hreflang alternate links din metadata — suficient pentru SEO/a11y.
 export default function RootLayout({
   children,
 }: {

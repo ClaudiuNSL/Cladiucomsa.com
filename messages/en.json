@@ -1,8 +1,10 @@
 {
   "meta": {
     "siteName": "Comsa Claudiu — Web & AI Studio",
+    "titleTemplate": "%s | Comsa Claudiu",
     "defaultTitle": "Comsa Claudiu — Websites & AI Automations",
-    "description": "We build websites and AI automations for businesses. Dashboards, AI agents, integrations. Constanța · Romania · Remote."
+    "description": "We build websites and AI automations for businesses. Dashboards, AI agents, integrations. Constanța · Romania · Remote.",
+    "ogImageAlt": "Comsa Claudiu — CC Logo"
   },
   "nav": {
     "langSwitcherLabel": "Language",
