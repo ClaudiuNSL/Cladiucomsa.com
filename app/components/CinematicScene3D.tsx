@@ -14,12 +14,13 @@ import {
   Lightformer,
   Sparkles,
   Stars,
+  useGLTF,
 } from '@react-three/drei';
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import { useReducedMotion } from 'framer-motion';
 import { useEffect, useMemo, useRef, useState, Suspense } from 'react';
 import * as THREE from 'three';
-import { createNoise2D, createNoise3D } from 'simplex-noise';
+import { createNoise2D } from 'simplex-noise';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -28,131 +29,52 @@ type ProgressRef = { current: number };
 // Pozitia mouse-ului normalizata in [-1, 1] pe fiecare axa.
 type MouseRef = { current: { x: number; y: number } };
 
-// Geometrie asteroid portata din v0: pre-stretch asimetric x*1.4/y*0.75/z*1.15
-// + 7 octave noise + cratere (3 scari) + basine + ridge-uri + cliff faces.
-// Sub-9 = ~21k triangles la radius 1.2 — densitate buna pe unitate suprafata.
-function buildAsteroidGeometry() {
-  const noise3D = createNoise3D();
-  // Base radius 1.2 ca sa pastram compozitia scenei existente (camera/zoom).
-  // Sub-9 = 5120 base triangles, mai dens per unitate suprafata decat sub-8.
-  const geo = new THREE.IcosahedronGeometry(1.2, 9);
+// Pregateste geometria asteroidului din modelul Bennu NASA OSIRIS-REx OLA
+// (incarcat ca .glb compressed Draco din /public/models/bennu.glb).
+// - Scaleaza modelul la radius ~1.2 ca sa pastreze compozitia scenei
+// - Genereaza UV-uri sferice (NASA OLA n-are UV-uri, sunt doar laser data)
+// - Adauga uv2 pentru AO map sampling
+function prepareBennuGeometry(source: THREE.BufferGeometry) {
+  const geo = source.clone();
+
+  // Calculeaza bbox-ul pentru a scala la radius ~1.2.
+  geo.computeBoundingBox();
+  const bbox = geo.boundingBox!;
+  const extent = Math.max(
+    bbox.max.x - bbox.min.x,
+    bbox.max.y - bbox.min.y,
+    bbox.max.z - bbox.min.z
+  );
+  // Target extent ~2.4 (radius 1.2). Bennu raw extent ~0.57.
+  const targetExtent = 2.4;
+  const scale = targetExtent / extent;
+  geo.scale(scale, scale, scale);
+
+  // Centreaza geometria la origin.
+  geo.computeBoundingBox();
+  const center = geo.boundingBox!.getCenter(new THREE.Vector3());
+  geo.translate(-center.x, -center.y, -center.z);
+
+  // Generam UV-uri sferice — projectie equirectangular pe baza directiei
+  // de la origin. Permite ca texturile noastre (diffuse/normal/AO/emissive)
+  // sa fie aplicate pe model.
   const positions = geo.attributes.position as THREE.BufferAttribute;
-  const vertex = new THREE.Vector3();
-
-  // First pass: pre-stretch asimetric pentru silueta non-sferica.
+  const uvs = new Float32Array(positions.count * 2);
+  const v = new THREE.Vector3();
   for (let i = 0; i < positions.count; i++) {
-    vertex.fromBufferAttribute(positions, i);
-    const stretchNoise = noise3D(vertex.x * 0.5, vertex.y * 0.5, vertex.z * 0.5);
-    vertex.x *= 1.4 + stretchNoise * 0.2;
-    vertex.y *= 0.75 + stretchNoise * 0.15;
-    vertex.z *= 1.15 + stretchNoise * 0.1;
-    positions.setXYZ(i, vertex.x, vertex.y, vertex.z);
+    v.fromBufferAttribute(positions, i).normalize();
+    const u = Math.atan2(v.x, v.z) / (2 * Math.PI) + 0.5;
+    const t = Math.asin(THREE.MathUtils.clamp(v.y, -1, 1)) / Math.PI + 0.5;
+    uvs[i * 2] = u;
+    uvs[i * 2 + 1] = t;
   }
+  geo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+  // uv2 pentru AO map sampling.
+  geo.setAttribute('uv2', new THREE.BufferAttribute(uvs.slice(), 2));
 
-  // Second pass: displacement multi-octava + cratere + basine + ridge + cliffs.
-  for (let i = 0; i < positions.count; i++) {
-    vertex.fromBufferAttribute(positions, i);
-    const originalLength = vertex.length();
-    const normalized = vertex.clone().normalize();
+  // Recompute normals daca lipsesc.
+  if (!geo.attributes.normal) geo.computeVertexNormals();
 
-    // 7-octave noise — de la silueta globala pana la micro-grain.
-    const ultraLarge = noise3D(
-      normalized.x * 0.15,
-      normalized.y * 0.15,
-      normalized.z * 0.15
-    ) * 0.6;
-    const majorShape = noise3D(
-      normalized.x * 0.4,
-      normalized.y * 0.4,
-      normalized.z * 0.4
-    ) * 0.45;
-    const largeFeatures = noise3D(
-      normalized.x * 1.0,
-      normalized.y * 1.0,
-      normalized.z * 1.0
-    ) * 0.3;
-    const mediumFeatures = noise3D(
-      normalized.x * 3.0,
-      normalized.y * 3.0,
-      normalized.z * 3.0
-    ) * 0.15;
-    const smallFeatures = noise3D(
-      normalized.x * 7,
-      normalized.y * 7,
-      normalized.z * 7
-    ) * 0.07;
-    const fineDetails = noise3D(
-      normalized.x * 15,
-      normalized.y * 15,
-      normalized.z * 15
-    ) * 0.035;
-    const microDetails = noise3D(
-      normalized.x * 30,
-      normalized.y * 30,
-      normalized.z * 30
-    ) * 0.015;
-
-    // Cratere — 3 scari, fiecare cu threshold + curba patratica negativa.
-    const craterNoise1 = noise3D(
-      normalized.x * 1.2,
-      normalized.y * 1.2,
-      normalized.z * 1.2
-    );
-    const craters1 = craterNoise1 > 0.25 ? -Math.pow(craterNoise1 - 0.25, 2) * 1.2 : 0;
-
-    const craterNoise2 = noise3D(
-      normalized.x * 2.5 + 50,
-      normalized.y * 2.5 + 50,
-      normalized.z * 2.5 + 50
-    );
-    const craters2 = craterNoise2 > 0.35 ? -Math.pow(craterNoise2 - 0.35, 2) * 0.6 : 0;
-
-    const craterNoise3 = noise3D(
-      normalized.x * 5 + 100,
-      normalized.y * 5 + 100,
-      normalized.z * 5 + 100
-    );
-    const craters3 = craterNoise3 > 0.4 ? -Math.pow(craterNoise3 - 0.4, 2) * 0.3 : 0;
-
-    // Basine de impact — concavitati mari, putine.
-    const basinNoise = noise3D(
-      normalized.x * 0.6 + 200,
-      normalized.y * 0.6 + 200,
-      normalized.z * 0.6 + 200
-    );
-    const basins = basinNoise > 0.5 ? -Math.pow(basinNoise - 0.5, 1.5) * 0.8 : 0;
-
-    // Ridge-uri ascutite — abs noise + threshold → muchii.
-    const ridgeNoise = Math.abs(noise3D(
-      normalized.x * 2,
-      normalized.y * 2,
-      normalized.z * 2
-    ));
-    const ridges = ridgeNoise > 0.55 ? Math.pow(ridgeNoise - 0.55, 0.7) * 0.4 : 0;
-
-    // Cliff faces — sign-aware pentru bumps pozitive si negative.
-    const cliffNoise = noise3D(
-      normalized.x * 4 + 300,
-      normalized.y * 4 + 300,
-      normalized.z * 4 + 300
-    );
-    const cliffs = Math.abs(cliffNoise) > 0.6
-      ? Math.sign(cliffNoise) * Math.pow(Math.abs(cliffNoise) - 0.6, 0.5) * 0.2
-      : 0;
-
-    const totalDisplacement = ultraLarge + majorShape + largeFeatures + mediumFeatures +
-      smallFeatures + fineDetails + microDetails + craters1 + craters2 + craters3 +
-      basins + ridges + cliffs;
-
-    // 0.45 multiplicator — pastreaza intensitatea originala v0.
-    const newLength = originalLength * (1 + totalDisplacement * 0.45);
-    vertex.normalize().multiplyScalar(newLength);
-    positions.setXYZ(i, vertex.x, vertex.y, vertex.z);
-  }
-
-  geo.computeVertexNormals();
-  // uv2 pentru AO map — MeshStandardMaterial citeste AO din UV channel 1.
-  geo.setAttribute('uv2', geo.attributes.uv);
   return geo;
 }
 
@@ -586,8 +508,24 @@ function MorphMeshes({ progressRef, mouseRef, reduced }: MorphMeshesProps) {
   const fragmentTetraRef = useRef<THREE.InstancedMesh>(null);
   const fragmentDodecaRef = useRef<THREE.InstancedMesh>(null);
 
-  // Geometrii construite o singura data si stocate in memo.
-  const asteroidGeometry = useMemo(() => buildAsteroidGeometry(), []);
+  // Modelul Bennu NASA OSIRIS-REx (.glb compressed Draco, 419KB).
+  // Suspense-ul din parent acopera asteptarea pana cand load-ul termina.
+  const gltf = useGLTF('/models/bennu.glb', '/draco/');
+
+  // Geometria procesata: scalata + UV-uri sferice generate + centrata.
+  const asteroidGeometry = useMemo(() => {
+    let source: THREE.BufferGeometry | null = null;
+    gltf.scene.traverse((obj) => {
+      if (obj instanceof THREE.Mesh && !source) {
+        source = obj.geometry as THREE.BufferGeometry;
+      }
+    });
+    if (!source) {
+      // Fallback la o sfera daca GLB-ul n-are mesh (n-ar trebui sa se intample).
+      return new THREE.IcosahedronGeometry(1.2, 6);
+    }
+    return prepareBennuGeometry(source);
+  }, [gltf]);
   // Texturi procedurale pentru asteroid — deferate cu setTimeout ca sa nu
   // blocheze first paint. Pana sunt gata, materialul foloseste fallback gri.
   const [surfaceMaps, setSurfaceMaps] = useState<ReturnType<typeof buildAsteroidSurfaceMaps>>(null);
@@ -995,6 +933,9 @@ function MorphMeshes({ progressRef, mouseRef, reduced }: MorphMeshesProps) {
     </>
   );
 }
+
+// Preload Bennu GLB la nivel de modul — porneste cat mai devreme.
+useGLTF.preload('/models/bennu.glb', '/draco/');
 
 export default function CinematicScene3D() {
   const reduced = useReducedMotion() ?? false;
