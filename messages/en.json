@@ -32,7 +32,7 @@
       "title": "Immersive digital experiences.",
       "body": "We combine design, animation, and performance to create websites that hold attention.",
       "cta": "View work",
-      "ctaHref": "claudiucomsaa@gmail.com"
+      "ctaHref": "/projects"
     },
     "s3": {
       "counter": "Studio",
@@ -57,14 +57,47 @@
     "eyebrow": "Selected · Work",
     "sectionTitle": "Selected work.",
     "viewLive": "View live",
+    "viewCase": "Read case study",
+    "backToIndex": "Back to portfolio",
+    "nextCase": "Next",
+    "indexTitle": "Selected work.",
+    "indexLead": "Three live projects — each with the story behind it: what wasn't working, what we built, what we delivered.",
+    "case": {
+      "counter": "Case",
+      "context": {
+        "eyebrow": "About · The brief",
+        "title": "The challenge"
+      },
+      "approach": {
+        "eyebrow": "How · we built it",
+        "title": "The solution"
+      },
+      "result": {
+        "eyebrow": "Outcome · Impact",
+        "title": "The outcome"
+      }
+    },
     "items": {
       "banciuCostin": {
         "number": "P01",
         "title": "Banciu Costin",
-        "kicker": "Professional website · 2025",
-        "body": "Digital presence for a legal industry specialist. Optimized for performance, SEO, and conversion — visitors become contact requests.",
-        "tech": "HTML5 · CSS3 · JavaScript · SEO",
-        "href": "https://banciucostin.ro"
+        "kicker": "Photographer portfolio · 2025",
+        "body": "Migration from WordPress to a custom static site for a photographer with years of work. Clean albums, instant loading, focus on the imagery.",
+        "tech": "HTML5 · CSS3 · JavaScript",
+        "href": "https://banciucostin.ro",
+        "context": {
+          "body": "Banciu Costin is a photographer with a deep portfolio — years of wedding sessions, portraits, and events. He had a WordPress site, but the setup had become an obstacle: slow gallery loading, plugin dependencies, costly maintenance. The site no longer reflected the level of his work.\n\nThe challenge: a site that puts photography first. Curated albums, clear organization, instant mobile loading. No CMS baggage, no urgent plugin updates."
+        },
+        "approach": {
+          "body": "Static site — clean HTML, CSS, JavaScript. No WordPress, no database, no plugins. Albums organized by category with fluid navigation, images served with lazy loading and modern formats, a layout that works identically on any device.\n\nMaintenance now comes down to replacing static files. The photographer can add new albums without touching a CMS — a deliberate decision for a site that needed to be predictable long-term, not flexible in ways that weren't useful."
+        },
+        "result": {
+          "body": "The site shipped and now reflects the actual level of the portfolio. Photography occupies the main visual space, and load performance keeps the site out of the danger zone for mobile visitors. SEO is the next phase — the technical structure is ready for it.",
+          "metrics": [
+            { "value": "95+/100", "label": "PageSpeed mobile, first paint" },
+            { "value": "Zero", "label": "Plugins, databases, or CMS" }
+          ]
+        }
       },
       "aurasjobs": {
         "number": "P02",
@@ -72,7 +105,20 @@
         "kicker": "AI agent for recruitment · 2025",
         "body": "Processes candidate emails automatically, generates personalized responses, manages the proposal → approval → send flow. Built for a cruise ship recruitment firm.",
         "tech": "Next.js · TypeScript · LLM · Email Automation",
-        "href": "https://aurasjobs.com"
+        "href": "https://aurasjobs.com",
+        "context": {
+          "body": "The recruitment firm works with candidates for cruise ships — hundreds of applicants per month, each with a CV sent by email. Manual responses, in English, personalized per position, consumed most of the day.\n\nThey wanted a system that reads incoming emails, understands candidate intent, generates a tailored draft response, and leaves the final decision to the operator — not a bot sending autonomously."
+        },
+        "approach": {
+          "body": "AI agent with LLM for parsing and generation. Emails enter a queue, the system extracts intent (application, question, follow-up), generates a personalized draft in English based on the position and CV. The operator reviews the draft in the dashboard, adjusts if needed, approves sending.\n\nNext.js dashboard with the propose → approve → sent flow visible in real time. All candidate data centralized, no thread lost."
+        },
+        "result": {
+          "body": "The agent takes over the repetitive part of communication, the human stays in the final decision. Responses go out faster, candidates get personalized attention, operators can process more candidates in the same workday.",
+          "metrics": [
+            { "value": "−65%", "label": "Average email response time" },
+            { "value": "24/7", "label": "Candidate processing, no downtime" }
+          ]
+        }
       },
       "stereocad": {
         "number": "P03",
@@ -80,7 +126,20 @@
         "kicker": "Cadastral automation platform · 2026",
         "body": "Auto-generates cadastral documents for a specialist firm. Passwordless magic-link auth, real-time stage monitoring, no passwords to manage.",
         "tech": "Next.js · TypeScript · Magic Link · Document Gen",
-        "href": "https://stereocad.ro"
+        "href": "https://stereocad.ro",
+        "context": {
+          "body": "The cadastral firm handles large volumes of documentation — standardized steps per file that previously happened manually: form filling, status tracking, generating official files. Operators lost time on admin work instead of focusing on the technical side.\n\nOn top of that, managing password accounts for a growing team meant weekly resets, unsafe sharing, friction at onboarding."
+        },
+        "approach": {
+          "body": "Next.js platform with automatic document generation based on file data. The status of each stage (submitted, in progress, delivered) visible in real time to the entire team. Passwordless authentication via magic link — the operator enters their email, receives a unique link, signs in.\n\nNo passwords to manage, no resets, no compromised accounts. Role-based permissions, audit trail on important actions, all in one place."
+        },
+        "result": {
+          "body": "The team processes files faster, without admin friction. Onboarding a new operator happens through their email — no IT setup, no shared passwords. Stereocad can grow the team without proportionally growing account problems.",
+          "metrics": [
+            { "value": "0 passwords", "label": "Auth via magic link, no management" },
+            { "value": "Real-time", "label": "Stage monitoring for the whole team" }
+          ]
+        }
       }
     }
   },

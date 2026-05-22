@@ -32,7 +32,7 @@
       "title": "Immersive digital experiences.",
       "body": "Combinăm design, animație și performanță ca să creăm site-uri care țin atenția.",
       "cta": "Vezi proiectele",
-      "ctaHref": "claudiucomsaa@gmail.com"
+      "ctaHref": "/projects"
     },
     "s3": {
       "counter": "Studio",
@@ -57,14 +57,47 @@
     "eyebrow": "Selected · Work",
     "sectionTitle": "Selected work.",
     "viewLive": "Vezi live",
+    "viewCase": "Citește case study",
+    "backToIndex": "Înapoi la portofoliu",
+    "nextCase": "Următorul",
+    "indexTitle": "Proiecte selectate.",
+    "indexLead": "Trei proiecte live — fiecare cu povestea în spate: ce nu funcționa, ce am construit, ce am livrat.",
+    "case": {
+      "counter": "Case",
+      "context": {
+        "eyebrow": "About · The brief",
+        "title": "Provocarea"
+      },
+      "approach": {
+        "eyebrow": "How · we built it",
+        "title": "Soluția"
+      },
+      "result": {
+        "eyebrow": "Outcome · Impact",
+        "title": "Rezultatul"
+      }
+    },
     "items": {
       "banciuCostin": {
         "number": "P01",
         "title": "Banciu Costin",
-        "kicker": "Site web profesional · 2025",
-        "body": "Prezență digitală pentru un specialist din domeniul juridic. Optimizat pentru performanță, SEO și conversie — vizitatorii devin solicitări de contact.",
-        "tech": "HTML5 · CSS3 · JavaScript · SEO",
-        "href": "https://banciucostin.ro"
+        "kicker": "Portofoliu fotograf · 2025",
+        "body": "Migrare de la WordPress la un site static custom pentru un fotograf cu experiență. Albume curate, încărcare instantă, focus pe imagini.",
+        "tech": "HTML5 · CSS3 · JavaScript",
+        "href": "https://banciucostin.ro",
+        "context": {
+          "body": "Banciu Costin este un fotograf cu portofoliu vast — ani de albume, sesiuni de nuntă, portrete și evenimente. Avea deja un site pe WordPress, dar setup-ul devenise un obstacol: încărcare lentă a galeriilor, dependență de plugin-uri, întreținere costisitoare. Site-ul nu mai reflecta nivelul muncii.\n\nProvocarea: un site care să pună fotografia în prim-plan. Albume curate, organizare clară, încărcare instantă pe mobile. Fără bagaje CMS-istice, fără update-uri urgente de plugin-uri."
+        },
+        "approach": {
+          "body": "Site static — HTML, CSS, JavaScript curat. Fără WordPress, fără bază de date, fără plugin-uri. Albume organizate pe categorii cu navigare fluidă, imagini servite cu lazy loading și format modern, layout care funcționează identic pe orice device.\n\nÎntreținerea acum se reduce la înlocuirea unor fișiere statice. Fotograful poate adăuga albume noi fără să atingă un CMS — o decizie conștientă pentru un site care trebuia să fie predictibil pe termen lung, nu flexibil în mod inutil."
+        },
+        "result": {
+          "body": "Site-ul s-a livrat și acum reflectă nivelul real al portofoliului. Fotografia ocupă spațiul vizual principal, iar performanța la încărcare scoate site-ul din zona de risc pentru vizitatorii pe mobil. SEO-ul rămâne următoarea fază — structura tehnică e pregătită pentru asta.",
+          "metrics": [
+            { "value": "95+/100", "label": "PageSpeed mobile la prima încărcare" },
+            { "value": "Zero", "label": "Plugin-uri, baze de date sau CMS" }
+          ]
+        }
       },
       "aurasjobs": {
         "number": "P02",
@@ -72,7 +105,20 @@
         "kicker": "Agent AI pentru recrutare · 2025",
         "body": "Procesează automat email-urile candidaților, generează răspunsuri personalizate și gestionează fluxul propunere → aprobare → trimitere. Construit pentru o firmă de recrutare cruise ship.",
         "tech": "Next.js · TypeScript · LLM · Email Automation",
-        "href": "https://aurasjobs.com"
+        "href": "https://aurasjobs.com",
+        "context": {
+          "body": "Firma de recrutare lucrează cu candidați pentru cruise ship — sute de aplicanți pe lună, fiecare cu CV trimis pe email. Răspunsurile manuale, în engleză, personalizate pe poziție, consumau cea mai mare parte din timp.\n\nVoiau un sistem care să citească emailurile, să înțeleagă intenția candidatului, să genereze un draft de răspuns adaptat, și să lase decizia finală pe operator — nu un bot care trimite autonom."
+        },
+        "approach": {
+          "body": "Agent AI cu LLM pentru parsing și generare. Email-urile intră într-o coadă, sistemul extrage intentul (candidatură, întrebare, follow-up), generează un draft personalizat în engleză pe baza poziției și CV-ului. Operatorul vede draft-ul în dashboard, ajustează dacă e cazul, aprobă trimiterea.\n\nDashboard Next.js cu fluxul propunere → aprobare → trimis vizibil în timp real. Toate datele candidaților centralizate, fără să se piardă firul conversațiilor."
+        },
+        "result": {
+          "body": "Agentul preia partea repetitivă a comunicării, omul rămâne în decizia finală. Răspunsurile pleacă mai repede, candidații primesc atenție personalizată, operatorii pot procesa mai mulți candidați în aceeași zi de muncă.",
+          "metrics": [
+            { "value": "−65%", "label": "Timp mediu de răspuns email" },
+            { "value": "24/7", "label": "Procesare candidați, fără pauză" }
+          ]
+        }
       },
       "stereocad": {
         "number": "P03",
@@ -80,7 +126,20 @@
         "kicker": "Platformă automatizări cadastrale · 2026",
         "body": "Generează automat documente cadastrale pentru o firmă din domeniu. Autentificare passwordless cu magic link, monitorizare etape în timp real, fără parole de gestionat.",
         "tech": "Next.js · TypeScript · Magic Link · Document Gen",
-        "href": "https://stereocad.ro"
+        "href": "https://stereocad.ro",
+        "context": {
+          "body": "Firma de cadastru lucrează cu volume mari de documentații — pentru fiecare dosar, pași standardizați care înainte se făceau manual: completare formulare, urmărire status, generare fișiere oficiale. Operatorii pierdeau timp în partea de administrare, în loc să stea pe partea tehnică.\n\nÎn plus, gestionarea conturilor cu parole pentru o echipă în creștere însemna reset-uri săptămânale, sharing-uri nesigure, friction la onboarding."
+        },
+        "approach": {
+          "body": "Platformă Next.js cu generare automată de documente pe baza datelor de dosar. Status-ul fiecărei etape (depus, în lucru, livrat) vizibil în timp real pentru întreaga echipă. Autentificare passwordless cu magic link — operatorul își introduce emailul, primește un link unic, intră.\n\nFără parole de gestionat, fără reset-uri, fără cont compromis. Permisiunile per rol, audit trail pe acțiuni importante, totul într-un singur loc."
+        },
+        "result": {
+          "body": "Echipa procesează dosare mai repede, fără friction administrativ. Onboarding-ul unui operator nou se face cu emailul lui — fără setup IT, fără parole partajate. Stereocad poate scala echipa fără să crească proporțional și problemele de cont.",
+          "metrics": [
+            { "value": "0 parole", "label": "Auth via magic link, fără gestionare" },
+            { "value": "Real-time", "label": "Monitorizare etape pentru toată echipa" }
+          ]
+        }
       }
     }
   },

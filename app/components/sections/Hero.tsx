@@ -113,7 +113,7 @@ export default function Hero() {
           </p>
           <div data-reveal className="mt-12">
             <a
-              href={`mailto:${t('s2.ctaHref')}`}
+              href={t('s2.ctaHref')}
               className="group inline-flex items-center gap-3 rounded-full border border-white/20 px-7 py-3 text-xs font-medium uppercase tracking-[0.2em] text-white transition-all duration-300 hover:scale-[1.03] hover:border-white/60 hover:bg-white/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
             >
               {t('s2.cta')}
