@@ -832,29 +832,15 @@ function MorphMeshes({ progressRef, mouseRef, reduced }: MorphMeshesProps) {
       >
         <group>
           <mesh ref={asteroidRef} geometry={asteroidGeometry} castShadow receiveShadow>
+            {/* Material simplu — geometria Bennu NASA OLA contine deja toate
+                cratereele si ridge-urile reale, deci nu mai e nevoie de texturi
+                pictate. Doar color + roughness + metalness. Asta evita complet
+                problema cu textura care satura suprafata in alb. */}
             <meshStandardMaterial
               ref={asteroidMatRef}
-              // Cand mapele lipsesc (texturile inca se genereaza), folosim
-              // un fallback foarte intunecat ca silueta sa nu paleasca alb.
-              // Cand mapele incarca, color devine alb (= no tint) ca textura
-              // sa fie vizibila in culoarea ei reala (multiplicare color × map).
-              color={surfaceMaps?.diffuseMap ? '#ffffff' : '#121417'}
-              map={surfaceMaps?.diffuseMap ?? null}
-              normalMap={surfaceMaps?.normalMap ?? null}
-              normalScale={new THREE.Vector2(2.0, 2.0)}
-              roughnessMap={surfaceMaps?.roughnessMap ?? null}
-              roughness={1}
-              metalness={0.05}
-              aoMap={surfaceMaps?.aoMap ?? null}
-              aoMapIntensity={1.0}
-              displacementMap={surfaceMaps?.displacementMap ?? null}
-              displacementScale={0.04}
-              emissiveMap={surfaceMaps?.emissiveMap ?? null}
-              // Cand emissiveMap lipseste, dezactivam emissive complet
-              // ca sa nu emite alb pe TOATA suprafata (= cutout luminos).
-              emissive={surfaceMaps?.emissiveMap ? '#ffffff' : '#000000'}
-              emissiveIntensity={surfaceMaps?.emissiveMap ? 0.3 : 0}
-              envMapIntensity={0.3}
+              color="#0a0a0a"
+              roughness={0.9}
+              metalness={0.1}
               transparent
               opacity={1}
             />
@@ -904,20 +890,12 @@ function MorphMeshes({ progressRef, mouseRef, reduced }: MorphMeshesProps) {
         args={[fragmentGeometries.icosa, undefined, FRAGMENT_COUNT_PER_GROUP]}
         castShadow
       >
+        {/* Material fragment — acelasi look ca asteroidul (chunks din el). */}
         <meshStandardMaterial
           ref={fragmentMatRef}
-          color={surfaceMaps?.diffuseMap ? '#ffffff' : '#121417'}
-          map={surfaceMaps?.diffuseMap ?? null}
-          normalMap={surfaceMaps?.normalMap ?? null}
-          normalScale={new THREE.Vector2(1.5, 1.5)}
-          roughnessMap={surfaceMaps?.roughnessMap ?? null}
-          roughness={1}
-          metalness={0.05}
-          aoMap={surfaceMaps?.aoMap ?? null}
-          aoMapIntensity={0.8}
-          emissiveMap={surfaceMaps?.emissiveMap ?? null}
-          emissive={surfaceMaps?.emissiveMap ? '#ffffff' : '#000000'}
-          emissiveIntensity={0}
+          color="#0a0a0a"
+          roughness={0.9}
+          metalness={0.1}
         />
       </instancedMesh>
       <instancedMesh
