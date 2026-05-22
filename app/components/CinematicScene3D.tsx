@@ -572,7 +572,18 @@ function buildFragmentScales(count: number) {
   return scales;
 }
 
-const FRAGMENT_COUNT = 300;
+// Delay-uri aleatoare per-fragment — variatie pe explozie/atragere.
+// Extras la nivel de modul pentru react-hooks/purity.
+function buildFragmentDelays(count: number) {
+  const delays: number[] = [];
+  for (let i = 0; i < count; i++) {
+    delays.push(Math.random() * 0.04);
+  }
+  return delays;
+}
+
+const FRAGMENT_COUNT_PER_GROUP = 75;
+const FRAGMENT_COUNT = FRAGMENT_COUNT_PER_GROUP * 4;
 
 interface MorphMeshesProps {
   progressRef: ProgressRef;
@@ -587,34 +598,62 @@ function MorphMeshes({ progressRef, mouseRef, reduced }: MorphMeshesProps) {
   // Pulse ring + fragments.
   const pulseRef = useRef<THREE.Mesh>(null);
   const pulseMatRef = useRef<THREE.MeshBasicMaterial>(null);
-  const fragmentMeshRef = useRef<THREE.InstancedMesh>(null);
+  // Dust shockwave + dust particles fine.
+  const dustRef = useRef<THREE.Mesh>(null);
+  const dustMatRef = useRef<THREE.MeshBasicMaterial>(null);
+  const dustParticlesRef = useRef<THREE.Group>(null);
+  // 4 grupuri de fragmente — fiecare cu propria geometrie, dar acelasi material.
+  const fragmentIcosaRef = useRef<THREE.InstancedMesh>(null);
+  const fragmentOctaRef = useRef<THREE.InstancedMesh>(null);
+  const fragmentTetraRef = useRef<THREE.InstancedMesh>(null);
+  const fragmentDodecaRef = useRef<THREE.InstancedMesh>(null);
 
   // Geometrii construite o singura data si stocate in memo.
   const asteroidGeometry = useMemo(() => buildAsteroidGeometry(), []);
   // Texturi procedurale pentru asteroid — normal + roughness map.
   const surfaceMaps = useMemo(() => buildAsteroidSurfaceMaps(), []);
 
-  // Sample origin / float / target points + rotatii + scaleuri ONCE on mount.
+  // Sample origin / float / target points + rotatii + scaleuri + delays ONCE on mount.
   const fragmentData = useMemo(() => {
     const origins = sampleAsteroidPoints(asteroidGeometry, FRAGMENT_COUNT);
     const floats = sampleFloatTargets(origins);
     const targets = sampleCCTargets(FRAGMENT_COUNT);
     const rotations = buildFragmentRotations(FRAGMENT_COUNT);
     const scales = buildFragmentScales(FRAGMENT_COUNT);
-    return { origins, floats, targets, rotations, scales };
+    // Delay per-fragment in unitati de scroll — variatie timing pe explozie/atragere.
+    const delays = buildFragmentDelays(FRAGMENT_COUNT);
+    return { origins, floats, targets, rotations, scales, delays };
   }, [asteroidGeometry]);
 
-  // Geometrie fragment — dodecaedru mic, cinematic. Single shared geometry.
-  const fragmentGeometry = useMemo(() => new THREE.DodecahedronGeometry(1, 0), []);
+  // Geometrii fragmente — 4 forme diferite pentru aspect variat, real.
+  // Icosaedru (20 fete), octaedru (8), tetraedru (4), dodecaedru (12).
+  const fragmentGeometries = useMemo(() => ({
+    icosa: new THREE.IcosahedronGeometry(1, 0),
+    octa: new THREE.OctahedronGeometry(1, 0),
+    tetra: new THREE.TetrahedronGeometry(1, 0),
+    dodeca: new THREE.DodecahedronGeometry(1, 0),
+  }), []);
+
+  // Material shared pentru toate cele 4 grupe de fragmente — citeste aceleasi
+  // texturi ca asteroidul, deci chunkurile arata ca bucati din suprafata lui.
+  // Definit ca <meshStandardMaterial> JSX cu ref + atasat via JSX la primul mesh,
+  // apoi reutilizat pe ceilalti 3 prin .material assignment in useEffect.
+  const fragmentMatRef = useRef<THREE.MeshStandardMaterial>(null);
 
   // Obiect dummy reutilizat in useFrame pentru a calcula matricea per-instanta.
   const dummy = useMemo(() => new THREE.Object3D(), []);
 
-  // Cleanup geometrii custom + texturi la unmount.
+  // Cleanup geometrii custom + texturi + material la unmount.
   useEffect(() => {
+    // Copiem ref-ul intr-o variabila locala pentru cleanup safety.
+    const fragMatAtMount = fragmentMatRef.current;
     return () => {
       asteroidGeometry.dispose();
-      fragmentGeometry.dispose();
+      fragmentGeometries.icosa.dispose();
+      fragmentGeometries.octa.dispose();
+      fragmentGeometries.tetra.dispose();
+      fragmentGeometries.dodeca.dispose();
+      fragMatAtMount?.dispose();
       if (surfaceMaps) {
         surfaceMaps.diffuseMap.dispose();
         surfaceMaps.normalMap.dispose();
@@ -624,7 +663,17 @@ function MorphMeshes({ progressRef, mouseRef, reduced }: MorphMeshesProps) {
         surfaceMaps.emissiveMap.dispose();
       }
     };
-  }, [asteroidGeometry, fragmentGeometry, surfaceMaps]);
+  }, [asteroidGeometry, fragmentGeometries, surfaceMaps]);
+
+  // Atasam materialul fragmentelor (definit inline pe icosa) la celelalte 3
+  // instanced meshes — astfel toate cele 4 grupuri share aceeasi instanta de material.
+  useEffect(() => {
+    const mat = fragmentMatRef.current;
+    if (!mat) return;
+    if (fragmentOctaRef.current) fragmentOctaRef.current.material = mat;
+    if (fragmentTetraRef.current) fragmentTetraRef.current.material = mat;
+    if (fragmentDodecaRef.current) fragmentDodecaRef.current.material = mat;
+  }, [surfaceMaps]);
 
   // Rotatie continua pe asteroid — viata vizuala constanta.
   // Tween inrolat intr-un context scoped pentru cleanup automat.
@@ -682,27 +731,84 @@ function MorphMeshes({ progressRef, mouseRef, reduced }: MorphMeshesProps) {
       }
     }
 
+    // === STAGE 0.20-0.34: Dust shockwave — sfera semi-transparenta in expansiune ===
+    if (dustRef.current && dustMatRef.current) {
+      if (p > 0.20 && p < 0.34) {
+        const dustT = THREE.MathUtils.clamp((p - 0.20) / 0.14, 0, 1);
+        // sqrt curve — expansiune rapida initial, apoi incetinire.
+        const scale = THREE.MathUtils.lerp(0.5, 5.0, Math.pow(dustT, 0.5));
+        dustRef.current.scale.setScalar(scale);
+        // Opacitatea scade mai repede decat expansiunea (puterea 1.5).
+        dustMatRef.current.opacity = (1 - Math.pow(dustT, 1.5)) * 0.35;
+        dustRef.current.visible = true;
+      } else {
+        dustRef.current.visible = false;
+      }
+    }
+
+    // === STAGE 0.18-0.75: Dust particles fine in volumul exploziei ===
+    if (dustParticlesRef.current) {
+      dustParticlesRef.current.visible = p > 0.18 && p < 0.75;
+    }
+
     // === STAGE 0.20+: Fragments (explozie -> float -> atragere -> solid) ===
-    if (fragmentMeshRef.current && p > 0.20) {
-      fragmentMeshRef.current.visible = true;
-      const { origins, floats, targets, rotations, scales } = fragmentData;
+    // Calculam emissive shared pe materialul fragmentelor (hot -> cool -> solid).
+    if (fragmentMatRef.current) {
+      if (!reduced) {
+        let fragEmissive = 0;
+        if (p > 0.18 && p < 0.40) {
+          // Debris fierbinte imediat dupa explozie.
+          const hotT = THREE.MathUtils.clamp((p - 0.18) / 0.22, 0, 1);
+          fragEmissive = (1 - hotT) * 1.2; // 1.2 -> 0
+        } else if (p > 0.78) {
+          // Bloc solid CC — glow subtil pulsat.
+          const solidT = THREE.MathUtils.clamp((p - 0.78) / 0.10, 0, 1);
+          fragEmissive = solidT * 0.4 + Math.sin(t * 0.6) * 0.08;
+        }
+        fragmentMatRef.current.emissiveIntensity = fragEmissive;
+      } else {
+        fragmentMatRef.current.emissiveIntensity = 0;
+      }
+    }
+
+    const meshes = [
+      fragmentIcosaRef.current,
+      fragmentOctaRef.current,
+      fragmentTetraRef.current,
+      fragmentDodecaRef.current,
+    ];
+    if (meshes.every((m) => m) && p > 0.20) {
+      meshes.forEach((m) => {
+        m!.visible = true;
+      });
+      const { origins, floats, targets, rotations, scales, delays } = fragmentData;
 
       for (let i = 0; i < FRAGMENT_COUNT; i++) {
+        const groupIdx = Math.floor(i / FRAGMENT_COUNT_PER_GROUP); // 0-3
+        const localIdx = i % FRAGMENT_COUNT_PER_GROUP;             // 0-74
         const origin = origins[i];
         const floatPos = floats[i];
         const target = targets[i];
         const rot = rotations[i];
         const scale = scales[i];
+        const delay = delays[i];
 
         let x: number, y: number, z: number;
 
         if (p < 0.32) {
-          // Faza explozie: origin -> float, ease power3.out
-          const local = THREE.MathUtils.clamp((p - 0.22) / 0.10, 0, 1);
-          const eased = 1 - Math.pow(1 - local, 3); // power3.out
-          x = THREE.MathUtils.lerp(origin.x, floatPos.x, eased);
-          y = THREE.MathUtils.lerp(origin.y, floatPos.y, eased);
-          z = THREE.MathUtils.lerp(origin.z, floatPos.z, eased);
+          // Faza explozie: origin -> float, ease power3.out, cu delay per-fragment.
+          const local = THREE.MathUtils.clamp((p - 0.22 - delay) / 0.10, 0, 1);
+          if (local <= 0) {
+            // Inca nu a iesit — stationar la origin (acoperit de asteroid).
+            x = origin.x;
+            y = origin.y;
+            z = origin.z;
+          } else {
+            const eased = 1 - Math.pow(1 - local, 3); // power3.out
+            x = THREE.MathUtils.lerp(origin.x, floatPos.x, eased);
+            y = THREE.MathUtils.lerp(origin.y, floatPos.y, eased);
+            z = THREE.MathUtils.lerp(origin.z, floatPos.z, eased);
+          }
         } else if (p < 0.55) {
           // Faza float: stationar la pozitia float cu drift subtil.
           const drift = reduced ? 0 : Math.sin(t * rot.speed + i) * 0.04;
@@ -710,8 +816,9 @@ function MorphMeshes({ progressRef, mouseRef, reduced }: MorphMeshesProps) {
           y = floatPos.y + drift * rot.axis.y;
           z = floatPos.z + drift * rot.axis.z;
         } else if (p < 0.78) {
-          // Faza atragere: float -> target, ease power3.inOut
-          const local = THREE.MathUtils.clamp((p - 0.55) / 0.23, 0, 1);
+          // Faza atragere: float -> target, ease power3.inOut, cu delay per-fragment.
+          const attractDelay = delay * 1.5;
+          const local = THREE.MathUtils.clamp((p - 0.55 - attractDelay) / 0.23, 0, 1);
           const eased =
             local < 0.5
               ? 4 * local * local * local
@@ -744,11 +851,15 @@ function MorphMeshes({ progressRef, mouseRef, reduced }: MorphMeshesProps) {
 
         dummy.scale.setScalar(scale);
         dummy.updateMatrix();
-        fragmentMeshRef.current.setMatrixAt(i, dummy.matrix);
+        meshes[groupIdx]!.setMatrixAt(localIdx, dummy.matrix);
       }
-      fragmentMeshRef.current.instanceMatrix.needsUpdate = true;
-    } else if (fragmentMeshRef.current) {
-      fragmentMeshRef.current.visible = false;
+      meshes.forEach((m) => {
+        m!.instanceMatrix.needsUpdate = true;
+      });
+    } else {
+      meshes.forEach((m) => {
+        if (m) m.visible = false;
+      });
     }
 
     // === Camera dolly noua ===
@@ -825,20 +936,63 @@ function MorphMeshes({ progressRef, mouseRef, reduced }: MorphMeshesProps) {
         />
       </mesh>
 
-      {/* FRAGMENTE — 300 instanced meshes, animate per frame din useFrame. */}
+      {/* DUST SHOCKWAVE — sfera semi-transparenta care se expandeaza la momentul exploziei. */}
+      <mesh ref={dustRef} scale={0.01}>
+        <sphereGeometry args={[1, 32, 32]} />
+        <meshBasicMaterial
+          ref={dustMatRef}
+          color="#3a3530"
+          transparent
+          opacity={0}
+          depthWrite={false}
+        />
+      </mesh>
+
+      {/* DUST PARTICLES FINE — vizibile in faza explozie + float. */}
+      <group ref={dustParticlesRef}>
+        {!reduced && (
+          <Sparkles count={200} scale={8} size={0.6} speed={0.15} color="#7a7570" />
+        )}
+      </group>
+
+      {/* FRAGMENTE — 4 grupuri x 75 instante, geometrii diferite, material shared.
+          Primul mesh defineste materialul inline (cu ref); celelalte trei il
+          reutilizeaza prin asignare directa pe .material in useEffect. */}
       <instancedMesh
-        ref={fragmentMeshRef}
-        args={[fragmentGeometry, undefined, FRAGMENT_COUNT]}
+        ref={fragmentIcosaRef}
+        args={[fragmentGeometries.icosa, undefined, FRAGMENT_COUNT_PER_GROUP]}
         castShadow
       >
         <meshStandardMaterial
-          color="#1a1a1a"
-          roughness={0.85}
-          metalness={0.2}
-          emissive="#6e82a5"
-          emissiveIntensity={0.3}
+          ref={fragmentMatRef}
+          map={surfaceMaps?.diffuseMap ?? null}
+          normalMap={surfaceMaps?.normalMap ?? null}
+          normalScale={new THREE.Vector2(1.5, 1.5)}
+          roughnessMap={surfaceMaps?.roughnessMap ?? null}
+          roughness={1}
+          metalness={0.05}
+          aoMap={surfaceMaps?.aoMap ?? null}
+          aoMapIntensity={0.8}
+          emissiveMap={surfaceMaps?.emissiveMap ?? null}
+          emissive="#ffffff"
+          emissiveIntensity={0}
         />
       </instancedMesh>
+      <instancedMesh
+        ref={fragmentOctaRef}
+        args={[fragmentGeometries.octa, undefined, FRAGMENT_COUNT_PER_GROUP]}
+        castShadow
+      />
+      <instancedMesh
+        ref={fragmentTetraRef}
+        args={[fragmentGeometries.tetra, undefined, FRAGMENT_COUNT_PER_GROUP]}
+        castShadow
+      />
+      <instancedMesh
+        ref={fragmentDodecaRef}
+        args={[fragmentGeometries.dodeca, undefined, FRAGMENT_COUNT_PER_GROUP]}
+        castShadow
+      />
     </>
   );
 }
