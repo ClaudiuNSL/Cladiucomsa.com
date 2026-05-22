@@ -62,6 +62,11 @@
     "nextCase": "Următorul",
     "indexTitle": "Proiecte selectate.",
     "indexLead": "Trei proiecte live — fiecare cu povestea în spate: ce nu funcționa, ce am construit, ce am livrat.",
+    "social": {
+      "eyebrow": "Connect · Online",
+      "title": "Conectează-te cu {name}",
+      "websiteLabel": "Website"
+    },
     "case": {
       "counter": "Case",
       "context": {
@@ -81,21 +86,21 @@
       "banciuCostin": {
         "number": "P01",
         "title": "Banciu Costin",
-        "kicker": "Portofoliu fotograf · 2025",
-        "body": "Migrare de la WordPress la un site static custom pentru un fotograf cu experiență. Albume curate, încărcare instantă, focus pe imagini.",
-        "tech": "HTML5 · CSS3 · JavaScript",
+        "kicker": "Site fotograf + panou admin · 2025",
+        "body": "Site complet pentru un fotograf cu experiență — partea publică optimizată pentru performanță, plus un panou admin propriu unde clientul gestionează albume, prețuri, slider, video showreel și evenimente.",
+        "tech": "Next.js · TypeScript · Admin Panel · Auth",
         "href": "https://banciucostin.ro",
         "context": {
-          "body": "Banciu Costin este un fotograf cu portofoliu vast — ani de albume, sesiuni de nuntă, portrete și evenimente. Avea deja un site pe WordPress, dar setup-ul devenise un obstacol: încărcare lentă a galeriilor, dependență de plugin-uri, întreținere costisitoare. Site-ul nu mai reflecta nivelul muncii.\n\nProvocarea: un site care să pună fotografia în prim-plan. Albume curate, organizare clară, încărcare instantă pe mobile. Fără bagaje CMS-istice, fără update-uri urgente de plugin-uri."
+          "body": "Banciu Costin este un fotograf cu portofoliu vast — ani de albume, sesiuni de nuntă, portrete, evenimente, profesional. Avea un site pe WordPress, dar întâmpina două probleme reale: încărcarea galeriilor era lentă din cauza volumului de imagini, iar dependența de plugin-uri și update-uri WordPress însemna întreținere costisitoare și fragilă.\n\nÎși dorea un produs unde să adauge singur albume, să schimbe slider-ul de pe pagina principală, să updateze pachetele de prețuri și să gestioneze evenimentele — fără să atingă cod, fără să mă sune pentru fiecare modificare."
         },
         "approach": {
-          "body": "Site static — HTML, CSS, JavaScript curat. Fără WordPress, fără bază de date, fără plugin-uri. Albume organizate pe categorii cu navigare fluidă, imagini servite cu lazy loading și format modern, layout care funcționează identic pe orice device.\n\nÎntreținerea acum se reduce la înlocuirea unor fișiere statice. Fotograful poate adăuga albume noi fără să atingă un CMS — o decizie conștientă pentru un site care trebuia să fie predictibil pe termen lung, nu flexibil în mod inutil."
+          "body": "Am construit un site Next.js cu panou admin custom — un produs cu două fețe. Partea publică e optimizată pentru încărcare instantă: galerii cu lazy load, format de imagine modern, layout care funcționează identic pe orice device. Partea de admin e un dashboard complet în spatele unei autentificări — Banciu gestionează singur categorii (Nuntă, Botez, Save the Date, Cuplu, Familie, Trash the Dress, Absolvire, Profesional, Fotografii amuzante), upload-uri în masă de fotografii, slider hero, video showreel, evenimente și pachete de prețuri.\n\nFiecare modificare făcută în admin se reflectă instant pe site. Fără cont WordPress de menținut, fără plugin-uri care să se actualizeze, fără dezvoltatori implicați în adăugarea unui album nou."
         },
         "result": {
-          "body": "Site-ul s-a livrat și acum reflectă nivelul real al portofoliului. Fotografia ocupă spațiul vizual principal, iar performanța la încărcare scoate site-ul din zona de risc pentru vizitatorii pe mobil. SEO-ul rămâne următoarea fază — structura tehnică e pregătită pentru asta.",
+          "body": "Banciu Costin gestionează singur 194 de fotografii organizate în 9 categorii, plus slider-ul de pe homepage, video-ul showreel și pachetele de servicii. Adaugă un album nou de nuntă în câteva minute, fără să atingă cod. Site-ul se încarcă rapid pe mobile chiar și cu volumul de imagini, iar admin-ul scalează — adăugarea unei noi categorii de servicii e o operație de 30 de secunde.",
           "metrics": [
-            { "value": "95+/100", "label": "PageSpeed mobile la prima încărcare" },
-            { "value": "Zero", "label": "Plugin-uri, baze de date sau CMS" }
+            { "value": "194", "label": "Fotografii gestionate în 9 categorii — totul din admin-ul propriu" },
+            { "value": "0", "label": "Dependențe WordPress, plugin-uri sau dezvoltator necesar" }
           ]
         }
       },

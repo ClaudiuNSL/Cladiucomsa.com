@@ -62,6 +62,11 @@
     "nextCase": "Next",
     "indexTitle": "Selected work.",
     "indexLead": "Three live projects — each with the story behind it: what wasn't working, what we built, what we delivered.",
+    "social": {
+      "eyebrow": "Connect · Online",
+      "title": "Connect with {name}",
+      "websiteLabel": "Website"
+    },
     "case": {
       "counter": "Case",
       "context": {
@@ -81,21 +86,21 @@
       "banciuCostin": {
         "number": "P01",
         "title": "Banciu Costin",
-        "kicker": "Photographer portfolio · 2025",
-        "body": "Migration from WordPress to a custom static site for a photographer with years of work. Clean albums, instant loading, focus on the imagery.",
-        "tech": "HTML5 · CSS3 · JavaScript",
+        "kicker": "Photographer site + admin panel · 2025",
+        "body": "Complete site for an experienced photographer — public-facing tuned for performance, plus a custom admin panel where the client manages albums, pricing, slider, video showreel, and events.",
+        "tech": "Next.js · TypeScript · Admin Panel · Auth",
         "href": "https://banciucostin.ro",
         "context": {
-          "body": "Banciu Costin is a photographer with a deep portfolio — years of wedding sessions, portraits, and events. He had a WordPress site, but the setup had become an obstacle: slow gallery loading, plugin dependencies, costly maintenance. The site no longer reflected the level of his work.\n\nThe challenge: a site that puts photography first. Curated albums, clear organization, instant mobile loading. No CMS baggage, no urgent plugin updates."
+          "body": "Banciu Costin is a photographer with a deep portfolio — years of weddings, portraits, events, and professional work. He had a WordPress site but ran into two real problems: gallery loading was slow given the image volume, and the WordPress plugin/update dependency made maintenance costly and fragile.\n\nHe wanted a product where he could add albums himself, swap the homepage slider, update pricing packages, and manage events — without touching code, without calling me for every change."
         },
         "approach": {
-          "body": "Static site — clean HTML, CSS, JavaScript. No WordPress, no database, no plugins. Albums organized by category with fluid navigation, images served with lazy loading and modern formats, a layout that works identically on any device.\n\nMaintenance now comes down to replacing static files. The photographer can add new albums without touching a CMS — a deliberate decision for a site that needed to be predictable long-term, not flexible in ways that weren't useful."
+          "body": "I built a Next.js site with a custom admin panel — a two-sided product. The public side is tuned for instant loading: lazy-loaded galleries, modern image formats, a layout that works identically on any device. The admin side is a full dashboard behind authentication — Banciu manages categories himself (Wedding, Christening, Save the Date, Couple, Family, Trash the Dress, Graduation, Professional, Fun shots), bulk photo uploads, the hero slider, video showreel, events, and pricing packages.\n\nEvery change made in the admin reflects on the site instantly. No WordPress account to maintain, no plugins to update, no developers involved in adding a new album."
         },
         "result": {
-          "body": "The site shipped and now reflects the actual level of the portfolio. Photography occupies the main visual space, and load performance keeps the site out of the danger zone for mobile visitors. SEO is the next phase — the technical structure is ready for it.",
+          "body": "Banciu Costin manages 194 photos across 9 categories himself, plus the homepage slider, the video showreel, and the service packages. He adds a new wedding album in minutes without touching code. The site loads fast on mobile even with the image volume, and the admin scales — adding a new service category is a 30-second operation.",
           "metrics": [
-            { "value": "95+/100", "label": "PageSpeed mobile, first paint" },
-            { "value": "Zero", "label": "Plugins, databases, or CMS" }
+            { "value": "194", "label": "Photos managed across 9 categories — all from his own admin" },
+            { "value": "0", "label": "WordPress dependencies, plugins, or developer needed" }
           ]
         }
       },

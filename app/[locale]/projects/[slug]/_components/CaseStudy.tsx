@@ -10,6 +10,7 @@ import { Link } from '@/i18n/navigation';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import MetricGrid from '@/app/components/MetricGrid';
+import SocialBlock, { type SocialLinks } from '@/app/components/SocialBlock';
 import { CASES, getNextCase, type CaseSlug } from '../../_data/cases';
 
 if (typeof window !== 'undefined') {
@@ -170,6 +171,12 @@ export default function CaseStudy({ caseSlug }: { caseSlug: CaseSlug }) {
           <MetricGrid metrics={metrics} />
         </div>
       </section>
+
+      {/* SOCIAL block — publicitate gratuita pentru client, "wow" pentru viitori clienti */}
+      <SocialBlock
+        social={current.social as SocialLinks}
+        displayName={current.displayName}
+      />
 
       {/* FOOTER case — back / next */}
       <section className="border-t border-white/[0.04] px-8 py-20 lg:px-12">
