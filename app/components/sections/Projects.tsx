@@ -3,8 +3,10 @@
 // Titlu cu letter-reveal stagger, watermark gigant cu numarul proiectului, scrub scale pe background.
 import { useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
+import { Link } from '@/i18n/navigation';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { CASES } from '@/app/[locale]/projects/_data/cases';
 
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(ScrollTrigger);
@@ -12,6 +14,13 @@ if (typeof window !== 'undefined') {
 
 const PROJECT_KEYS = ['banciuCostin', 'aurasjobs', 'stereocad'] as const;
 type ProjectKey = (typeof PROJECT_KEYS)[number];
+
+// Mapping projectKey -> slug pentru ruta /[locale]/projects/[slug].
+const SLUG_FOR_KEY: Record<ProjectKey, string> = {
+  banciuCostin: CASES.find((c) => c.key === 'banciuCostin')!.slug,
+  aurasjobs: CASES.find((c) => c.key === 'aurasjobs')!.slug,
+  stereocad: CASES.find((c) => c.key === 'stereocad')!.slug,
+};
 
 export default function Projects() {
   const t = useTranslations('projects');
@@ -168,7 +177,18 @@ function ProjectScreen({ projectKey, idx, t }: ProjectScreenProps) {
         <p data-reveal className="mt-6 text-xs font-medium uppercase tracking-[0.28em] text-zinc-600">
           {t(`items.${projectKey}.tech`)}
         </p>
-        <div data-reveal className="mt-12">
+        <div data-reveal className="mt-12 flex flex-wrap items-center justify-center gap-4">
+          {/* Primary CTA — case study intern (Next.js Link cu locale prefix). */}
+          <Link
+            href={`/projects/${SLUG_FOR_KEY[projectKey]}`}
+            className="group inline-flex items-center gap-3 rounded-full bg-white px-7 py-3 text-xs font-medium uppercase tracking-[0.2em] text-black transition-all duration-300 hover:scale-[1.03] hover:bg-zinc-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+          >
+            {t('viewCase')}
+            <span aria-hidden="true" className="transition-transform duration-300 group-hover:translate-x-1">
+              →
+            </span>
+          </Link>
+          {/* Secondary CTA — site live, demoted la border-only. */}
           <a
             href={t(`items.${projectKey}.href`)}
             target="_blank"
@@ -177,7 +197,7 @@ function ProjectScreen({ projectKey, idx, t }: ProjectScreenProps) {
           >
             {t('viewLive')}
             <span aria-hidden="true" className="transition-transform duration-300 group-hover:translate-x-1">
-              →
+              ↗
             </span>
           </a>
         </div>
