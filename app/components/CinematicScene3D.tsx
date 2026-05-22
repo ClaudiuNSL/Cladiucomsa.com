@@ -28,144 +28,455 @@ type ProgressRef = { current: number };
 // Pozitia mouse-ului normalizata in [-1, 1] pe fiecare axa.
 type MouseRef = { current: { x: number; y: number } };
 
-// Geometrie asteroid: icosaedru subdivizat la 10 cu displacement noise
-// 5-octava per-vertex + vertex colors pentru variatie minerala. Silueta
-// de poliedru e rupta complet — pare stanca naturala, nu un D20.
+// Geometrie asteroid portata din v0: pre-stretch asimetric x*1.4/y*0.75/z*1.15
+// + 7 octave noise + cratere (3 scari) + basine + ridge-uri + cliff faces.
+// Sub-9 = ~21k triangles la radius 1.2 — densitate buna pe unitate suprafata.
 function buildAsteroidGeometry() {
-  // Sub-10 = ~80k triangles. Distributie uniforma fara singularitati polare.
-  const geometry = new THREE.IcosahedronGeometry(1.2, 10);
   const noise3D = createNoise3D();
-  const positionAttr = geometry.attributes.position as THREE.BufferAttribute;
-  const colors = new Float32Array(positionAttr.count * 3);
-  const v = new THREE.Vector3();
+  // Base radius 1.2 ca sa pastram compozitia scenei existente (camera/zoom).
+  // Sub-9 = 5120 base triangles, mai dens per unitate suprafata decat sub-8.
+  const geo = new THREE.IcosahedronGeometry(1.2, 9);
+  const positions = geo.attributes.position as THREE.BufferAttribute;
+  const vertex = new THREE.Vector3();
 
-  for (let i = 0; i < positionAttr.count; i++) {
-    v.fromBufferAttribute(positionAttr, i);
-    const dirX = v.x, dirY = v.y, dirZ = v.z;
-
-    // 5 octave noise — frecvente diferite pentru detalii la scari diferite.
-    const n1 = noise3D(dirX * 0.7, dirY * 0.7, dirZ * 0.7) * 0.32; // lumps mari, asimetrie
-    const n2 = noise3D(dirX * 1.8, dirY * 1.8, dirZ * 1.8) * 0.14; // lumps medii
-    const n3 = noise3D(dirX * 4.0, dirY * 4.0, dirZ * 4.0) * 0.06; // detalii mici
-    const n4 = noise3D(dirX * 9.0, dirY * 9.0, dirZ * 9.0) * 0.025; // micro
-    const n5 = noise3D(dirX * 18.0, dirY * 18.0, dirZ * 18.0) * 0.01; // nano
-    const total = n1 + n2 + n3 + n4 + n5;
-
-    v.multiplyScalar(1 + total);
-    positionAttr.setXYZ(i, v.x, v.y, v.z);
-
-    // Variatie de culoare pe suprafata: noise mai mic ca frecventa
-    // simuleaza vene minerale / zone iluminate diferit.
-    const cNoise = noise3D(dirX * 1.4, dirY * 1.4, dirZ * 1.4);
-    // brightness in [0.04, 0.18] — foarte intunecat, dar cu variatie vizibila
-    const brightness = 0.11 + cNoise * 0.07;
-    colors[i * 3] = brightness;
-    colors[i * 3 + 1] = brightness * 0.98;
-    colors[i * 3 + 2] = brightness * 1.04; // tint subtil rece
+  // First pass: pre-stretch asimetric pentru silueta non-sferica.
+  for (let i = 0; i < positions.count; i++) {
+    vertex.fromBufferAttribute(positions, i);
+    const stretchNoise = noise3D(vertex.x * 0.5, vertex.y * 0.5, vertex.z * 0.5);
+    vertex.x *= 1.4 + stretchNoise * 0.2;
+    vertex.y *= 0.75 + stretchNoise * 0.15;
+    vertex.z *= 1.15 + stretchNoise * 0.1;
+    positions.setXYZ(i, vertex.x, vertex.y, vertex.z);
   }
 
-  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-  positionAttr.needsUpdate = true;
-  geometry.computeVertexNormals();
-  return geometry;
+  // Second pass: displacement multi-octava + cratere + basine + ridge + cliffs.
+  for (let i = 0; i < positions.count; i++) {
+    vertex.fromBufferAttribute(positions, i);
+    const originalLength = vertex.length();
+    const normalized = vertex.clone().normalize();
+
+    // 7-octave noise — de la silueta globala pana la micro-grain.
+    const ultraLarge = noise3D(
+      normalized.x * 0.15,
+      normalized.y * 0.15,
+      normalized.z * 0.15
+    ) * 0.6;
+    const majorShape = noise3D(
+      normalized.x * 0.4,
+      normalized.y * 0.4,
+      normalized.z * 0.4
+    ) * 0.45;
+    const largeFeatures = noise3D(
+      normalized.x * 1.0,
+      normalized.y * 1.0,
+      normalized.z * 1.0
+    ) * 0.3;
+    const mediumFeatures = noise3D(
+      normalized.x * 3.0,
+      normalized.y * 3.0,
+      normalized.z * 3.0
+    ) * 0.15;
+    const smallFeatures = noise3D(
+      normalized.x * 7,
+      normalized.y * 7,
+      normalized.z * 7
+    ) * 0.07;
+    const fineDetails = noise3D(
+      normalized.x * 15,
+      normalized.y * 15,
+      normalized.z * 15
+    ) * 0.035;
+    const microDetails = noise3D(
+      normalized.x * 30,
+      normalized.y * 30,
+      normalized.z * 30
+    ) * 0.015;
+
+    // Cratere — 3 scari, fiecare cu threshold + curba patratica negativa.
+    const craterNoise1 = noise3D(
+      normalized.x * 1.2,
+      normalized.y * 1.2,
+      normalized.z * 1.2
+    );
+    const craters1 = craterNoise1 > 0.25 ? -Math.pow(craterNoise1 - 0.25, 2) * 1.2 : 0;
+
+    const craterNoise2 = noise3D(
+      normalized.x * 2.5 + 50,
+      normalized.y * 2.5 + 50,
+      normalized.z * 2.5 + 50
+    );
+    const craters2 = craterNoise2 > 0.35 ? -Math.pow(craterNoise2 - 0.35, 2) * 0.6 : 0;
+
+    const craterNoise3 = noise3D(
+      normalized.x * 5 + 100,
+      normalized.y * 5 + 100,
+      normalized.z * 5 + 100
+    );
+    const craters3 = craterNoise3 > 0.4 ? -Math.pow(craterNoise3 - 0.4, 2) * 0.3 : 0;
+
+    // Basine de impact — concavitati mari, putine.
+    const basinNoise = noise3D(
+      normalized.x * 0.6 + 200,
+      normalized.y * 0.6 + 200,
+      normalized.z * 0.6 + 200
+    );
+    const basins = basinNoise > 0.5 ? -Math.pow(basinNoise - 0.5, 1.5) * 0.8 : 0;
+
+    // Ridge-uri ascutite — abs noise + threshold → muchii.
+    const ridgeNoise = Math.abs(noise3D(
+      normalized.x * 2,
+      normalized.y * 2,
+      normalized.z * 2
+    ));
+    const ridges = ridgeNoise > 0.55 ? Math.pow(ridgeNoise - 0.55, 0.7) * 0.4 : 0;
+
+    // Cliff faces — sign-aware pentru bumps pozitive si negative.
+    const cliffNoise = noise3D(
+      normalized.x * 4 + 300,
+      normalized.y * 4 + 300,
+      normalized.z * 4 + 300
+    );
+    const cliffs = Math.abs(cliffNoise) > 0.6
+      ? Math.sign(cliffNoise) * Math.pow(Math.abs(cliffNoise) - 0.6, 0.5) * 0.2
+      : 0;
+
+    const totalDisplacement = ultraLarge + majorShape + largeFeatures + mediumFeatures +
+      smallFeatures + fineDetails + microDetails + craters1 + craters2 + craters3 +
+      basins + ridges + cliffs;
+
+    // 0.45 multiplicator — pastreaza intensitatea originala v0.
+    const newLength = originalLength * (1 + totalDisplacement * 0.45);
+    vertex.normalize().multiplyScalar(newLength);
+    positions.setXYZ(i, vertex.x, vertex.y, vertex.z);
+  }
+
+  geo.computeVertexNormals();
+  // uv2 pentru AO map — MeshStandardMaterial citeste AO din UV channel 1.
+  geo.setAttribute('uv2', geo.attributes.uv);
+  return geo;
 }
 
-// Genereaza canvas-based normal map + roughness map + emissive map din noise.
-// - normal/roughness: micro-detalii suprafata (zgârieturi, craters)
-// - emissive: pattern crack-uri subtile care emit lumina rece din interior
+// Genereaza 6 texturi PBR pentru asteroid:
+//  1. diffuseMap (2K canvas): Voronoi cells + cratere pictate la 3 scari +
+//     vene minerale + dust subtil. Gama foarte intunecata (gri 20-90).
+//  2. normalMap (2K canvas): multi-scale height + Sobel filter.
+//  3. roughnessMap (2K canvas): variatie organica, foarte non-lucios (>0.8).
+//  4. aoMap (2K canvas): white base + radial dark patches pe crevices,
+//     citit prin uv2 channel (setat pe geometrie).
+//  5. displacementMap (1K canvas): noise organic, scale mic in material.
+//  6. emissiveMap (1K data texture): pattern crack-uri subtili — pastrat
+//     din implementarea anterioara pentru efectul de lumina interioara.
+// Total ~66MB GPU memory. Generarea la mount costa 1-3s pe thread principal
+// (Suspense fallback={null} acopera asta).
 function buildAsteroidSurfaceMaps() {
   if (typeof document === 'undefined') return null;
-  const size = 1024;
+  const size = 2048; // 2K pentru diffuse/normal/roughness/AO (memorie controlata)
   const noise2D = createNoise2D();
 
-  // Pas 1: genereaza un heightmap intern
-  const heightMap = new Float32Array(size * size);
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      const u = (x / size) * 6;
-      const w = (y / size) * 6;
-      const h =
-        noise2D(u, w) * 0.5 +
-        noise2D(u * 2.3, w * 2.3) * 0.25 +
-        noise2D(u * 5.1, w * 5.1) * 0.12 +
-        noise2D(u * 11.0, w * 11.0) * 0.06;
-      heightMap[y * size + x] = h;
-    }
+  // === DIFFUSE/ALBEDO MAP (2K canvas) ===
+  const diffuseCanvas = document.createElement('canvas');
+  diffuseCanvas.width = size;
+  diffuseCanvas.height = size;
+  const diffuseCtx = diffuseCanvas.getContext('2d')!;
+
+  diffuseCtx.fillStyle = '#2e2e2e';
+  diffuseCtx.fillRect(0, 0, size, size);
+
+  const imageData = diffuseCtx.getImageData(0, 0, size, size);
+  const data = imageData.data;
+
+  // Voronoi cells — 800 puncte aleatoare pentru rock grain.
+  const cellCount = 800;
+  const cells: { x: number; y: number; gray: number }[] = [];
+  for (let i = 0; i < cellCount; i++) {
+    cells.push({
+      x: Math.random() * size,
+      y: Math.random() * size,
+      gray: 30 + Math.random() * 50,
+    });
   }
 
-  // Pas 2: converteste heightmap-ul in normal map
-  const normalData = new Uint8Array(size * size * 4);
-  const strength = 3.0; // cat de pronuntate sunt normalele
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
-      const i = y * size + x;
-      const left = heightMap[y * size + Math.max(0, x - 1)];
-      const right = heightMap[y * size + Math.min(size - 1, x + 1)];
-      const up = heightMap[Math.max(0, y - 1) * size + x];
-      const down = heightMap[Math.min(size - 1, y + 1) * size + x];
-      const dx = (right - left) * strength;
-      const dy = (down - up) * strength;
-      const dz = 1.0;
-      const len = Math.sqrt(dx * dx + dy * dy + dz * dz);
-      normalData[i * 4] = Math.floor(((dx / len) * 0.5 + 0.5) * 255);
-      normalData[i * 4 + 1] = Math.floor(((dy / len) * 0.5 + 0.5) * 255);
-      normalData[i * 4 + 2] = Math.floor(((dz / len) * 0.5 + 0.5) * 255);
-      normalData[i * 4 + 3] = 255;
+      const idx = (y * size + x) * 4;
+      let minDist = Infinity;
+      let secondMinDist = Infinity;
+      let closestGray = 40;
+
+      for (const cell of cells) {
+        // Wrap-around pentru seamless texture.
+        const dx = Math.min(Math.abs(x - cell.x), size - Math.abs(x - cell.x));
+        const dy = Math.min(Math.abs(y - cell.y), size - Math.abs(y - cell.y));
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < minDist) {
+          secondMinDist = minDist;
+          minDist = dist;
+          closestGray = cell.gray;
+        } else if (dist < secondMinDist) {
+          secondMinDist = dist;
+        }
+      }
+
+      const edgeFactor = Math.min(1, (secondMinDist - minDist) / 15);
+      const noiseVal = noise2D(x * 0.02 + 1000, y * 0.02 + 1000) * 10;
+      const fineNoise = noise2D(x * 0.08 + 2000, y * 0.08 + 2000) * 5;
+      let gray = closestGray + noiseVal + fineNoise;
+      gray = gray * (0.85 + edgeFactor * 0.15);
+      gray += Math.random() * 4 - 2;
+      gray = Math.max(20, Math.min(90, gray));
+
+      data[idx] = gray;
+      data[idx + 1] = gray;
+      data[idx + 2] = gray + 1; // tint subtil rece
+      data[idx + 3] = 255;
     }
   }
-  const normalMap = new THREE.DataTexture(normalData, size, size, THREE.RGBAFormat);
-  normalMap.wrapS = normalMap.wrapT = THREE.RepeatWrapping;
-  normalMap.needsUpdate = true;
+  diffuseCtx.putImageData(imageData, 0, 0);
+
+  // Cratere mari pictate — 80x, cu rim highlight.
+  for (let i = 0; i < 80; i++) {
+    const x = Math.random() * size;
+    const y = Math.random() * size;
+    const radius = Math.random() * 150 + 30;
+    const craterGradient = diffuseCtx.createRadialGradient(x, y, 0, x, y, radius);
+    craterGradient.addColorStop(0, 'rgba(15, 15, 17, 0.8)');
+    craterGradient.addColorStop(0.6, 'rgba(22, 22, 25, 0.5)');
+    craterGradient.addColorStop(0.85, 'rgba(30, 30, 33, 0.3)');
+    craterGradient.addColorStop(1, 'rgba(40, 40, 43, 0)');
+    diffuseCtx.fillStyle = craterGradient;
+    diffuseCtx.beginPath();
+    diffuseCtx.arc(x, y, radius, 0, Math.PI * 2);
+    diffuseCtx.fill();
+
+    const rimGradient = diffuseCtx.createRadialGradient(x, y, radius * 0.7, x, y, radius * 1.1);
+    rimGradient.addColorStop(0, 'rgba(80, 80, 85, 0)');
+    rimGradient.addColorStop(0.5, 'rgba(70, 70, 75, 0.3)');
+    rimGradient.addColorStop(1, 'rgba(60, 60, 65, 0)');
+    diffuseCtx.fillStyle = rimGradient;
+    diffuseCtx.beginPath();
+    diffuseCtx.arc(x, y, radius * 1.1, 0, Math.PI * 2);
+    diffuseCtx.fill();
+  }
+
+  // Cratere medii — 200x.
+  for (let i = 0; i < 200; i++) {
+    const x = Math.random() * size;
+    const y = Math.random() * size;
+    const radius = Math.random() * 50 + 10;
+    const gradient = diffuseCtx.createRadialGradient(x, y, 0, x, y, radius);
+    gradient.addColorStop(0, 'rgba(18, 18, 20, 0.7)');
+    gradient.addColorStop(0.7, 'rgba(28, 28, 30, 0.4)');
+    gradient.addColorStop(1, 'rgba(38, 38, 40, 0)');
+    diffuseCtx.fillStyle = gradient;
+    diffuseCtx.beginPath();
+    diffuseCtx.arc(x, y, radius, 0, Math.PI * 2);
+    diffuseCtx.fill();
+  }
+
+  // Micro cratere si pits — 500x.
+  for (let i = 0; i < 500; i++) {
+    const x = Math.random() * size;
+    const y = Math.random() * size;
+    const radius = Math.random() * 12 + 2;
+    const gradient = diffuseCtx.createRadialGradient(x, y, 0, x, y, radius);
+    gradient.addColorStop(0, 'rgba(12, 12, 14, 0.6)');
+    gradient.addColorStop(1, 'rgba(25, 25, 27, 0)');
+    diffuseCtx.fillStyle = gradient;
+    diffuseCtx.beginPath();
+    diffuseCtx.arc(x, y, radius, 0, Math.PI * 2);
+    diffuseCtx.fill();
+  }
+
+  // Vene minerale lighter — 60x.
+  for (let i = 0; i < 60; i++) {
+    const x = Math.random() * size;
+    const y = Math.random() * size;
+    const radius = Math.random() * 40 + 8;
+    const gradient = diffuseCtx.createRadialGradient(x, y, 0, x, y, radius);
+    gradient.addColorStop(0, 'rgba(100, 100, 105, 0.4)');
+    gradient.addColorStop(0.5, 'rgba(85, 85, 90, 0.2)');
+    gradient.addColorStop(1, 'rgba(70, 70, 75, 0)');
+    diffuseCtx.fillStyle = gradient;
+    diffuseCtx.beginPath();
+    diffuseCtx.arc(x, y, radius, 0, Math.PI * 2);
+    diffuseCtx.fill();
+  }
+
+  // Dust accumulation pe crevices — patches subtile rotite aleatoriu.
+  for (let i = 0; i < 150; i++) {
+    const x = Math.random() * size;
+    const y = Math.random() * size;
+    const width = Math.random() * 100 + 30;
+    const height = Math.random() * 60 + 20;
+    const rotation = Math.random() * Math.PI;
+    diffuseCtx.save();
+    diffuseCtx.translate(x, y);
+    diffuseCtx.rotate(rotation);
+    const dustGradient = diffuseCtx.createRadialGradient(0, 0, 0, 0, 0, Math.max(width, height) / 2);
+    dustGradient.addColorStop(0, 'rgba(20, 20, 22, 0.3)');
+    dustGradient.addColorStop(1, 'rgba(30, 30, 32, 0)');
+    diffuseCtx.fillStyle = dustGradient;
+    diffuseCtx.beginPath();
+    diffuseCtx.ellipse(0, 0, width / 2, height / 2, 0, 0, Math.PI * 2);
+    diffuseCtx.fill();
+    diffuseCtx.restore();
+  }
+
+  const diffuseMap = new THREE.CanvasTexture(diffuseCanvas);
+  diffuseMap.wrapS = THREE.RepeatWrapping;
+  diffuseMap.wrapT = THREE.RepeatWrapping;
+  diffuseMap.anisotropy = 16;
+  diffuseMap.colorSpace = THREE.SRGBColorSpace;
+
+  // === NORMAL MAP (2K canvas) ===
+  const normalCanvas = document.createElement('canvas');
+  normalCanvas.width = size;
+  normalCanvas.height = size;
+  const normalCtx = normalCanvas.getContext('2d')!;
+
+  const normalImageData = normalCtx.getImageData(0, 0, size, size);
+  const normalData = normalImageData.data;
+
+  const getHeight = (px: number, py: number) => {
+    const h1 = noise2D(px * 0.006 + 500, py * 0.006 + 500);
+    const h2 = noise2D(px * 0.018 + 800, py * 0.018 + 800);
+    const h3 = noise2D(px * 0.05 + 1200, py * 0.05 + 1200);
+    const h4 = noise2D(px * 0.12 + 1600, py * 0.12 + 1600);
+    return h1 * 0.35 + h2 * 0.3 + h3 * 0.2 + h4 * 0.15;
+  };
+
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const idx = (y * size + x) * 4;
+      const strength = 2.0;
+      const heightL = getHeight(x - 1, y);
+      const heightR = getHeight(x + 1, y);
+      const heightU = getHeight(x, y - 1);
+      const heightD = getHeight(x, y + 1);
+      const dx = (heightL - heightR) * strength;
+      const dy = (heightU - heightD) * strength;
+      normalData[idx] = Math.floor((dx * 0.5 + 0.5) * 255);
+      normalData[idx + 1] = Math.floor((dy * 0.5 + 0.5) * 255);
+      normalData[idx + 2] = 255;
+      normalData[idx + 3] = 255;
+    }
+  }
+  normalCtx.putImageData(normalImageData, 0, 0);
+  const normalMap = new THREE.CanvasTexture(normalCanvas);
+  normalMap.wrapS = THREE.RepeatWrapping;
+  normalMap.wrapT = THREE.RepeatWrapping;
+  normalMap.anisotropy = 16;
   normalMap.colorSpace = THREE.NoColorSpace;
 
-  // Pas 3: roughness map din inaltime — zone joase mai rugoase
-  const roughData = new Uint8Array(size * size * 4);
-  for (let i = 0; i < size * size; i++) {
-    const h = heightMap[i];
-    // h e ~ -1 la 1; mapeaza la 0.55-0.95 roughness (foarte ne-lucios)
-    const r = 0.75 + h * 0.2;
-    const val = Math.max(0, Math.min(255, Math.floor(r * 255)));
-    roughData[i * 4] = val;
-    roughData[i * 4 + 1] = val;
-    roughData[i * 4 + 2] = val;
-    roughData[i * 4 + 3] = 255;
-  }
-  const roughnessMap = new THREE.DataTexture(roughData, size, size, THREE.RGBAFormat);
-  roughnessMap.wrapS = roughnessMap.wrapT = THREE.RepeatWrapping;
-  roughnessMap.needsUpdate = true;
-  roughnessMap.colorSpace = THREE.NoColorSpace;
+  // === ROUGHNESS MAP (2K canvas) ===
+  const roughnessCanvas = document.createElement('canvas');
+  roughnessCanvas.width = size;
+  roughnessCanvas.height = size;
+  const roughnessCtx = roughnessCanvas.getContext('2d')!;
 
-  // Pas 4: emissive map — pattern crack-uri subtile. Iau valoare absoluta
-  // de noise + threshold ingust pentru a obtine linii subtiri ramificate
-  // care arata ca fisuri prin care iese lumina din interior.
-  const emissiveData = new Uint8Array(size * size * 4);
+  const roughImageData = roughnessCtx.getImageData(0, 0, size, size);
+  const roughData = roughImageData.data;
+
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
-      const i = y * size + x;
-      const u = (x / size) * 4;
-      const w = (y / size) * 4;
-      // Combinatie de 2 noise — banda ingusta unde valoarea e aproape de 0
-      // = linie de crack.
+      const idx = (y * size + x) * 4;
+      const n1 = noise2D(x * 0.008 + 3000, y * 0.008 + 3000) * 0.5 + 0.5;
+      const n2 = noise2D(x * 0.03 + 4000, y * 0.03 + 4000) * 0.5 + 0.5;
+      const roughness = 210 + (n1 * 0.6 + n2 * 0.4) * 40 + Math.random() * 5;
+      roughData[idx] = roughness;
+      roughData[idx + 1] = roughness;
+      roughData[idx + 2] = roughness;
+      roughData[idx + 3] = 255;
+    }
+  }
+  roughnessCtx.putImageData(roughImageData, 0, 0);
+  const roughnessMap = new THREE.CanvasTexture(roughnessCanvas);
+  roughnessMap.wrapS = THREE.RepeatWrapping;
+  roughnessMap.wrapT = THREE.RepeatWrapping;
+  roughnessMap.colorSpace = THREE.NoColorSpace;
+
+  // === AMBIENT OCCLUSION MAP (2K canvas) ===
+  const aoCanvas = document.createElement('canvas');
+  aoCanvas.width = size;
+  aoCanvas.height = size;
+  const aoCtx = aoCanvas.getContext('2d')!;
+  aoCtx.fillStyle = '#ffffff';
+  aoCtx.fillRect(0, 0, size, size);
+  for (let i = 0; i < 400; i++) {
+    const x = Math.random() * size;
+    const y = Math.random() * size;
+    const radius = Math.random() * 100 + 25;
+    const gradient = aoCtx.createRadialGradient(x, y, 0, x, y, radius);
+    gradient.addColorStop(0, 'rgba(0, 0, 0, 0.5)');
+    gradient.addColorStop(0.5, 'rgba(0, 0, 0, 0.2)');
+    gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    aoCtx.fillStyle = gradient;
+    aoCtx.beginPath();
+    aoCtx.arc(x, y, radius, 0, Math.PI * 2);
+    aoCtx.fill();
+  }
+  const aoMap = new THREE.CanvasTexture(aoCanvas);
+  aoMap.wrapS = THREE.RepeatWrapping;
+  aoMap.wrapT = THREE.RepeatWrapping;
+  aoMap.colorSpace = THREE.NoColorSpace;
+
+  // === DISPLACEMENT MAP (1K canvas) ===
+  const dispSize = 1024;
+  const dispCanvas = document.createElement('canvas');
+  dispCanvas.width = dispSize;
+  dispCanvas.height = dispSize;
+  const dispCtx = dispCanvas.getContext('2d')!;
+  const dispImageData = dispCtx.getImageData(0, 0, dispSize, dispSize);
+  const dispData = dispImageData.data;
+  for (let y = 0; y < dispSize; y++) {
+    for (let x = 0; x < dispSize; x++) {
+      const idx = (y * dispSize + x) * 4;
+      const n = (
+        noise2D(x * 0.008 + 5000, y * 0.008 + 5000) * 0.45 +
+        noise2D(x * 0.025 + 6000, y * 0.025 + 6000) * 0.35 +
+        noise2D(x * 0.07 + 7000, y * 0.07 + 7000) * 0.2
+      ) * 0.5 + 0.5;
+      const value = n * 255;
+      dispData[idx] = value;
+      dispData[idx + 1] = value;
+      dispData[idx + 2] = value;
+      dispData[idx + 3] = 255;
+    }
+  }
+  dispCtx.putImageData(dispImageData, 0, 0);
+  const displacementMap = new THREE.CanvasTexture(dispCanvas);
+  displacementMap.wrapS = THREE.RepeatWrapping;
+  displacementMap.wrapT = THREE.RepeatWrapping;
+  displacementMap.colorSpace = THREE.NoColorSpace;
+
+  // === EMISSIVE CRACK MAP (1K data texture) — pastrat din R9 ===
+  // Pattern crack-uri subtile: linii subtiri ramificate care emit lumina rece
+  // ca o fisura prin care iese lumina din interior. Culoare rece desaturata.
+  const emSize = 1024;
+  const emissiveData = new Uint8Array(emSize * emSize * 4);
+  for (let y = 0; y < emSize; y++) {
+    for (let x = 0; x < emSize; x++) {
+      const i = y * emSize + x;
+      const u = (x / emSize) * 4;
+      const w = (y / emSize) * 4;
       const n1 = noise2D(u, w);
       const n2 = noise2D(u * 3.1, w * 3.1) * 0.4;
       const crackVal = Math.abs(n1 + n2);
       const crack = crackVal < 0.06 ? 1 - crackVal / 0.06 : 0;
-      // Multiplicat cu un al doilea noise mai larg ca sa nu fie crack-uri uniforme.
       const breakup = (noise2D(u * 0.5, w * 0.5) + 1) * 0.5;
       const intensity = Math.pow(crack * breakup, 1.4);
-      // Culoare rece desaturata — fara wash warm, ramane in paleta mdx.
       emissiveData[i * 4] = Math.floor(intensity * 110);
       emissiveData[i * 4 + 1] = Math.floor(intensity * 130);
       emissiveData[i * 4 + 2] = Math.floor(intensity * 165);
       emissiveData[i * 4 + 3] = 255;
     }
   }
-  const emissiveMap = new THREE.DataTexture(emissiveData, size, size, THREE.RGBAFormat);
+  const emissiveMap = new THREE.DataTexture(emissiveData, emSize, emSize, THREE.RGBAFormat);
   emissiveMap.wrapS = emissiveMap.wrapT = THREE.RepeatWrapping;
   emissiveMap.needsUpdate = true;
   emissiveMap.colorSpace = THREE.SRGBColorSpace;
 
-  return { normalMap, roughnessMap, emissiveMap };
+  return { diffuseMap, normalMap, roughnessMap, aoMap, displacementMap, emissiveMap };
 }
 
 // Sample N puncte pe geometria asteroidului — pozitii initiale fragmente.
@@ -305,8 +616,11 @@ function MorphMeshes({ progressRef, mouseRef, reduced }: MorphMeshesProps) {
       asteroidGeometry.dispose();
       fragmentGeometry.dispose();
       if (surfaceMaps) {
+        surfaceMaps.diffuseMap.dispose();
         surfaceMaps.normalMap.dispose();
         surfaceMaps.roughnessMap.dispose();
+        surfaceMaps.aoMap.dispose();
+        surfaceMaps.displacementMap.dispose();
         surfaceMaps.emissiveMap.dispose();
       }
     };
@@ -475,15 +789,20 @@ function MorphMeshes({ progressRef, mouseRef, reduced }: MorphMeshesProps) {
           <mesh ref={asteroidRef} geometry={asteroidGeometry} castShadow receiveShadow>
             <meshStandardMaterial
               ref={asteroidMatRef}
-              vertexColors
+              map={surfaceMaps?.diffuseMap ?? null}
               normalMap={surfaceMaps?.normalMap ?? null}
-              normalScale={new THREE.Vector2(1.4, 1.4)}
+              normalScale={new THREE.Vector2(2.0, 2.0)}
               roughnessMap={surfaceMaps?.roughnessMap ?? null}
               roughness={1}
-              metalness={0.18}
+              metalness={0.05}
+              aoMap={surfaceMaps?.aoMap ?? null}
+              aoMapIntensity={1.0}
+              displacementMap={surfaceMaps?.displacementMap ?? null}
+              displacementScale={0.04}
               emissiveMap={surfaceMaps?.emissiveMap ?? null}
               emissive="#ffffff"
               emissiveIntensity={0.55}
+              envMapIntensity={0.3}
               transparent
               opacity={1}
             />
