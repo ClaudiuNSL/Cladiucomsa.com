@@ -11,7 +11,7 @@ import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import { useReducedMotion } from 'framer-motion';
 import { useEffect, useMemo, useRef, Suspense } from 'react';
 import * as THREE from 'three';
-import { createNoise3D } from 'simplex-noise';
+import { createNoise2D, createNoise3D } from 'simplex-noise';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -29,24 +29,113 @@ function buildHelixCurve(phaseShift: number) {
   return new THREE.CatmullRomCurve3(points);
 }
 
-// Geometrie asteroid: icosaedru subdivizat la 8 cu displacement noise
-// dual-octava per-vertex pentru o forma mai detaliata, neregulata, stancoasa.
+// Geometrie asteroid: icosaedru subdivizat la 10 cu displacement noise
+// 5-octava per-vertex + vertex colors pentru variatie minerala. Silueta
+// de poliedru e rupta complet — pare stanca naturala, nu un D20.
 function buildAsteroidGeometry() {
-  const geometry = new THREE.IcosahedronGeometry(1.2, 8);
+  // Sub-10 = ~80k triangles. Distributie uniforma fara singularitati polare.
+  const geometry = new THREE.IcosahedronGeometry(1.2, 10);
   const noise3D = createNoise3D();
   const positionAttr = geometry.attributes.position as THREE.BufferAttribute;
+  const colors = new Float32Array(positionAttr.count * 3);
   const v = new THREE.Vector3();
+
   for (let i = 0; i < positionAttr.count; i++) {
     v.fromBufferAttribute(positionAttr, i);
-    // Doua octave de noise: prima da silueta, a doua adauga detaliu fin.
-    const n1 = noise3D(v.x * 1.5, v.y * 1.5, v.z * 1.5) * 0.15;
-    const n2 = noise3D(v.x * 4.0, v.y * 4.0, v.z * 4.0) * 0.04;
-    v.multiplyScalar(1 + n1 + n2);
+    const dirX = v.x, dirY = v.y, dirZ = v.z;
+
+    // 5 octave noise — frecvente diferite pentru detalii la scari diferite.
+    const n1 = noise3D(dirX * 0.7, dirY * 0.7, dirZ * 0.7) * 0.32; // lumps mari, asimetrie
+    const n2 = noise3D(dirX * 1.8, dirY * 1.8, dirZ * 1.8) * 0.14; // lumps medii
+    const n3 = noise3D(dirX * 4.0, dirY * 4.0, dirZ * 4.0) * 0.06; // detalii mici
+    const n4 = noise3D(dirX * 9.0, dirY * 9.0, dirZ * 9.0) * 0.025; // micro
+    const n5 = noise3D(dirX * 18.0, dirY * 18.0, dirZ * 18.0) * 0.01; // nano
+    const total = n1 + n2 + n3 + n4 + n5;
+
+    v.multiplyScalar(1 + total);
     positionAttr.setXYZ(i, v.x, v.y, v.z);
+
+    // Variatie de culoare pe suprafata: noise mai mic ca frecventa
+    // simuleaza vene minerale / zone iluminate diferit.
+    const cNoise = noise3D(dirX * 1.4, dirY * 1.4, dirZ * 1.4);
+    // brightness in [0.04, 0.18] — foarte intunecat, dar cu variatie vizibila
+    const brightness = 0.11 + cNoise * 0.07;
+    colors[i * 3] = brightness;
+    colors[i * 3 + 1] = brightness * 0.98;
+    colors[i * 3 + 2] = brightness * 1.04; // tint subtil rece
   }
+
+  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
   positionAttr.needsUpdate = true;
   geometry.computeVertexNormals();
   return geometry;
+}
+
+// Genereaza canvas-based normal map + roughness map din noise procedural.
+// Aplicate pe asteroid pentru micro-detalii de suprafata fara mai multa geometrie.
+function buildAsteroidSurfaceMaps() {
+  if (typeof document === 'undefined') return null;
+  const size = 1024;
+  const noise2D = createNoise2D();
+
+  // Pas 1: genereaza un heightmap intern
+  const heightMap = new Float32Array(size * size);
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const u = (x / size) * 6;
+      const w = (y / size) * 6;
+      const h =
+        noise2D(u, w) * 0.5 +
+        noise2D(u * 2.3, w * 2.3) * 0.25 +
+        noise2D(u * 5.1, w * 5.1) * 0.12 +
+        noise2D(u * 11.0, w * 11.0) * 0.06;
+      heightMap[y * size + x] = h;
+    }
+  }
+
+  // Pas 2: converteste heightmap-ul in normal map
+  const normalData = new Uint8Array(size * size * 4);
+  const strength = 3.0; // cat de pronuntate sunt normalele
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const i = y * size + x;
+      const left = heightMap[y * size + Math.max(0, x - 1)];
+      const right = heightMap[y * size + Math.min(size - 1, x + 1)];
+      const up = heightMap[Math.max(0, y - 1) * size + x];
+      const down = heightMap[Math.min(size - 1, y + 1) * size + x];
+      const dx = (right - left) * strength;
+      const dy = (down - up) * strength;
+      const dz = 1.0;
+      const len = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      normalData[i * 4] = Math.floor(((dx / len) * 0.5 + 0.5) * 255);
+      normalData[i * 4 + 1] = Math.floor(((dy / len) * 0.5 + 0.5) * 255);
+      normalData[i * 4 + 2] = Math.floor(((dz / len) * 0.5 + 0.5) * 255);
+      normalData[i * 4 + 3] = 255;
+    }
+  }
+  const normalMap = new THREE.DataTexture(normalData, size, size, THREE.RGBAFormat);
+  normalMap.wrapS = normalMap.wrapT = THREE.RepeatWrapping;
+  normalMap.needsUpdate = true;
+  normalMap.colorSpace = THREE.NoColorSpace;
+
+  // Pas 3: roughness map din inaltime — zone joase mai rugoase
+  const roughData = new Uint8Array(size * size * 4);
+  for (let i = 0; i < size * size; i++) {
+    const h = heightMap[i];
+    // h e ~ -1 la 1; mapeaza la 0.55-0.95 roughness (foarte ne-lucios)
+    const r = 0.75 + h * 0.2;
+    const val = Math.max(0, Math.min(255, Math.floor(r * 255)));
+    roughData[i * 4] = val;
+    roughData[i * 4 + 1] = val;
+    roughData[i * 4 + 2] = val;
+    roughData[i * 4 + 3] = 255;
+  }
+  const roughnessMap = new THREE.DataTexture(roughData, size, size, THREE.RGBAFormat);
+  roughnessMap.wrapS = roughnessMap.wrapT = THREE.RepeatWrapping;
+  roughnessMap.needsUpdate = true;
+  roughnessMap.colorSpace = THREE.NoColorSpace;
+
+  return { normalMap, roughnessMap };
 }
 
 interface MorphMeshesProps {
@@ -76,15 +165,21 @@ function MorphMeshes({ progressRef, reduced }: MorphMeshesProps) {
     const curve = buildHelixCurve(Math.PI);
     return new THREE.TubeGeometry(curve, 100, 0.07, 16, false);
   }, []);
+  // Texturi procedurale pentru asteroid — normal + roughness map.
+  const surfaceMaps = useMemo(() => buildAsteroidSurfaceMaps(), []);
 
-  // Cleanup geometrii custom la unmount.
+  // Cleanup geometrii custom + texturi la unmount.
   useEffect(() => {
     return () => {
       asteroidGeometry.dispose();
       dnaGeometryA.dispose();
       dnaGeometryB.dispose();
+      if (surfaceMaps) {
+        surfaceMaps.normalMap.dispose();
+        surfaceMaps.roughnessMap.dispose();
+      }
     };
-  }, [asteroidGeometry, dnaGeometryA, dnaGeometryB]);
+  }, [asteroidGeometry, dnaGeometryA, dnaGeometryB, surfaceMaps]);
 
   // Rotatii continue conduse prin GSAP — viata vizuala constanta.
   // Tweens sunt inrolate intr-un context scoped pentru cleanup automat.
@@ -204,10 +299,12 @@ function MorphMeshes({ progressRef, reduced }: MorphMeshesProps) {
           <mesh ref={asteroidRef} geometry={asteroidGeometry} castShadow receiveShadow>
             <meshStandardMaterial
               ref={asteroidMatRef}
-              color="#1a1a1a"
-              roughness={0.7}
-              metalness={0.4}
-              envMapIntensity={1}
+              vertexColors
+              normalMap={surfaceMaps?.normalMap ?? null}
+              normalScale={new THREE.Vector2(1.4, 1.4)}
+              roughnessMap={surfaceMaps?.roughnessMap ?? null}
+              roughness={1}
+              metalness={0.05}
               transparent
               opacity={1}
             />
@@ -314,23 +411,23 @@ export default function CinematicScene3D() {
         {/* Iluminare cinematica in 3 puncte. */}
         {/* Ambient foarte slab — doar pentru a evita negru perfect. */}
         <ambientLight intensity={0.08} color="#ffffff" />
-        {/* Key light — directionalul principal. */}
+        {/* Key light — directionalul principal. Tonat in jos pentru a evita wash-out pe rocky. */}
         <directionalLight
           position={[6, 8, 6]}
-          intensity={1.8}
+          intensity={1.2}
           color="#ffffff"
           castShadow
         />
-        {/* Rim subtil blue-gray — accent rece pe partea opusa cheii. */}
-        <directionalLight position={[-7, 2, -5]} intensity={0.9} color="#6b8aa8" />
-        {/* Fill de jos — bounce moale pentru a evita umbrele dure. */}
-        <directionalLight position={[0, -4, 4]} intensity={0.25} color="#9aa0b0" />
+        {/* Rim blue — accent rece mai pronuntat, sa scoata silueta neregulata. */}
+        <directionalLight position={[-7, 2, -5]} intensity={1.4} color="#7a98c0" />
+        {/* Fill de jos — bounce mai vizibil pentru depth. */}
+        <directionalLight position={[0, -4, 4]} intensity={0.4} color="#9aa0b0" />
         {/* Hemisfera — gradient cer/sol pentru ambianta. */}
-        <hemisphereLight args={['#1a2030', '#050505', 0.35]} />
-        {/* Glow subtil in spatele obiectului — punctul de "respiratie" cald-rece. */}
+        <hemisphereLight args={['#1a2030', '#050505', 0.45]} />
+        {/* Glow subtil in spatele obiectului — redus, sa nu blow-out bloom-ul. */}
         <pointLight
           position={[0, 0.5, -3]}
-          intensity={1.5}
+          intensity={1.0}
           distance={6}
           decay={2}
           color="#5a708a"
@@ -349,8 +446,8 @@ export default function CinematicScene3D() {
         </Suspense>
         <EffectComposer>
           <Bloom
-            intensity={0.55}
-            luminanceThreshold={0.55}
+            intensity={0.4}
+            luminanceThreshold={0.75}
             luminanceSmoothing={0.6}
             mipmapBlur
           />
