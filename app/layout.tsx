@@ -31,6 +31,18 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ro">
+      <head>
+        {/* Satoshi via Fontshare — wordmark in footer. */}
+        <link
+          rel="preconnect"
+          href="https://api.fontshare.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="stylesheet"
+          href="https://api.fontshare.com/v2/css?f[]=satoshi@500,700&display=swap"
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
