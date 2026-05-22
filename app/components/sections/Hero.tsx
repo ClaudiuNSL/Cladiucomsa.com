@@ -58,7 +58,7 @@ export default function Hero() {
         id="section-1"
         data-cinematic-section
         aria-label="Section 1 — Intro"
-        className="relative flex min-h-screen items-end px-8 pb-24 pt-24 lg:items-center lg:px-12 lg:pb-12"
+        className="relative flex min-h-screen items-center px-8 pb-24 pt-24 lg:px-12 lg:pb-12"
       >
         <SectionCounter index={1} label={t('s1.counter')} />
         <PageCounter current={1} total={3} />
@@ -93,7 +93,7 @@ export default function Hero() {
         id="section-2"
         data-cinematic-section
         aria-label="Section 2 — Work"
-        className="relative flex min-h-screen items-end px-8 pb-24 pt-24 lg:items-center lg:px-12 lg:pb-12"
+        className="relative flex min-h-screen items-center px-8 pb-24 pt-24 lg:px-12 lg:pb-12"
       >
         <SectionCounter index={2} label={t('s2.counter')} />
         <PageCounter current={2} total={3} />
@@ -128,7 +128,7 @@ export default function Hero() {
         id="section-3"
         data-cinematic-section
         aria-label="Section 3 — Studio"
-        className="relative flex min-h-screen items-end px-8 pb-24 pt-24 lg:items-center lg:px-12 lg:pb-12"
+        className="relative flex min-h-screen items-center px-8 pb-24 pt-24 lg:px-12 lg:pb-12"
       >
         <SectionCounter index={3} label={t('s3.counter')} />
         <PageCounter current={3} total={3} />

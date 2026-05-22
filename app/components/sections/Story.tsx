@@ -47,7 +47,7 @@ export default function Story() {
       ref={rootRef}
       id="story"
       aria-label="Story — about Claudiu"
-      className="relative flex min-h-screen items-end px-8 pb-24 pt-24 lg:items-center lg:px-12 lg:pb-12"
+      className="relative flex min-h-screen items-center px-8 pb-24 pt-24 lg:px-12 lg:pb-12"
     >
       <div className="absolute left-8 top-24 flex items-center gap-3 border-l border-white/[0.08] pl-4 text-[10px] font-medium uppercase tracking-[0.3em] text-zinc-500 lg:left-12 lg:top-32">
         <span className="h-1 w-1 rounded-full bg-white" aria-hidden="true" />

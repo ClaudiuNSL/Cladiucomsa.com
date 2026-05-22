@@ -18,7 +18,26 @@ import {
 } from '@react-three/drei';
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import { useReducedMotion } from 'framer-motion';
-import { useEffect, useMemo, useRef, useState, Suspense } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, Suspense } from 'react';
+
+// Hook intern: detecteaza viewport sub Tailwind lg (1024px). Pe mobile,
+// reducem costul scenei 3D — fara post-processing, fara particule decorative,
+// DPR=1, fara umbre. useSyncExternalStore e pattern-ul React 19 corect pentru
+// media queries (evita lint react-hooks/set-state-in-effect).
+const MOBILE_QUERY = '(max-width: 1023px)';
+
+function useIsMobile() {
+  const subscribe = useCallback((onChange: () => void) => {
+    if (typeof window === 'undefined') return () => {};
+    const mq = window.matchMedia(MOBILE_QUERY);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+  const getSnapshot = () =>
+    typeof window === 'undefined' ? false : window.matchMedia(MOBILE_QUERY).matches;
+  const getServerSnapshot = () => false;
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+}
 import * as THREE from 'three';
 import { createNoise2D } from 'simplex-noise';
 import { gsap } from 'gsap';
@@ -492,9 +511,10 @@ interface MorphMeshesProps {
   progressRef: ProgressRef;
   mouseRef: MouseRef;
   reduced: boolean;
+  isMobile: boolean;
 }
 
-function MorphMeshes({ progressRef, mouseRef, reduced }: MorphMeshesProps) {
+function MorphMeshes({ progressRef, mouseRef, reduced, isMobile }: MorphMeshesProps) {
   const asteroidRef = useRef<THREE.Mesh>(null);
   const asteroidMatRef = useRef<THREE.MeshStandardMaterial>(null);
 
@@ -845,7 +865,7 @@ function MorphMeshes({ progressRef, mouseRef, reduced }: MorphMeshesProps) {
               opacity={1}
             />
           </mesh>
-          {!reduced && (
+          {!reduced && !isMobile && (
             <Sparkles count={40} scale={3.5} size={1.4} speed={0.25} color="#aaaaaa" />
           )}
         </group>
@@ -877,7 +897,7 @@ function MorphMeshes({ progressRef, mouseRef, reduced }: MorphMeshesProps) {
 
       {/* DUST PARTICLES FINE — vizibile in faza explozie + float. */}
       <group ref={dustParticlesRef}>
-        {!reduced && (
+        {!reduced && !isMobile && (
           <Sparkles count={200} scale={8} size={0.6} speed={0.15} color="#7a7570" />
         )}
       </group>
@@ -922,6 +942,7 @@ useGLTF.preload('/models/bennu.glb', '/draco/');
 
 export default function CinematicScene3D() {
   const reduced = useReducedMotion() ?? false;
+  const isMobile = useIsMobile();
   const progressRef = useRef<number>(0);
   // Pozitia mouse-ului normalizata in [-1, 1]. Citita per-frame in MorphMeshes.
   const mouseRef = useRef({ x: 0, y: 0 });
@@ -978,12 +999,12 @@ export default function CinematicScene3D() {
   return (
     <div
       aria-hidden
-      className="pointer-events-none fixed inset-0 -z-10 hidden lg:block"
+      className="pointer-events-none fixed inset-0 -z-10"
     >
       <Canvas
         camera={{ position: [0, 0, 5], fov: 35 }}
-        dpr={[1, 1.75]}
-        shadows
+        dpr={isMobile ? [1, 1] : [1, 1.75]}
+        shadows={!isMobile}
         gl={{
           antialias: true,
           alpha: true,
@@ -1045,8 +1066,9 @@ export default function CinematicScene3D() {
               color="#2a3040"
             />
           </Environment>
-          {/* Stele 3D cu adancime — drift natural pe baza de fade + speed. */}
-          {!reduced && (
+          {/* Stele 3D cu adancime — drift natural pe baza de fade + speed.
+              Skip pe mobile — costul de geometrie pentru 2000 puncte e prea mare. */}
+          {!reduced && !isMobile && (
             <Stars
               radius={80}
               depth={60}
@@ -1057,7 +1079,7 @@ export default function CinematicScene3D() {
               speed={0.4}
             />
           )}
-          <MorphMeshes progressRef={progressRef} mouseRef={mouseRef} reduced={reduced} />
+          <MorphMeshes progressRef={progressRef} mouseRef={mouseRef} reduced={reduced} isMobile={isMobile} />
           {/* Umbre de contact moi sub obiect — ancorare vizuala. */}
           <ContactShadows
             position={[0, -1.6, 0]}
@@ -1068,15 +1090,18 @@ export default function CinematicScene3D() {
             color="#000000"
           />
         </Suspense>
-        <EffectComposer>
-          <Bloom
-            intensity={0.4}
-            luminanceThreshold={0.92}
-            luminanceSmoothing={0.6}
-            mipmapBlur
-          />
-          <Vignette offset={0.3} darkness={0.8} />
-        </EffectComposer>
+        {/* Post-processing — fara pe mobile, costul shader-pass e mare. */}
+        {!isMobile && (
+          <EffectComposer>
+            <Bloom
+              intensity={0.4}
+              luminanceThreshold={0.92}
+              luminanceSmoothing={0.6}
+              mipmapBlur
+            />
+            <Vignette offset={0.3} darkness={0.8} />
+          </EffectComposer>
+        )}
       </Canvas>
     </div>
   );
