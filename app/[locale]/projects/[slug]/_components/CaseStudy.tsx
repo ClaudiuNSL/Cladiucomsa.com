@@ -11,6 +11,7 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import MetricGrid from '@/app/components/MetricGrid';
 import SocialBlock, { type SocialLinks } from '@/app/components/SocialBlock';
+import EffectButton from '@/app/components/EffectButton';
 import { CASES, getNextCase, type CaseSlug } from '../../_data/cases';
 
 if (typeof window !== 'undefined') {
@@ -101,15 +102,7 @@ export default function CaseStudy({ caseSlug }: { caseSlug: CaseSlug }) {
           </div>
 
           <div data-reveal className="mt-12 flex flex-wrap items-center gap-6">
-            <a
-              href={current.live}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group inline-flex items-center gap-3 rounded-full border border-white/25 px-7 py-3 text-xs font-medium uppercase tracking-[0.2em] text-white transition-all duration-300 hover:scale-[1.03] hover:border-white/60 hover:bg-white/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
-            >
-              {t('viewLive')}
-              <span aria-hidden="true" className="transition-transform duration-300 group-hover:translate-x-1">↗</span>
-            </a>
+            <EffectButton text={t('viewLive')} href={current.live} variant="secondary" trailing="↗" />
             <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-600">
               {current.live.replace(/^https?:\/\//, '')}
             </span>

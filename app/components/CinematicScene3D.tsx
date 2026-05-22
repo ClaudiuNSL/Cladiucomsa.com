@@ -940,10 +940,69 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile }: MorphMeshesPr
 // Preload Bennu GLB la nivel de modul — porneste cat mai devreme.
 useGLTF.preload('/models/bennu.glb', '/draco/');
 
+// Genereaza o textura radiala cu gradient alb -> transparent pentru halou.
+// Folosita ca sprite cu additive blending — creeaza glow alb difuz fara
+// post-processing (functioneaza si pe mobile unde bloom-ul e off).
+function createHaloTexture() {
+  if (typeof document === 'undefined') return null;
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+  const gradient = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+  gradient.addColorStop(0, 'rgba(255, 255, 255, 0.55)');
+  gradient.addColorStop(0.25, 'rgba(255, 255, 255, 0.22)');
+  gradient.addColorStop(0.55, 'rgba(190, 205, 230, 0.06)');
+  gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, 256, 256);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.needsUpdate = true;
+  return texture;
+}
+
+// Sprite cu pulsatie subtila de scale + opacity (3.5s loop). Pozitionat
+// putin in spatele asteroidului (z=-1), invizibil cand asteroidul se
+// fragmenteaza (gated pe progress < 0.20 in HaloSprite).
+function HaloSprite({ texture, progressRef }: {
+  texture: THREE.Texture;
+  progressRef: ProgressRef;
+}) {
+  const spriteRef = useRef<THREE.Sprite>(null);
+  const matRef = useRef<THREE.SpriteMaterial>(null);
+  useFrame(({ clock }) => {
+    if (!spriteRef.current || !matRef.current) return;
+    const t = clock.elapsedTime;
+    // Pulsatie subtila: scale 1 -> 1.04, opacity 0.85 -> 1.
+    const pulse = (Math.sin(t * 1.8) + 1) * 0.5; // 0..1
+    const scale = 5 + pulse * 0.2;
+    spriteRef.current.scale.set(scale, scale, 1);
+    // Halo dispare cand asteroidul se fragmenteaza (progress 0.22+).
+    const p = progressRef.current;
+    const haloOpacity = p < 0.22 ? 0.85 + pulse * 0.15 : Math.max(0, 0.85 - (p - 0.22) * 4);
+    matRef.current.opacity = haloOpacity;
+  });
+  return (
+    <sprite ref={spriteRef} position={[0, 0, -1]} scale={[5, 5, 1]}>
+      <spriteMaterial
+        ref={matRef}
+        map={texture}
+        transparent
+        depthWrite={false}
+        blending={THREE.AdditiveBlending}
+        opacity={0.85}
+      />
+    </sprite>
+  );
+}
+
 export default function CinematicScene3D() {
   const reduced = useReducedMotion() ?? false;
   const isMobile = useIsMobile();
   const progressRef = useRef<number>(0);
+  // Textura pentru halou — generata o singura data la mount.
+  const haloTexture = useMemo(() => createHaloTexture(), []);
   // Pozitia mouse-ului normalizata in [-1, 1]. Citita per-frame in MorphMeshes.
   const mouseRef = useRef({ x: 0, y: 0 });
 
@@ -1032,6 +1091,15 @@ export default function CinematicScene3D() {
         <directionalLight position={[0, -4, 4]} intensity={0.2} color="#9aa0b0" />
         {/* Hemisfera — gradient cer/sol pentru ambianta. */}
         <hemisphereLight args={['#1a2030', '#050505', 0.25]} />
+        {/* Highlight pe suprafata — pointLight alb din stanga-sus,
+            creeaza specular subtil pe asteroid fara sa-i schimbe culoarea. */}
+        <pointLight
+          position={[-3, 3, 4]}
+          intensity={0.85}
+          distance={9}
+          decay={2}
+          color="#ffffff"
+        />
         {/* Glow subtil in spatele obiectului. */}
         <pointLight
           position={[0, 0.5, -3]}
@@ -1079,6 +1147,9 @@ export default function CinematicScene3D() {
               speed={0.4}
             />
           )}
+          {/* Halou alb difuz in spatele asteroidului — sprite cu additive
+              blending. Vizibil pe mobile (post-processing dezactivat acolo). */}
+          {haloTexture && <HaloSprite texture={haloTexture} progressRef={progressRef} />}
           <MorphMeshes progressRef={progressRef} mouseRef={mouseRef} reduced={reduced} isMobile={isMobile} />
           {/* Umbre de contact moi sub obiect — ancorare vizuala. */}
           <ContactShadows

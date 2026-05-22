@@ -8,6 +8,7 @@ import { useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import EffectButton from '@/app/components/EffectButton';
 
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(ScrollTrigger);
@@ -112,13 +113,7 @@ export default function Hero() {
             {t('s2.body')}
           </p>
           <div data-reveal className="mt-12">
-            <a
-              href={t('s2.ctaHref')}
-              className="group inline-flex items-center gap-3 rounded-full border border-white/20 px-7 py-3 text-xs font-medium uppercase tracking-[0.2em] text-white transition-all duration-300 hover:scale-[1.03] hover:border-white/60 hover:bg-white/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
-            >
-              {t('s2.cta')}
-              <span aria-hidden="true" className="transition-transform duration-300 group-hover:translate-x-1">→</span>
-            </a>
+            <EffectButton text={t('s2.cta')} href={t('s2.ctaHref')} variant="secondary" trailing="→" />
           </div>
         </div>
       </section>
@@ -147,15 +142,7 @@ export default function Hero() {
             {t('s3.body')}
           </p>
           <div data-reveal className="mt-12">
-            <a
-              href={t('s3.ctaHref')}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group inline-flex items-center gap-3 rounded-full border border-white/20 px-7 py-3 text-xs font-medium uppercase tracking-[0.2em] text-white transition-all duration-300 hover:scale-[1.03] hover:border-white/60 hover:bg-white/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
-            >
-              {t('s3.cta')}
-              <span aria-hidden="true" className="transition-transform duration-300 group-hover:translate-x-1">→</span>
-            </a>
+            <EffectButton text={t('s3.cta')} href={t('s3.ctaHref')} variant="secondary" trailing="→" />
           </div>
         </div>
       </section>

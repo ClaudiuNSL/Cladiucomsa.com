@@ -3,10 +3,10 @@
 // Titlu cu letter-reveal stagger, watermark gigant cu numarul proiectului, scrub scale pe background.
 import { useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
-import { Link } from '@/i18n/navigation';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { CASES } from '@/app/[locale]/projects/_data/cases';
+import EffectButton from '@/app/components/EffectButton';
 
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(ScrollTrigger);
@@ -178,28 +178,18 @@ function ProjectScreen({ projectKey, idx, t }: ProjectScreenProps) {
           {t(`items.${projectKey}.tech`)}
         </p>
         <div data-reveal className="mt-12 flex flex-wrap items-center justify-center gap-4">
-          {/* Primary CTA — case study intern (Next.js Link cu locale prefix). */}
-          <Link
+          <EffectButton
+            text={t('viewCase')}
             href={`/projects/${SLUG_FOR_KEY[projectKey]}`}
-            className="group inline-flex items-center gap-3 rounded-full bg-white px-7 py-3 text-xs font-medium uppercase tracking-[0.2em] text-black transition-all duration-300 hover:scale-[1.03] hover:bg-zinc-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
-          >
-            {t('viewCase')}
-            <span aria-hidden="true" className="transition-transform duration-300 group-hover:translate-x-1">
-              →
-            </span>
-          </Link>
-          {/* Secondary CTA — site live, demoted la border-only. */}
-          <a
+            variant="primary"
+            trailing="→"
+          />
+          <EffectButton
+            text={t('viewLive')}
             href={t(`items.${projectKey}.href`)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group inline-flex items-center gap-3 rounded-full border border-white/25 px-7 py-3 text-xs font-medium uppercase tracking-[0.2em] text-white transition-all duration-300 hover:scale-[1.03] hover:border-white/60 hover:bg-white/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
-          >
-            {t('viewLive')}
-            <span aria-hidden="true" className="transition-transform duration-300 group-hover:translate-x-1">
-              ↗
-            </span>
-          </a>
+            variant="secondary"
+            trailing="↗"
+          />
         </div>
       </div>
     </section>
