@@ -509,7 +509,9 @@ function MorphMeshes({ progressRef, mouseRef, reduced }: MorphMeshesProps) {
   const fragmentDodecaRef = useRef<THREE.InstancedMesh>(null);
 
   // Modelul Bennu NASA OSIRIS-REx (.glb compressed Draco, 419KB).
-  // Suspense-ul din parent acopera asteptarea pana cand load-ul termina.
+  // useGLTF suspends until ready — Suspense-ul din parent acopera asteptarea.
+  // NU folosim try/catch fiindca useGLTF arunca un Promise pe Suspense (mecanism
+  // intern React), iar try/catch ar bloca suspendarea legitima.
   const gltf = useGLTF('/models/bennu.glb', '/draco/');
 
   // Geometria procesata: scalata + UV-uri sferice generate + centrata.
@@ -521,7 +523,6 @@ function MorphMeshes({ progressRef, mouseRef, reduced }: MorphMeshesProps) {
       }
     });
     if (!source) {
-      // Fallback la o sfera daca GLB-ul n-are mesh (n-ar trebui sa se intample).
       return new THREE.IcosahedronGeometry(1.2, 6);
     }
     return prepareBennuGeometry(source);
