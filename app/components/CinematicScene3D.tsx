@@ -179,11 +179,11 @@ function buildAsteroidSurfaceMaps() {
   diffuseCanvas.height = size;
   const diffuseCtx = diffuseCanvas.getContext('2d')!;
 
-  diffuseCtx.fillStyle = '#2e2e2e';
+  diffuseCtx.fillStyle = '#121417';
   diffuseCtx.fillRect(0, 0, size, size);
 
   // Generam culoarea per pixel din noise multi-octava — variatie organica
-  // de tip "grain" fara costul Voronoi 800-cell × size² operations.
+  // de tip "grain". Centrata pe #121417 (RGB 18,20,23) — antracit cu tenta rece.
   const imageData = diffuseCtx.getImageData(0, 0, size, size);
   const data = imageData.data;
   for (let y = 0; y < size; y++) {
@@ -193,15 +193,17 @@ function buildAsteroidSurfaceMaps() {
       const n1 = noise2D(x * 0.015 + 1000, y * 0.015 + 1000) * 0.5 + 0.5;
       const n2 = noise2D(x * 0.04 + 2000, y * 0.04 + 2000) * 0.5 + 0.5;
       const n3 = noise2D(x * 0.12 + 3000, y * 0.12 + 3000) * 0.5 + 0.5;
-      // Grain boundaries — derivata noise-ului dă liniile între zone
+      // Grain boundaries — pe zero crossings ale noise-ului
       const grainEdge = Math.abs(noise2D(x * 0.025 + 4000, y * 0.025 + 4000));
-      const edgeDarken = grainEdge < 0.05 ? (1 - grainEdge / 0.05) * 0.15 : 0;
-      // Combine: gray base 30-90, modulat de noise, întunecat pe grain boundaries
-      let gray = 35 + n1 * 25 + n2 * 12 + n3 * 6 + Math.random() * 4 - 2;
-      gray = Math.max(20, Math.min(90, gray * (1 - edgeDarken)));
-      data[idx] = gray;
-      data[idx + 1] = gray;
-      data[idx + 2] = gray + 1;
+      const edgeDarken = grainEdge < 0.05 ? (1 - grainEdge / 0.05) * 0.25 : 0;
+      // Variatie ±10 in jurul bazei #121417. Range clamp 8-34.
+      const variation = n1 * 8 + n2 * 4 + n3 * 2 + Math.random() * 2 - 1;
+      const base = 14 + variation;
+      const lit = Math.max(8, Math.min(34, base * (1 - edgeDarken)));
+      // Tenta rece subtila — R<G<B pentru antracit cu subton albastru.
+      data[idx] = Math.max(4, lit - 3);
+      data[idx + 1] = Math.max(6, lit - 1);
+      data[idx + 2] = lit + 2;
       data[idx + 3] = 255;
     }
   }
@@ -267,9 +269,10 @@ function buildAsteroidSurfaceMaps() {
     const y = Math.random() * size;
     const radius = Math.random() * 40 + 8;
     const gradient = diffuseCtx.createRadialGradient(x, y, 0, x, y, radius);
-    gradient.addColorStop(0, 'rgba(100, 100, 105, 0.4)');
-    gradient.addColorStop(0.5, 'rgba(85, 85, 90, 0.2)');
-    gradient.addColorStop(1, 'rgba(70, 70, 75, 0)');
+    // Vene minerale — mai luminate decat baza #121417 dar nu prea pop.
+    gradient.addColorStop(0, 'rgba(48, 50, 56, 0.4)');
+    gradient.addColorStop(0.5, 'rgba(38, 40, 46, 0.2)');
+    gradient.addColorStop(1, 'rgba(30, 32, 38, 0)');
     diffuseCtx.fillStyle = gradient;
     diffuseCtx.beginPath();
     diffuseCtx.arc(x, y, radius, 0, Math.PI * 2);
@@ -439,9 +442,10 @@ function buildAsteroidSurfaceMaps() {
       const crack = crackVal < 0.06 ? 1 - crackVal / 0.06 : 0;
       const breakup = (noise2D(u * 0.5, w * 0.5) + 1) * 0.5;
       const intensity = Math.pow(crack * breakup, 1.4);
-      emissiveData[i * 4] = Math.floor(intensity * 110);
-      emissiveData[i * 4 + 1] = Math.floor(intensity * 130);
-      emissiveData[i * 4 + 2] = Math.floor(intensity * 165);
+      // Culoare crack-uri #4A5A70 = RGB(74, 90, 112) — oțel oxidat rece.
+      emissiveData[i * 4] = Math.floor(intensity * 74);
+      emissiveData[i * 4 + 1] = Math.floor(intensity * 90);
+      emissiveData[i * 4 + 2] = Math.floor(intensity * 112);
       emissiveData[i * 4 + 3] = 255;
     }
   }
@@ -891,7 +895,7 @@ function MorphMeshes({ progressRef, mouseRef, reduced }: MorphMeshesProps) {
               // un fallback foarte intunecat ca silueta sa nu paleasca alb.
               // Cand mapele incarca, color devine alb (= no tint) ca textura
               // sa fie vizibila in culoarea ei reala (multiplicare color × map).
-              color={surfaceMaps?.diffuseMap ? '#ffffff' : '#0a0a0a'}
+              color={surfaceMaps?.diffuseMap ? '#ffffff' : '#121417'}
               map={surfaceMaps?.diffuseMap ?? null}
               normalMap={surfaceMaps?.normalMap ?? null}
               normalScale={new THREE.Vector2(2.0, 2.0)}
@@ -959,7 +963,7 @@ function MorphMeshes({ progressRef, mouseRef, reduced }: MorphMeshesProps) {
       >
         <meshStandardMaterial
           ref={fragmentMatRef}
-          color={surfaceMaps?.diffuseMap ? '#ffffff' : '#0a0a0a'}
+          color={surfaceMaps?.diffuseMap ? '#ffffff' : '#121417'}
           map={surfaceMaps?.diffuseMap ?? null}
           normalMap={surfaceMaps?.normalMap ?? null}
           normalScale={new THREE.Vector2(1.5, 1.5)}
@@ -1059,26 +1063,26 @@ export default function CinematicScene3D() {
         gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
       >
         <fog attach="fog" args={['#050505', 6, 12]} />
-        {/* Iluminare cinematica in 3 puncte. */}
-        {/* Ambient foarte slab — doar pentru a evita negru perfect. */}
+        {/* Iluminare cinematica balansata — toate intensitatile reduse
+            ca asteroidul sa nu mai fie blow-out pe diffuse #121417. */}
         <ambientLight intensity={0.08} color="#ffffff" />
-        {/* Key light — directionalul principal. Tonat in jos pentru a evita wash-out pe rocky. */}
+        {/* Key light — directionalul principal. */}
         <directionalLight
           position={[6, 8, 6]}
-          intensity={1.2}
+          intensity={0.6}
           color="#ffffff"
           castShadow
         />
-        {/* Rim blue — accent rece mai pronuntat, sa scoata silueta neregulata. */}
-        <directionalLight position={[-7, 2, -5]} intensity={1.4} color="#7a98c0" />
-        {/* Fill de jos — bounce mai vizibil pentru depth. */}
-        <directionalLight position={[0, -4, 4]} intensity={0.4} color="#9aa0b0" />
+        {/* Rim — accent rece subtil, contureaza silueta. */}
+        <directionalLight position={[-7, 2, -5]} intensity={0.7} color="#555F6B" />
+        {/* Fill de jos — bounce subtil. */}
+        <directionalLight position={[0, -4, 4]} intensity={0.2} color="#9aa0b0" />
         {/* Hemisfera — gradient cer/sol pentru ambianta. */}
-        <hemisphereLight args={['#1a2030', '#050505', 0.45]} />
-        {/* Glow subtil in spatele obiectului — redus, sa nu blow-out bloom-ul. */}
+        <hemisphereLight args={['#1a2030', '#050505', 0.25]} />
+        {/* Glow subtil in spatele obiectului. */}
         <pointLight
           position={[0, 0.5, -3]}
-          intensity={1.0}
+          intensity={0.4}
           distance={6}
           decay={2}
           color="#5a708a"
@@ -1135,7 +1139,7 @@ export default function CinematicScene3D() {
         <EffectComposer>
           <Bloom
             intensity={0.4}
-            luminanceThreshold={0.75}
+            luminanceThreshold={0.92}
             luminanceSmoothing={0.6}
             mipmapBlur
           />
