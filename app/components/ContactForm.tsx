@@ -52,7 +52,7 @@ export default function ContactForm() {
       <div>
         <label
           htmlFor="contact-name"
-          className="mb-2 block text-[10px] font-medium uppercase tracking-[0.3em] text-zinc-500"
+          className="mb-2 block text-xs font-medium uppercase tracking-[0.3em] text-zinc-500"
         >
           {t('formName')}
         </label>
@@ -62,13 +62,13 @@ export default function ContactForm() {
           name="name"
           required
           autoComplete="name"
-          className="w-full border-b border-white/15 bg-transparent py-3 text-white placeholder-zinc-600 transition-colors focus:border-white focus:outline-none"
+          className="w-full border-b border-white/30 bg-transparent py-4 text-lg text-white placeholder-zinc-600 transition-colors focus:border-white focus:outline-none"
         />
       </div>
       <div>
         <label
           htmlFor="contact-email"
-          className="mb-2 block text-[10px] font-medium uppercase tracking-[0.3em] text-zinc-500"
+          className="mb-2 block text-xs font-medium uppercase tracking-[0.3em] text-zinc-500"
         >
           {t('formEmail')}
         </label>
@@ -78,13 +78,13 @@ export default function ContactForm() {
           name="email"
           required
           autoComplete="email"
-          className="w-full border-b border-white/15 bg-transparent py-3 text-white placeholder-zinc-600 transition-colors focus:border-white focus:outline-none"
+          className="w-full border-b border-white/30 bg-transparent py-4 text-lg text-white placeholder-zinc-600 transition-colors focus:border-white focus:outline-none"
         />
       </div>
       <div>
         <label
           htmlFor="contact-message"
-          className="mb-2 block text-[10px] font-medium uppercase tracking-[0.3em] text-zinc-500"
+          className="mb-2 block text-xs font-medium uppercase tracking-[0.3em] text-zinc-500"
         >
           {t('formMessage')}
         </label>
@@ -93,7 +93,7 @@ export default function ContactForm() {
           rows={4}
           name="message"
           required
-          className="w-full resize-none border-b border-white/15 bg-transparent py-3 text-white placeholder-zinc-600 transition-colors focus:border-white focus:outline-none"
+          className="w-full resize-none border-b border-white/30 bg-transparent py-4 text-lg text-white placeholder-zinc-600 transition-colors focus:border-white focus:outline-none"
         />
       </div>
       {status === 'error' && (

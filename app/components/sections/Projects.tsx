@@ -1,6 +1,6 @@
 'use client';
-// Projects — 3 ecrane stacked, fiecare un proiect, layout-ul moseneste paternul Hero.
-// Reveal fade+slide-up per sectiune via GSAP ScrollTrigger.
+// Projects — 3 ecrane centrate vertical+orizontal, fiecare un proiect cu storytelling scroll-driven.
+// Titlu cu letter-reveal stagger, watermark gigant cu numarul proiectului, scrub scale pe background.
 import { useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { gsap } from 'gsap';
@@ -15,40 +15,8 @@ type ProjectKey = (typeof PROJECT_KEYS)[number];
 
 export default function Projects() {
   const t = useTranslations('projects');
-  const rootRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!rootRef.current) return;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
-    const ctx = gsap.context(() => {
-      const sections = gsap.utils.toArray<HTMLElement>('[data-project-section]');
-      sections.forEach((section) => {
-        const items = section.querySelectorAll('[data-reveal]');
-        gsap.fromTo(
-          items,
-          { y: 36, opacity: 0 },
-          {
-            y: 0,
-            opacity: 1,
-            duration: 1,
-            stagger: 0.1,
-            ease: 'expo.out',
-            scrollTrigger: {
-              trigger: section,
-              start: 'top 70%',
-              toggleActions: 'play none none reverse',
-            },
-          }
-        );
-      });
-    }, rootRef);
-
-    return () => ctx.revert();
-  }, []);
-
   return (
-    <div ref={rootRef}>
+    <div>
       {PROJECT_KEYS.map((key, idx) => (
         <ProjectScreen key={key} projectKey={key} idx={idx} t={t} />
       ))}
@@ -62,50 +30,150 @@ interface ProjectScreenProps {
   t: ReturnType<typeof useTranslations>;
 }
 
-// Un ecran de proiect — eyebrow, numar, titlu mare, kicker, body, tech, CTA "View live".
+// Un ecran de proiect — centrat vertical+orizontal, cu watermark numar urias in spate.
+// Titlul se reveleaza litera-cu-litera la scroll, restul fade-up standard.
 function ProjectScreen({ projectKey, idx, t }: ProjectScreenProps) {
+  const sectionRef = useRef<HTMLElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+
   const counterIndex = String(5 + idx).padStart(2, '0');
+  const title = t(`items.${projectKey}.title`);
+  const projectNumber = t(`items.${projectKey}.number`);
+
+  useEffect(() => {
+    if (!sectionRef.current) return;
+    if (typeof window === 'undefined') return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const section = sectionRef.current;
+
+    const ctx = gsap.context(() => {
+      // Reveal fade-up pentru elementele standard
+      const items = section.querySelectorAll('[data-reveal]');
+      gsap.fromTo(
+        items,
+        { y: 36, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration: 1,
+          stagger: 0.1,
+          ease: 'expo.out',
+          scrollTrigger: {
+            trigger: section,
+            start: 'top 70%',
+            toggleActions: 'play none none reverse',
+          },
+        }
+      );
+
+      // Letter-reveal pentru titlu — stagger pe fiecare caracter
+      if (titleRef.current) {
+        const letters = titleRef.current.querySelectorAll('[data-letter]');
+        gsap.fromTo(
+          letters,
+          { y: 90, opacity: 0, rotateX: -45 },
+          {
+            y: 0,
+            opacity: 1,
+            rotateX: 0,
+            duration: 1.1,
+            stagger: 0.03,
+            ease: 'expo.out',
+            scrollTrigger: {
+              trigger: section,
+              start: 'top 75%',
+              end: 'top 25%',
+              toggleActions: 'play none none reverse',
+            },
+          }
+        );
+      }
+
+      // Watermark scrub — scale + opacity legat de scroll
+      const bgNumber = section.querySelector('[data-bg-number]');
+      if (bgNumber) {
+        gsap.fromTo(
+          bgNumber,
+          { scale: 0.92, opacity: 0 },
+          {
+            scale: 1,
+            opacity: 1,
+            scrollTrigger: {
+              trigger: section,
+              start: 'top bottom',
+              end: 'top center',
+              scrub: 0.8,
+            },
+          }
+        );
+      }
+    }, section);
+
+    return () => ctx.revert();
+  }, []);
+
   return (
     <section
+      ref={sectionRef}
       data-project-section
       id={`project-${projectKey}`}
-      aria-label={`Project — ${t(`items.${projectKey}.title`)}`}
-      className="relative flex min-h-screen items-end px-8 pb-24 pt-24 lg:items-center lg:px-12 lg:pb-12"
+      aria-label={`Project — ${title}`}
+      className="relative flex min-h-screen items-center justify-center overflow-hidden px-8 py-32 lg:px-12"
     >
+      {/* Contor sectiune top-left */}
       <div className="absolute left-8 top-24 flex items-center gap-3 border-l border-white/[0.08] pl-4 text-[10px] font-medium uppercase tracking-[0.3em] text-zinc-500 lg:left-12 lg:top-32">
         <span className="h-1 w-1 rounded-full bg-white" aria-hidden="true" />
         <span className="text-white">{counterIndex}</span>
         <span className="h-px w-8 bg-white/20" aria-hidden="true" />
         <span>
-          {t('counter')} · {t(`items.${projectKey}.number`)}
+          {t('counter')} · {projectNumber}
         </span>
       </div>
-      <div className="max-w-xl lg:max-w-2xl">
+
+      {/* Watermark gigant cu numarul proiectului */}
+      <span
+        aria-hidden="true"
+        data-bg-number
+        className="pointer-events-none absolute inset-0 flex select-none items-center justify-center"
+      >
+        <span className="text-[16rem] font-bold leading-none tracking-tighter text-white/[0.025] sm:text-[20rem] lg:text-[24rem] xl:text-[28rem]">
+          {projectNumber}
+        </span>
+      </span>
+
+      {/* Stack continut centrat */}
+      <div className="relative z-10 mx-auto max-w-2xl text-center">
         <p data-reveal className="text-[10px] font-medium uppercase tracking-[0.32em] text-zinc-500">
-          {t('eyebrow')} · {t(`items.${projectKey}.number`)}
+          {t('eyebrow')} · {projectNumber}
         </p>
         <h3
-          data-reveal
-          className="mt-8 text-4xl font-semibold leading-[1.05] tracking-[-0.04em] text-white sm:text-5xl lg:text-6xl xl:text-7xl"
+          ref={titleRef}
+          aria-label={title}
+          className="mt-8 text-5xl font-semibold leading-[1.05] tracking-[-0.04em] text-white sm:text-6xl lg:text-7xl xl:text-8xl"
         >
-          {t(`items.${projectKey}.title`)}
+          {Array.from(title).map((ch, i) => (
+            <span key={i} data-letter aria-hidden="true" className="inline-block">
+              {ch === ' ' ? ' ' : ch}
+            </span>
+          ))}
         </h3>
         <p data-reveal className="mt-6 text-sm font-medium uppercase tracking-[0.2em] text-zinc-500">
           {t(`items.${projectKey}.kicker`)}
         </p>
-        <div data-reveal className="mt-12 h-px w-24 bg-white/10" aria-hidden="true" />
-        <p data-reveal className="mt-8 max-w-xl text-base leading-[1.6] text-zinc-400 lg:text-lg">
+        <div data-reveal className="mx-auto mt-12 h-px w-24 bg-white/15" aria-hidden="true" />
+        <p data-reveal className="mx-auto mt-10 max-w-xl text-base leading-[1.6] text-zinc-400 lg:text-lg">
           {t(`items.${projectKey}.body`)}
         </p>
-        <p data-reveal className="mt-6 text-xs font-medium uppercase tracking-[0.25em] text-zinc-600">
+        <p data-reveal className="mt-6 text-xs font-medium uppercase tracking-[0.28em] text-zinc-600">
           {t(`items.${projectKey}.tech`)}
         </p>
-        <div data-reveal className="mt-10">
+        <div data-reveal className="mt-12">
           <a
             href={t(`items.${projectKey}.href`)}
             target="_blank"
             rel="noopener noreferrer"
-            className="group inline-flex items-center gap-3 rounded-full border border-white/20 px-7 py-3 text-xs font-medium uppercase tracking-[0.2em] text-white transition-all duration-300 hover:scale-[1.03] hover:border-white/60 hover:bg-white/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+            className="group inline-flex items-center gap-3 rounded-full border border-white/25 px-7 py-3 text-xs font-medium uppercase tracking-[0.2em] text-white transition-all duration-300 hover:scale-[1.03] hover:border-white/60 hover:bg-white/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
           >
             {t('viewLive')}
             <span aria-hidden="true" className="transition-transform duration-300 group-hover:translate-x-1">
