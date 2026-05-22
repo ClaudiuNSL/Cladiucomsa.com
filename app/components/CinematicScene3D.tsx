@@ -1,8 +1,9 @@
 'use client';
 // Scena 3D cinematica fixata in spatele continutului paginii.
-// Morphing: asteroid -> ADN -> cub, condus de progresul de scroll
-// al documentului prin GSAP ScrollTrigger. Vibe mdx.so: dark, minimal,
-// rim-lights subtile, bloom subtil, vignette, contact shadows.
+// Secventa: asteroid solid -> emissive intensifies + energy pulse -> explozie
+// in 300 fragmente -> float liber -> atragere catre litere "CC" -> bloc solid.
+// Toata animatia e condusa de progresul de scroll prin GSAP ScrollTrigger.
+// Vibe mdx.so: dark, minimal, rim-lights subtile, bloom subtil, vignette.
 // Iluminare cinematica in 3 puncte (key + blue rim + fill) + glow point
 // in spatele obiectului. Rotatii continue conduse prin GSAP.
 import { Canvas, useFrame } from '@react-three/fiber';
@@ -11,7 +12,6 @@ import {
   Environment,
   Float,
   Lightformer,
-  RoundedBox,
   Sparkles,
   Stars,
 } from '@react-three/drei';
@@ -27,17 +27,6 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 type ProgressRef = { current: number };
 // Pozitia mouse-ului normalizata in [-1, 1] pe fiecare axa.
 type MouseRef = { current: { x: number; y: number } };
-
-// Construieste o curba helicoidala pe Z pentru un fir de ADN.
-function buildHelixCurve(phaseShift: number) {
-  const points: THREE.Vector3[] = [];
-  for (let i = 0; i <= 100; i++) {
-    const t = (i / 100 - 0.5) * 2.8; // z in [-1.4, 1.4]
-    const angle = t * Math.PI * 6 + phaseShift; // ~6 rasuciri
-    points.push(new THREE.Vector3(Math.cos(angle) * 0.5, Math.sin(angle) * 0.5, t));
-  }
-  return new THREE.CatmullRomCurve3(points);
-}
 
 // Geometrie asteroid: icosaedru subdivizat la 10 cu displacement noise
 // 5-octava per-vertex + vertex colors pentru variatie minerala. Silueta
@@ -179,6 +168,101 @@ function buildAsteroidSurfaceMaps() {
   return { normalMap, roughnessMap, emissiveMap };
 }
 
+// Sample N puncte pe geometria asteroidului — pozitii initiale fragmente.
+// Sample-am direct din vertex positions, asa fragmentele explodeaza fix
+// de unde "exista" pe suprafata asteroidului.
+function sampleAsteroidPoints(geometry: THREE.BufferGeometry, count: number) {
+  const positionAttr = geometry.attributes.position as THREE.BufferAttribute;
+  const total = positionAttr.count;
+  const points: THREE.Vector3[] = [];
+  for (let i = 0; i < count; i++) {
+    const idx = Math.floor(Math.random() * total);
+    const v = new THREE.Vector3().fromBufferAttribute(positionAttr, idx);
+    points.push(v);
+  }
+  return points;
+}
+
+// Generate target positions pe forma "C C" — doua arce de cerc 3/4.
+// Distributie aleatoare pe interiorul "stroke-ului" pentru a citi literele.
+function sampleCCTargets(count: number) {
+  const points: THREE.Vector3[] = [];
+  const halfN = Math.floor(count / 2);
+  const arcStart = Math.PI * 0.27;        // ~49°
+  const arcEnd = Math.PI * 1.73;          // ~312°
+  const arcSpan = arcEnd - arcStart;
+
+  for (let i = 0; i < halfN; i++) {
+    // C-ul din stanga, centrat la x = -1.4
+    const t = Math.random();
+    const angle = arcStart + t * arcSpan;
+    const r = 1.0 + (Math.random() - 0.5) * 0.32; // stroke width
+    points.push(new THREE.Vector3(
+      -1.4 + Math.cos(angle) * r,
+      Math.sin(angle) * r,
+      (Math.random() - 0.5) * 0.18
+    ));
+  }
+  for (let i = 0; i < count - halfN; i++) {
+    // C-ul din dreapta, centrat la x = 1.4
+    const t = Math.random();
+    const angle = arcStart + t * arcSpan;
+    const r = 1.0 + (Math.random() - 0.5) * 0.32;
+    points.push(new THREE.Vector3(
+      1.4 + Math.cos(angle) * r,
+      Math.sin(angle) * r,
+      (Math.random() - 0.5) * 0.18
+    ));
+  }
+  return points;
+}
+
+// Pentru fiecare fragment, generam si o pozitie "float" intermediara
+// — pozitia in care fragmentul se aseaza dupa explozie, inainte sa
+// fie atras spre litera. Aleator in jurul originii, dar mai larg decat asteroidul.
+function sampleFloatTargets(originPoints: THREE.Vector3[]) {
+  return originPoints.map((origin) => {
+    const direction = origin.clone().normalize();
+    const distance = 2.8 + Math.random() * 1.5; // 2.8-4.3 unitati de la centru
+    return direction.multiplyScalar(distance).add(
+      new THREE.Vector3(
+        (Math.random() - 0.5) * 1.2,
+        (Math.random() - 0.5) * 1.2,
+        (Math.random() - 0.5) * 1.2
+      )
+    );
+  });
+}
+
+// Rotatii aleatoare per-fragment — axa de rotatie normalizata + viteza.
+// Helper extras la nivel de modul pentru ca lint-ul react-hooks/purity
+// blocheaza Math.random() apelat direct in body de useMemo.
+function buildFragmentRotations(count: number) {
+  const rotations: { axis: THREE.Vector3; speed: number }[] = [];
+  for (let i = 0; i < count; i++) {
+    rotations.push({
+      axis: new THREE.Vector3(
+        Math.random() - 0.5,
+        Math.random() - 0.5,
+        Math.random() - 0.5
+      ).normalize(),
+      speed: 0.5 + Math.random() * 1.5,
+    });
+  }
+  return rotations;
+}
+
+// Scale-uri aleatoare per-fragment. Acelasi motiv ca buildFragmentRotations.
+function buildFragmentScales(count: number) {
+  const scales: number[] = [];
+  for (let i = 0; i < count; i++) {
+    scales.push(0.05 + Math.random() * 0.07);
+  }
+  return scales;
+}
+
+const FRAGMENT_COUNT = 300;
+
 interface MorphMeshesProps {
   progressRef: ProgressRef;
   mouseRef: MouseRef;
@@ -187,45 +271,49 @@ interface MorphMeshesProps {
 
 function MorphMeshes({ progressRef, mouseRef, reduced }: MorphMeshesProps) {
   const asteroidRef = useRef<THREE.Mesh>(null);
-  const dnaGroupRef = useRef<THREE.Group>(null);
-  const dnaMesh1Ref = useRef<THREE.Mesh>(null);
-  const dnaMesh2Ref = useRef<THREE.Mesh>(null);
-  const cubeRef = useRef<THREE.Mesh>(null);
-
   const asteroidMatRef = useRef<THREE.MeshStandardMaterial>(null);
-  const dnaMat1Ref = useRef<THREE.MeshStandardMaterial>(null);
-  const dnaMat2Ref = useRef<THREE.MeshStandardMaterial>(null);
-  const cubeMatRef = useRef<THREE.MeshStandardMaterial>(null);
+
+  // Pulse ring + fragments.
+  const pulseRef = useRef<THREE.Mesh>(null);
+  const pulseMatRef = useRef<THREE.MeshBasicMaterial>(null);
+  const fragmentMeshRef = useRef<THREE.InstancedMesh>(null);
 
   // Geometrii construite o singura data si stocate in memo.
   const asteroidGeometry = useMemo(() => buildAsteroidGeometry(), []);
-  const dnaGeometryA = useMemo(() => {
-    const curve = buildHelixCurve(0);
-    return new THREE.TubeGeometry(curve, 100, 0.07, 16, false);
-  }, []);
-  const dnaGeometryB = useMemo(() => {
-    const curve = buildHelixCurve(Math.PI);
-    return new THREE.TubeGeometry(curve, 100, 0.07, 16, false);
-  }, []);
   // Texturi procedurale pentru asteroid — normal + roughness map.
   const surfaceMaps = useMemo(() => buildAsteroidSurfaceMaps(), []);
+
+  // Sample origin / float / target points + rotatii + scaleuri ONCE on mount.
+  const fragmentData = useMemo(() => {
+    const origins = sampleAsteroidPoints(asteroidGeometry, FRAGMENT_COUNT);
+    const floats = sampleFloatTargets(origins);
+    const targets = sampleCCTargets(FRAGMENT_COUNT);
+    const rotations = buildFragmentRotations(FRAGMENT_COUNT);
+    const scales = buildFragmentScales(FRAGMENT_COUNT);
+    return { origins, floats, targets, rotations, scales };
+  }, [asteroidGeometry]);
+
+  // Geometrie fragment — dodecaedru mic, cinematic. Single shared geometry.
+  const fragmentGeometry = useMemo(() => new THREE.DodecahedronGeometry(1, 0), []);
+
+  // Obiect dummy reutilizat in useFrame pentru a calcula matricea per-instanta.
+  const dummy = useMemo(() => new THREE.Object3D(), []);
 
   // Cleanup geometrii custom + texturi la unmount.
   useEffect(() => {
     return () => {
       asteroidGeometry.dispose();
-      dnaGeometryA.dispose();
-      dnaGeometryB.dispose();
+      fragmentGeometry.dispose();
       if (surfaceMaps) {
         surfaceMaps.normalMap.dispose();
         surfaceMaps.roughnessMap.dispose();
         surfaceMaps.emissiveMap.dispose();
       }
     };
-  }, [asteroidGeometry, dnaGeometryA, dnaGeometryB, surfaceMaps]);
+  }, [asteroidGeometry, fragmentGeometry, surfaceMaps]);
 
-  // Rotatii continue conduse prin GSAP — viata vizuala constanta.
-  // Tweens sunt inrolate intr-un context scoped pentru cleanup automat.
+  // Rotatie continua pe asteroid — viata vizuala constanta.
+  // Tween inrolat intr-un context scoped pentru cleanup automat.
   useEffect(() => {
     if (reduced) return;
     const ctx = gsap.context(() => {
@@ -237,111 +325,143 @@ function MorphMeshes({ progressRef, mouseRef, reduced }: MorphMeshesProps) {
           ease: 'none',
         });
       }
-      if (dnaGroupRef.current) {
-        gsap.to(dnaGroupRef.current.rotation, {
-          y: '+=6.28',
-          duration: 18,
-          repeat: -1,
-          ease: 'none',
-        });
-      }
-      if (cubeRef.current) {
-        gsap.to(cubeRef.current.rotation, {
-          y: '+=6.28',
-          duration: 35,
-          repeat: -1,
-          ease: 'none',
-        });
-        gsap.to(cubeRef.current.rotation, {
-          x: '+=6.28',
-          duration: 50,
-          repeat: -1,
-          ease: 'none',
-        });
-      }
     });
     return () => ctx.revert();
   }, [reduced]);
 
   useFrame((state, delta) => {
     const p = progressRef.current;
+    const t = state.clock.elapsedTime;
     const camera = state.camera;
 
-    // Crossfade opacitate dupa specificatia R4.
-    const asteroidOpacity = THREE.MathUtils.clamp(1 - (p - 0.3) / 0.1, 0, 1);
-    const dnaIn = THREE.MathUtils.clamp((p - 0.3) / 0.1, 0, 1);
-    const dnaOut = THREE.MathUtils.clamp(1 - (p - 0.63) / 0.1, 0, 1);
-    const dnaOpacity = Math.min(dnaIn, dnaOut);
-    const cubeOpacity = THREE.MathUtils.clamp((p - 0.63) / 0.1, 0, 1);
-
-    if (asteroidMatRef.current) asteroidMatRef.current.opacity = asteroidOpacity;
-    if (asteroidRef.current) asteroidRef.current.visible = asteroidOpacity > 0.01;
-
-    if (dnaMat1Ref.current) dnaMat1Ref.current.opacity = dnaOpacity;
-    if (dnaMat2Ref.current) dnaMat2Ref.current.opacity = dnaOpacity;
-    if (dnaGroupRef.current) dnaGroupRef.current.visible = dnaOpacity > 0.01;
-
-    if (cubeMatRef.current) cubeMatRef.current.opacity = cubeOpacity;
-    if (cubeRef.current) cubeRef.current.visible = cubeOpacity > 0.01;
-
-    // Dolly subtil tied to scroll: 5 -> 4.4 (DNA) -> 5.3 (cub). Smooth = delta*1.5.
-    let targetZ = 5;
-    if (p < 0.5) {
-      targetZ = THREE.MathUtils.lerp(5, 4.4, p / 0.5);
-    } else {
-      targetZ = THREE.MathUtils.lerp(4.4, 5.3, (p - 0.5) / 0.5);
+    // === STAGE 0-1: Asteroid solid -> emissive intensifies -> fade out ===
+    const asteroidAlpha = THREE.MathUtils.clamp(1 - (p - 0.22) / 0.1, 0, 1);
+    if (asteroidMatRef.current) {
+      asteroidMatRef.current.opacity = asteroidAlpha;
+      // Emissive base + scroll-driven intensification + idle pulse.
+      if (!reduced) {
+        const baseIntensity = 0.45 + Math.sin(t * 0.8) * 0.15;
+        // Boost emissive aggressively as we approach explosion (p=0.22).
+        const explosionBoost = p < 0.22 ? Math.pow(p / 0.22, 3) * 1.5 : 0;
+        asteroidMatRef.current.emissiveIntensity = baseIntensity + explosionBoost;
+      }
     }
+    if (asteroidRef.current) {
+      asteroidRef.current.visible = asteroidAlpha > 0.01;
+    }
+
+    // === STAGE 0.13-0.28: Energy pulse expanding ring ===
+    if (pulseRef.current && pulseMatRef.current) {
+      if (p > 0.13 && p < 0.28) {
+        const pulseT = THREE.MathUtils.clamp((p - 0.13) / 0.15, 0, 1);
+        const scale = THREE.MathUtils.lerp(0.5, 5.5, pulseT);
+        pulseRef.current.scale.setScalar(scale);
+        pulseMatRef.current.opacity = (1 - pulseT) * 0.9;
+        pulseRef.current.visible = true;
+        // Rotatie subtila pe pulse pentru senzatie organica.
+        if (!reduced) {
+          pulseRef.current.rotation.x = t * 0.3;
+          pulseRef.current.rotation.z = t * 0.2;
+        }
+      } else {
+        pulseRef.current.visible = false;
+      }
+    }
+
+    // === STAGE 0.20+: Fragments (explozie -> float -> atragere -> solid) ===
+    if (fragmentMeshRef.current && p > 0.20) {
+      fragmentMeshRef.current.visible = true;
+      const { origins, floats, targets, rotations, scales } = fragmentData;
+
+      for (let i = 0; i < FRAGMENT_COUNT; i++) {
+        const origin = origins[i];
+        const floatPos = floats[i];
+        const target = targets[i];
+        const rot = rotations[i];
+        const scale = scales[i];
+
+        let x: number, y: number, z: number;
+
+        if (p < 0.32) {
+          // Faza explozie: origin -> float, ease power3.out
+          const local = THREE.MathUtils.clamp((p - 0.22) / 0.10, 0, 1);
+          const eased = 1 - Math.pow(1 - local, 3); // power3.out
+          x = THREE.MathUtils.lerp(origin.x, floatPos.x, eased);
+          y = THREE.MathUtils.lerp(origin.y, floatPos.y, eased);
+          z = THREE.MathUtils.lerp(origin.z, floatPos.z, eased);
+        } else if (p < 0.55) {
+          // Faza float: stationar la pozitia float cu drift subtil.
+          const drift = reduced ? 0 : Math.sin(t * rot.speed + i) * 0.04;
+          x = floatPos.x + drift * rot.axis.x;
+          y = floatPos.y + drift * rot.axis.y;
+          z = floatPos.z + drift * rot.axis.z;
+        } else if (p < 0.78) {
+          // Faza atragere: float -> target, ease power3.inOut
+          const local = THREE.MathUtils.clamp((p - 0.55) / 0.23, 0, 1);
+          const eased =
+            local < 0.5
+              ? 4 * local * local * local
+              : 1 - Math.pow(-2 * local + 2, 3) / 2;
+          x = THREE.MathUtils.lerp(floatPos.x, target.x, eased);
+          y = THREE.MathUtils.lerp(floatPos.y, target.y, eased);
+          z = THREE.MathUtils.lerp(floatPos.z, target.z, eased);
+        } else {
+          // Faza solid: bloc la target cu floating subtil pe Y.
+          const wobble = reduced ? 0 : Math.sin(t * 0.6 + i * 0.05) * 0.02;
+          x = target.x;
+          y = target.y + wobble;
+          z = target.z;
+        }
+
+        dummy.position.set(x, y, z);
+
+        // Rotatie individuala — diferita per fragment, mai rapida in float, mai lenta in solid.
+        if (!reduced) {
+          const rotSpeed = p > 0.78 ? 0.05 : 0.4;
+          const angle = t * rot.speed * rotSpeed;
+          dummy.rotation.set(
+            rot.axis.x * angle,
+            rot.axis.y * angle,
+            rot.axis.z * angle
+          );
+        } else {
+          dummy.rotation.set(0, 0, 0);
+        }
+
+        dummy.scale.setScalar(scale);
+        dummy.updateMatrix();
+        fragmentMeshRef.current.setMatrixAt(i, dummy.matrix);
+      }
+      fragmentMeshRef.current.instanceMatrix.needsUpdate = true;
+    } else if (fragmentMeshRef.current) {
+      fragmentMeshRef.current.visible = false;
+    }
+
+    // === Camera dolly noua ===
+    // 0.0-0.22: z=5, slight orbit
+    // 0.22-0.32: z pulls back to 6.5 to see explosion
+    // 0.32-0.78: z stable at 6.5
+    // 0.78-1.0: z zooms in to 4.5 to see CC
+    let targetZ = 5;
+    if (p < 0.22) targetZ = 5;
+    else if (p < 0.32) targetZ = THREE.MathUtils.lerp(5, 6.5, (p - 0.22) / 0.10);
+    else if (p < 0.78) targetZ = 6.5;
+    else targetZ = THREE.MathUtils.lerp(6.5, 4.5, (p - 0.78) / 0.22);
     camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetZ, delta * 1.5);
-    // Parallax mouse + drift scroll combinate pe X si Y.
+
+    // Mouse parallax pe X/Y combinat cu drift subtil scroll.
     const mouseX = reduced ? 0 : mouseRef.current.x * 0.35;
     const mouseY = reduced ? 0 : mouseRef.current.y * -0.22;
+    const scrollY = (p - 0.5) * -0.3;
     camera.position.x = THREE.MathUtils.lerp(camera.position.x, mouseX, delta * 1.2);
-    camera.position.y = THREE.MathUtils.lerp(
-      camera.position.y,
-      p * -0.4 + mouseY,
-      delta * 1.5
-    );
-
-    // Pulse emissive pe asteroid — face crack-urile sa pulse-eze subtil.
-    if (asteroidMatRef.current && !reduced) {
-      const t = state.clock.elapsedTime;
-      asteroidMatRef.current.emissiveIntensity = 0.45 + Math.sin(t * 0.8) * 0.15;
-    }
-
-    // Mesh-urile dau drift subtil cu scroll-ul — "obiectul se misca cu scroll".
-    if (asteroidRef.current) {
-      asteroidRef.current.position.x = THREE.MathUtils.lerp(
-        asteroidRef.current.position.x,
-        p * -0.5,
-        delta * 1.5
-      );
-    }
-    if (dnaGroupRef.current) {
-      dnaGroupRef.current.position.y = THREE.MathUtils.lerp(
-        dnaGroupRef.current.position.y,
-        (p - 0.5) * 0.3,
-        delta * 1.5
-      );
-    }
-    if (cubeRef.current) {
-      cubeRef.current.position.x = THREE.MathUtils.lerp(
-        cubeRef.current.position.x,
-        (1 - p) * 0.4,
-        delta * 1.5
-      );
-    }
+    camera.position.y = THREE.MathUtils.lerp(camera.position.y, scrollY + mouseY, delta * 1.5);
+    camera.lookAt(0, 0, 0);
   });
 
   // Float-ul aplica miscare idle "vie"; cu reduced motion dezactivam complet.
   const asteroidFloat = reduced
     ? { speed: 0, rot: 0, pos: 0 }
     : { speed: 1.0, rot: 0.4, pos: 0.55 };
-  const dnaFloat = reduced
-    ? { speed: 0, rot: 0, pos: 0 }
-    : { speed: 1.2, rot: 0.2, pos: 0.45 };
-  const cubeFloat = reduced
-    ? { speed: 0, rot: 0, pos: 0 }
-    : { speed: 0.8, rot: 0.3, pos: 0.35 };
 
   return (
     <>
@@ -374,62 +494,32 @@ function MorphMeshes({ progressRef, mouseRef, reduced }: MorphMeshesProps) {
         </group>
       </Float>
 
-      {/* ADN — helix dublu, metal lustruit inchis, sparkles fine in interior. */}
-      <Float
-        speed={dnaFloat.speed}
-        rotationIntensity={dnaFloat.rot}
-        floatIntensity={dnaFloat.pos}
-      >
-        <group ref={dnaGroupRef} rotation={[Math.PI / 2, 0, 0]}>
-          <mesh ref={dnaMesh1Ref} geometry={dnaGeometryA} castShadow>
-            <meshStandardMaterial
-              ref={dnaMat1Ref}
-              color="#2a2a2a"
-              roughness={0.4}
-              metalness={0.6}
-              transparent
-              opacity={0}
-            />
-          </mesh>
-          <mesh ref={dnaMesh2Ref} geometry={dnaGeometryB} castShadow>
-            <meshStandardMaterial
-              ref={dnaMat2Ref}
-              color="#2a2a2a"
-              roughness={0.4}
-              metalness={0.6}
-              transparent
-              opacity={0}
-            />
-          </mesh>
-          {!reduced && (
-            <Sparkles
-              count={80}
-              scale={[0.8, 0.8, 3]}
-              size={0.8}
-              speed={0.3}
-              color="#cccccc"
-            />
-          )}
-        </group>
-      </Float>
+      {/* ENERGY PULSE — torus care se expandeaza din asteroid si fade out. */}
+      <mesh ref={pulseRef} scale={0.01}>
+        <torusGeometry args={[1, 0.04, 16, 64]} />
+        <meshBasicMaterial
+          ref={pulseMatRef}
+          color="#8aa0c8"
+          transparent
+          opacity={0}
+          toneMapped={false}
+        />
+      </mesh>
 
-      {/* CUB — metal negru lustruit, reflectiv. */}
-      <Float
-        speed={cubeFloat.speed}
-        rotationIntensity={cubeFloat.rot}
-        floatIntensity={cubeFloat.pos}
+      {/* FRAGMENTE — 300 instanced meshes, animate per frame din useFrame. */}
+      <instancedMesh
+        ref={fragmentMeshRef}
+        args={[fragmentGeometry, undefined, FRAGMENT_COUNT]}
+        castShadow
       >
-        <RoundedBox ref={cubeRef} args={[1.6, 1.6, 1.6]} radius={0.06} smoothness={6} castShadow>
-          <meshStandardMaterial
-            ref={cubeMatRef}
-            color="#0d0d0d"
-            roughness={0.15}
-            metalness={0.95}
-            transparent
-            opacity={0}
-          />
-        </RoundedBox>
-      </Float>
+        <meshStandardMaterial
+          color="#1a1a1a"
+          roughness={0.85}
+          metalness={0.2}
+          emissive="#6e82a5"
+          emissiveIntensity={0.3}
+        />
+      </instancedMesh>
     </>
   );
 }
@@ -507,7 +597,7 @@ export default function CinematicScene3D() {
         />
         <Suspense fallback={null}>
           {/* Environment IBL generat din Lightformer-i — fara HDR extern.
-              Da reflexii reale pe asteroid + cub. */}
+              Da reflexii reale pe asteroid + fragmente. */}
           <Environment background={false} resolution={256}>
             <Lightformer
               form="rect"
