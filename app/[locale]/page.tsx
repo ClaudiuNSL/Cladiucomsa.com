@@ -1,8 +1,11 @@
-// Homepage minimal: chrome global + Hero placeholder pana la rebuild-ul R5.
+// Homepage cinematic: Hero (3 sectiuni cu 3D fix) + Story + Projects (3 stacked) + Contact.
 import { setRequestLocale } from 'next-intl/server';
 import Navbar from '@/app/components/Navbar';
 import Footer from '@/app/components/Footer';
 import Hero from '@/app/components/sections/Hero';
+import Story from '@/app/components/sections/Story';
+import Projects from '@/app/components/sections/Projects';
+import Contact from '@/app/components/sections/Contact';
 import type { Locale } from '@/i18n/routing';
 
 export default async function Page({ params }: { params: Promise<{ locale: string }> }) {
@@ -20,6 +23,9 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
       <Navbar />
       <main>
         <Hero />
+        <Story />
+        <Projects />
+        <Contact />
       </main>
       <Footer />
     </>
