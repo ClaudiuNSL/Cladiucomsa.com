@@ -17,7 +17,7 @@ import {
 } from '@react-three/drei';
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import { useReducedMotion } from 'framer-motion';
-import { useEffect, useMemo, useRef, Suspense } from 'react';
+import { useEffect, useMemo, useRef, useState, Suspense } from 'react';
 import * as THREE from 'three';
 import { createNoise2D, createNoise3D } from 'simplex-noise';
 import { gsap } from 'gsap';
@@ -157,11 +157,11 @@ function buildAsteroidGeometry() {
 }
 
 // Genereaza 6 texturi PBR pentru asteroid:
-//  1. diffuseMap (2K canvas): Voronoi cells + cratere pictate la 3 scari +
+//  1. diffuseMap (1K canvas): Voronoi cells + cratere pictate la 3 scari +
 //     vene minerale + dust subtil. Gama foarte intunecata (gri 20-90).
-//  2. normalMap (2K canvas): multi-scale height + Sobel filter.
-//  3. roughnessMap (2K canvas): variatie organica, foarte non-lucios (>0.8).
-//  4. aoMap (2K canvas): white base + radial dark patches pe crevices,
+//  2. normalMap (1K canvas): multi-scale height + Sobel filter.
+//  3. roughnessMap (1K canvas): variatie organica, foarte non-lucios (>0.8).
+//  4. aoMap (1K canvas): white base + radial dark patches pe crevices,
 //     citit prin uv2 channel (setat pe geometrie).
 //  5. displacementMap (1K canvas): noise organic, scale mic in material.
 //  6. emissiveMap (1K data texture): pattern crack-uri subtili — pastrat
@@ -170,10 +170,10 @@ function buildAsteroidGeometry() {
 // (Suspense fallback={null} acopera asta).
 function buildAsteroidSurfaceMaps() {
   if (typeof document === 'undefined') return null;
-  const size = 2048; // 2K pentru diffuse/normal/roughness/AO (memorie controlata)
+  const size = 1024; // 1K pentru diffuse/normal/roughness/AO (deferat in useEffect)
   const noise2D = createNoise2D();
 
-  // === DIFFUSE/ALBEDO MAP (2K canvas) ===
+  // === DIFFUSE/ALBEDO MAP (1K canvas) ===
   const diffuseCanvas = document.createElement('canvas');
   diffuseCanvas.width = size;
   diffuseCanvas.height = size;
@@ -182,52 +182,26 @@ function buildAsteroidSurfaceMaps() {
   diffuseCtx.fillStyle = '#2e2e2e';
   diffuseCtx.fillRect(0, 0, size, size);
 
+  // Generam culoarea per pixel din noise multi-octava — variatie organica
+  // de tip "grain" fara costul Voronoi 800-cell × size² operations.
   const imageData = diffuseCtx.getImageData(0, 0, size, size);
   const data = imageData.data;
-
-  // Voronoi cells — 800 puncte aleatoare pentru rock grain.
-  const cellCount = 800;
-  const cells: { x: number; y: number; gray: number }[] = [];
-  for (let i = 0; i < cellCount; i++) {
-    cells.push({
-      x: Math.random() * size,
-      y: Math.random() * size,
-      gray: 30 + Math.random() * 50,
-    });
-  }
-
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
       const idx = (y * size + x) * 4;
-      let minDist = Infinity;
-      let secondMinDist = Infinity;
-      let closestGray = 40;
-
-      for (const cell of cells) {
-        // Wrap-around pentru seamless texture.
-        const dx = Math.min(Math.abs(x - cell.x), size - Math.abs(x - cell.x));
-        const dy = Math.min(Math.abs(y - cell.y), size - Math.abs(y - cell.y));
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < minDist) {
-          secondMinDist = minDist;
-          minDist = dist;
-          closestGray = cell.gray;
-        } else if (dist < secondMinDist) {
-          secondMinDist = dist;
-        }
-      }
-
-      const edgeFactor = Math.min(1, (secondMinDist - minDist) / 15);
-      const noiseVal = noise2D(x * 0.02 + 1000, y * 0.02 + 1000) * 10;
-      const fineNoise = noise2D(x * 0.08 + 2000, y * 0.08 + 2000) * 5;
-      let gray = closestGray + noiseVal + fineNoise;
-      gray = gray * (0.85 + edgeFactor * 0.15);
-      gray += Math.random() * 4 - 2;
-      gray = Math.max(20, Math.min(90, gray));
-
+      // 3 octave noise pentru variatie de luminozitate
+      const n1 = noise2D(x * 0.015 + 1000, y * 0.015 + 1000) * 0.5 + 0.5;
+      const n2 = noise2D(x * 0.04 + 2000, y * 0.04 + 2000) * 0.5 + 0.5;
+      const n3 = noise2D(x * 0.12 + 3000, y * 0.12 + 3000) * 0.5 + 0.5;
+      // Grain boundaries — derivata noise-ului dă liniile între zone
+      const grainEdge = Math.abs(noise2D(x * 0.025 + 4000, y * 0.025 + 4000));
+      const edgeDarken = grainEdge < 0.05 ? (1 - grainEdge / 0.05) * 0.15 : 0;
+      // Combine: gray base 30-90, modulat de noise, întunecat pe grain boundaries
+      let gray = 35 + n1 * 25 + n2 * 12 + n3 * 6 + Math.random() * 4 - 2;
+      gray = Math.max(20, Math.min(90, gray * (1 - edgeDarken)));
       data[idx] = gray;
       data[idx + 1] = gray;
-      data[idx + 2] = gray + 1; // tint subtil rece
+      data[idx + 2] = gray + 1;
       data[idx + 3] = 255;
     }
   }
@@ -328,7 +302,7 @@ function buildAsteroidSurfaceMaps() {
   diffuseMap.anisotropy = 16;
   diffuseMap.colorSpace = THREE.SRGBColorSpace;
 
-  // === NORMAL MAP (2K canvas) ===
+  // === NORMAL MAP (1K canvas) ===
   const normalCanvas = document.createElement('canvas');
   normalCanvas.width = size;
   normalCanvas.height = size;
@@ -368,7 +342,7 @@ function buildAsteroidSurfaceMaps() {
   normalMap.anisotropy = 16;
   normalMap.colorSpace = THREE.NoColorSpace;
 
-  // === ROUGHNESS MAP (2K canvas) ===
+  // === ROUGHNESS MAP (1K canvas) ===
   const roughnessCanvas = document.createElement('canvas');
   roughnessCanvas.width = size;
   roughnessCanvas.height = size;
@@ -395,7 +369,7 @@ function buildAsteroidSurfaceMaps() {
   roughnessMap.wrapT = THREE.RepeatWrapping;
   roughnessMap.colorSpace = THREE.NoColorSpace;
 
-  // === AMBIENT OCCLUSION MAP (2K canvas) ===
+  // === AMBIENT OCCLUSION MAP (1K canvas) ===
   const aoCanvas = document.createElement('canvas');
   aoCanvas.width = size;
   aoCanvas.height = size;
@@ -610,8 +584,18 @@ function MorphMeshes({ progressRef, mouseRef, reduced }: MorphMeshesProps) {
 
   // Geometrii construite o singura data si stocate in memo.
   const asteroidGeometry = useMemo(() => buildAsteroidGeometry(), []);
-  // Texturi procedurale pentru asteroid — normal + roughness map.
-  const surfaceMaps = useMemo(() => buildAsteroidSurfaceMaps(), []);
+  // Texturi procedurale pentru asteroid — deferate cu setTimeout ca sa nu
+  // blocheze first paint. Pana sunt gata, materialul foloseste fallback gri.
+  const [surfaceMaps, setSurfaceMaps] = useState<ReturnType<typeof buildAsteroidSurfaceMaps>>(null);
+
+  useEffect(() => {
+    // Defer generation cu setTimeout — first paint apare imediat, texturile
+    // pop-pează când sunt gata (1-2s mai târziu).
+    const timer = setTimeout(() => {
+      setSurfaceMaps(buildAsteroidSurfaceMaps());
+    }, 16); // 1 frame delay — lasă timpul pentru first paint
+    return () => clearTimeout(timer);
+  }, []);
 
   // Sample origin / float / target points + rotatii + scaleuri + delays ONCE on mount.
   const fragmentData = useMemo(() => {
@@ -900,6 +884,7 @@ function MorphMeshes({ progressRef, mouseRef, reduced }: MorphMeshesProps) {
           <mesh ref={asteroidRef} geometry={asteroidGeometry} castShadow receiveShadow>
             <meshStandardMaterial
               ref={asteroidMatRef}
+              color="#2e2e2e"
               map={surfaceMaps?.diffuseMap ?? null}
               normalMap={surfaceMaps?.normalMap ?? null}
               normalScale={new THREE.Vector2(2.0, 2.0)}
@@ -965,6 +950,7 @@ function MorphMeshes({ progressRef, mouseRef, reduced }: MorphMeshesProps) {
       >
         <meshStandardMaterial
           ref={fragmentMatRef}
+          color="#2e2e2e"
           map={surfaceMaps?.diffuseMap ?? null}
           normalMap={surfaceMaps?.normalMap ?? null}
           normalScale={new THREE.Vector2(1.5, 1.5)}
