@@ -42,6 +42,64 @@
       "ctaHref": "https://wa.me/40761880406"
     }
   },
+  "story": {
+    "counter": "Story",
+    "eyebrow": "About · Claudiu",
+    "title": "Built with intent.",
+    "paragraph1": "[Your story goes here — paragraph 1. Replace this text with your own story: how you started, what drives you, what you ship.]",
+    "paragraph2": "[Paragraph 2 — something more personal: how you work with clients, what matters to you in each project.]",
+    "paragraph3": "[Paragraph 3 — closing: your vision, or an invitation to a conversation.]"
+  },
+  "projects": {
+    "counter": "Projects",
+    "eyebrow": "Selected · Work",
+    "sectionTitle": "Selected work.",
+    "viewLive": "View live",
+    "items": {
+      "banciuCostin": {
+        "number": "P01",
+        "title": "Banciu Costin",
+        "kicker": "Professional website · 2025",
+        "body": "Digital presence for a legal industry specialist. Optimized for performance, SEO, and conversion — visitors become contact requests.",
+        "tech": "HTML5 · CSS3 · JavaScript · SEO",
+        "href": "https://banciucostin.ro"
+      },
+      "aurasjobs": {
+        "number": "P02",
+        "title": "Aurasjobs",
+        "kicker": "AI agent for recruitment · 2025",
+        "body": "Processes candidate emails automatically, generates personalized responses, manages the proposal → approval → send flow. Built for a cruise ship recruitment firm.",
+        "tech": "Next.js · TypeScript · LLM · Email Automation",
+        "href": "https://aurasjobs.com"
+      },
+      "stereocad": {
+        "number": "P03",
+        "title": "Stereocad",
+        "kicker": "Cadastral automation platform · 2026",
+        "body": "Auto-generates cadastral documents for a specialist firm. Passwordless magic-link auth, real-time stage monitoring, no passwords to manage.",
+        "tech": "Next.js · TypeScript · Magic Link · Document Gen",
+        "href": "https://stereocad.ro"
+      }
+    }
+  },
+  "contact": {
+    "counter": "Contact",
+    "eyebrow": "Let's · Talk",
+    "title": "Let's talk about your project.",
+    "subtitle": "I respond within 24 business hours. Constanța · Remote · Worldwide.",
+    "formName": "Your name",
+    "formEmail": "Email",
+    "formMessage": "Tell me about your project",
+    "formSubmit": "Send message",
+    "formSubmitting": "Sending...",
+    "formSuccess": "Message sent!",
+    "formSuccessBody": "I'll get back to you as soon as possible.",
+    "formError": "Something went wrong. Please try again or email me directly.",
+    "formAnother": "Send another message",
+    "directLabel": "Or directly:",
+    "emailValue": "claudiucomsaa@gmail.com",
+    "phoneValue": "+40 761 880 406"
+  },
   "footer": {
     "rights": "All rights reserved.",
     "builtWith": "Built with Next.js and care for details."

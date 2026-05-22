@@ -42,6 +42,64 @@
       "ctaHref": "https://wa.me/40761880406"
     }
   },
+  "story": {
+    "counter": "Story",
+    "eyebrow": "About · Claudiu",
+    "title": "Construim cu intenție.",
+    "paragraph1": "[Aici vine povestea ta — paragraf 1. Înlocuiește acest text cu propria poveste, despre cum ai început, ce te motivează, ce livrezi.]",
+    "paragraph2": "[Paragraf 2 — poate ceva mai personal: cum lucrezi cu clienții, ce contează pentru tine în fiecare proiect.]",
+    "paragraph3": "[Paragraf 3 — închidere: viziunea ta, sau o invitație la conversație.]"
+  },
+  "projects": {
+    "counter": "Projects",
+    "eyebrow": "Selected · Work",
+    "sectionTitle": "Selected work.",
+    "viewLive": "Vezi live",
+    "items": {
+      "banciuCostin": {
+        "number": "P01",
+        "title": "Banciu Costin",
+        "kicker": "Site web profesional · 2025",
+        "body": "Prezență digitală pentru un specialist din domeniul juridic. Optimizat pentru performanță, SEO și conversie — vizitatorii devin solicitări de contact.",
+        "tech": "HTML5 · CSS3 · JavaScript · SEO",
+        "href": "https://banciucostin.ro"
+      },
+      "aurasjobs": {
+        "number": "P02",
+        "title": "Aurasjobs",
+        "kicker": "Agent AI pentru recrutare · 2025",
+        "body": "Procesează automat email-urile candidaților, generează răspunsuri personalizate și gestionează fluxul propunere → aprobare → trimitere. Construit pentru o firmă de recrutare cruise ship.",
+        "tech": "Next.js · TypeScript · LLM · Email Automation",
+        "href": "https://aurasjobs.com"
+      },
+      "stereocad": {
+        "number": "P03",
+        "title": "Stereocad",
+        "kicker": "Platformă automatizări cadastrale · 2026",
+        "body": "Generează automat documente cadastrale pentru o firmă din domeniu. Autentificare passwordless cu magic link, monitorizare etape în timp real, fără parole de gestionat.",
+        "tech": "Next.js · TypeScript · Magic Link · Document Gen",
+        "href": "https://stereocad.ro"
+      }
+    }
+  },
+  "contact": {
+    "counter": "Contact",
+    "eyebrow": "Let's · Talk",
+    "title": "Hai să discutăm proiectul tău.",
+    "subtitle": "Răspund în maxim 24 de ore lucrătoare. Constanța · Remote · Worldwide.",
+    "formName": "Numele tău",
+    "formEmail": "Email",
+    "formMessage": "Spune-mi despre proiect",
+    "formSubmit": "Trimite mesajul",
+    "formSubmitting": "Se trimite...",
+    "formSuccess": "Mesaj trimis!",
+    "formSuccessBody": "Revin cu un răspuns cât de curând.",
+    "formError": "Ceva nu a mers. Încearcă din nou sau scrie-mi direct pe email.",
+    "formAnother": "Trimite alt mesaj",
+    "directLabel": "Sau direct:",
+    "emailValue": "claudiucomsaa@gmail.com",
+    "phoneValue": "+40 761 880 406"
+  },
   "footer": {
     "rights": "Toate drepturile rezervate.",
     "builtWith": "Construit cu Next.js și grijă pentru detalii."

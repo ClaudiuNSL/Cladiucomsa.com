@@ -49,7 +49,7 @@ export default function Hero() {
   }, []);
 
   return (
-    <div ref={rootRef} className="relative">
+    <div ref={rootRef} data-cinematic-wrapper className="relative">
       {/* Side rails — fixed across all sections */}
       <SideRails />
 

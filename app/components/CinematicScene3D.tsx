@@ -1003,20 +1003,40 @@ export default function CinematicScene3D() {
   // Pozitia mouse-ului normalizata in [-1, 1]. Citita per-frame in MorphMeshes.
   const mouseRef = useRef({ x: 0, y: 0 });
 
-  // ScrollTrigger urmareste intregul document si actualizeaza progressRef.
+  // ScrollTrigger urmareste DOAR wrapper-ul cinematic (primele 3 sectiuni).
+  // Asa progresul 0->1 se face fix in secventa explozie + CC, iar dupa
+  // ce utilizatorul trece de Section 3, progressRef ramane la 1 si CC sta solid.
+  // Wrapper-ul se monteaza in Hero.tsx cu data-cinematic-wrapper.
   useEffect(() => {
     if (typeof window === 'undefined') return;
     gsap.registerPlugin(ScrollTrigger);
-    const st = ScrollTrigger.create({
-      trigger: document.body,
-      start: 0,
-      end: 'max',
-      onUpdate: (self) => {
-        progressRef.current = self.progress;
-      },
-    });
+
+    let st: ScrollTrigger | null = null;
+    const tryAttach = () => {
+      const wrapper = document.querySelector('[data-cinematic-wrapper]') as HTMLElement | null;
+      if (!wrapper) return false;
+      st = ScrollTrigger.create({
+        trigger: wrapper,
+        start: 'top top',
+        end: 'bottom top',
+        onUpdate: (self) => {
+          progressRef.current = self.progress;
+        },
+      });
+      return true;
+    };
+
+    // Wrapper-ul poate fi mounted dupa CinematicScene3D in arborele DOM.
+    // Incercam imediat; daca nu exista, retry pe RAF.
+    if (!tryAttach()) {
+      const raf = requestAnimationFrame(() => tryAttach());
+      return () => {
+        cancelAnimationFrame(raf);
+        st?.kill();
+      };
+    }
     return () => {
-      st.kill();
+      st?.kill();
     };
   }, []);
 
