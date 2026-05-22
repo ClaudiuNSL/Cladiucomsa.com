@@ -6,7 +6,15 @@
 // Iluminare cinematica in 3 puncte (key + blue rim + fill) + glow point
 // in spatele obiectului. Rotatii continue conduse prin GSAP.
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Float, RoundedBox, Sparkles, ContactShadows } from '@react-three/drei';
+import {
+  ContactShadows,
+  Environment,
+  Float,
+  Lightformer,
+  RoundedBox,
+  Sparkles,
+  Stars,
+} from '@react-three/drei';
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import { useReducedMotion } from 'framer-motion';
 import { useEffect, useMemo, useRef, Suspense } from 'react';
@@ -17,6 +25,8 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 // Ref shared intre componenta-parinte si meshes — citit la fiecare frame.
 type ProgressRef = { current: number };
+// Pozitia mouse-ului normalizata in [-1, 1] pe fiecare axa.
+type MouseRef = { current: { x: number; y: number } };
 
 // Construieste o curba helicoidala pe Z pentru un fir de ADN.
 function buildHelixCurve(phaseShift: number) {
@@ -71,8 +81,9 @@ function buildAsteroidGeometry() {
   return geometry;
 }
 
-// Genereaza canvas-based normal map + roughness map din noise procedural.
-// Aplicate pe asteroid pentru micro-detalii de suprafata fara mai multa geometrie.
+// Genereaza canvas-based normal map + roughness map + emissive map din noise.
+// - normal/roughness: micro-detalii suprafata (zgârieturi, craters)
+// - emissive: pattern crack-uri subtile care emit lumina rece din interior
 function buildAsteroidSurfaceMaps() {
   if (typeof document === 'undefined') return null;
   const size = 1024;
@@ -135,15 +146,46 @@ function buildAsteroidSurfaceMaps() {
   roughnessMap.needsUpdate = true;
   roughnessMap.colorSpace = THREE.NoColorSpace;
 
-  return { normalMap, roughnessMap };
+  // Pas 4: emissive map — pattern crack-uri subtile. Iau valoare absoluta
+  // de noise + threshold ingust pentru a obtine linii subtiri ramificate
+  // care arata ca fisuri prin care iese lumina din interior.
+  const emissiveData = new Uint8Array(size * size * 4);
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const i = y * size + x;
+      const u = (x / size) * 4;
+      const w = (y / size) * 4;
+      // Combinatie de 2 noise — banda ingusta unde valoarea e aproape de 0
+      // = linie de crack.
+      const n1 = noise2D(u, w);
+      const n2 = noise2D(u * 3.1, w * 3.1) * 0.4;
+      const crackVal = Math.abs(n1 + n2);
+      const crack = crackVal < 0.06 ? 1 - crackVal / 0.06 : 0;
+      // Multiplicat cu un al doilea noise mai larg ca sa nu fie crack-uri uniforme.
+      const breakup = (noise2D(u * 0.5, w * 0.5) + 1) * 0.5;
+      const intensity = Math.pow(crack * breakup, 1.4);
+      // Culoare rece desaturata — fara wash warm, ramane in paleta mdx.
+      emissiveData[i * 4] = Math.floor(intensity * 110);
+      emissiveData[i * 4 + 1] = Math.floor(intensity * 130);
+      emissiveData[i * 4 + 2] = Math.floor(intensity * 165);
+      emissiveData[i * 4 + 3] = 255;
+    }
+  }
+  const emissiveMap = new THREE.DataTexture(emissiveData, size, size, THREE.RGBAFormat);
+  emissiveMap.wrapS = emissiveMap.wrapT = THREE.RepeatWrapping;
+  emissiveMap.needsUpdate = true;
+  emissiveMap.colorSpace = THREE.SRGBColorSpace;
+
+  return { normalMap, roughnessMap, emissiveMap };
 }
 
 interface MorphMeshesProps {
   progressRef: ProgressRef;
+  mouseRef: MouseRef;
   reduced: boolean;
 }
 
-function MorphMeshes({ progressRef, reduced }: MorphMeshesProps) {
+function MorphMeshes({ progressRef, mouseRef, reduced }: MorphMeshesProps) {
   const asteroidRef = useRef<THREE.Mesh>(null);
   const dnaGroupRef = useRef<THREE.Group>(null);
   const dnaMesh1Ref = useRef<THREE.Mesh>(null);
@@ -177,6 +219,7 @@ function MorphMeshes({ progressRef, reduced }: MorphMeshesProps) {
       if (surfaceMaps) {
         surfaceMaps.normalMap.dispose();
         surfaceMaps.roughnessMap.dispose();
+        surfaceMaps.emissiveMap.dispose();
       }
     };
   }, [asteroidGeometry, dnaGeometryA, dnaGeometryB, surfaceMaps]);
@@ -249,8 +292,21 @@ function MorphMeshes({ progressRef, reduced }: MorphMeshesProps) {
       targetZ = THREE.MathUtils.lerp(4.4, 5.3, (p - 0.5) / 0.5);
     }
     camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetZ, delta * 1.5);
-    // Drift subtil pe Y pentru senzatie de parallax — camera coboara putin pe scroll.
-    camera.position.y = THREE.MathUtils.lerp(camera.position.y, p * -0.4, delta * 1.5);
+    // Parallax mouse + drift scroll combinate pe X si Y.
+    const mouseX = reduced ? 0 : mouseRef.current.x * 0.35;
+    const mouseY = reduced ? 0 : mouseRef.current.y * -0.22;
+    camera.position.x = THREE.MathUtils.lerp(camera.position.x, mouseX, delta * 1.2);
+    camera.position.y = THREE.MathUtils.lerp(
+      camera.position.y,
+      p * -0.4 + mouseY,
+      delta * 1.5
+    );
+
+    // Pulse emissive pe asteroid — face crack-urile sa pulse-eze subtil.
+    if (asteroidMatRef.current && !reduced) {
+      const t = state.clock.elapsedTime;
+      asteroidMatRef.current.emissiveIntensity = 0.45 + Math.sin(t * 0.8) * 0.15;
+    }
 
     // Mesh-urile dau drift subtil cu scroll-ul — "obiectul se misca cu scroll".
     if (asteroidRef.current) {
@@ -304,7 +360,10 @@ function MorphMeshes({ progressRef, reduced }: MorphMeshesProps) {
               normalScale={new THREE.Vector2(1.4, 1.4)}
               roughnessMap={surfaceMaps?.roughnessMap ?? null}
               roughness={1}
-              metalness={0.05}
+              metalness={0.18}
+              emissiveMap={surfaceMaps?.emissiveMap ?? null}
+              emissive="#ffffff"
+              emissiveIntensity={0.55}
               transparent
               opacity={1}
             />
@@ -378,6 +437,8 @@ function MorphMeshes({ progressRef, reduced }: MorphMeshesProps) {
 export default function CinematicScene3D() {
   const reduced = useReducedMotion() ?? false;
   const progressRef = useRef<number>(0);
+  // Pozitia mouse-ului normalizata in [-1, 1]. Citita per-frame in MorphMeshes.
+  const mouseRef = useRef({ x: 0, y: 0 });
 
   // ScrollTrigger urmareste intregul document si actualizeaza progressRef.
   useEffect(() => {
@@ -395,6 +456,18 @@ export default function CinematicScene3D() {
       st.kill();
     };
   }, []);
+
+  // Parallax mouse — citim pozitia globala, normalizam la [-1, 1].
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (reduced) return;
+    const onMove = (e: PointerEvent) => {
+      mouseRef.current.x = (e.clientX / window.innerWidth - 0.5) * 2;
+      mouseRef.current.y = (e.clientY / window.innerHeight - 0.5) * 2;
+    };
+    window.addEventListener('pointermove', onMove, { passive: true });
+    return () => window.removeEventListener('pointermove', onMove);
+  }, [reduced]);
 
   return (
     <div
@@ -433,7 +506,44 @@ export default function CinematicScene3D() {
           color="#5a708a"
         />
         <Suspense fallback={null}>
-          <MorphMeshes progressRef={progressRef} reduced={reduced} />
+          {/* Environment IBL generat din Lightformer-i — fara HDR extern.
+              Da reflexii reale pe asteroid + cub. */}
+          <Environment background={false} resolution={256}>
+            <Lightformer
+              form="rect"
+              position={[5, 4, 5]}
+              scale={[3, 3, 1]}
+              intensity={2}
+              color="#ffffff"
+            />
+            <Lightformer
+              form="rect"
+              position={[-5, 2, -3]}
+              scale={[3, 4, 1]}
+              intensity={1.6}
+              color="#6b8aa8"
+            />
+            <Lightformer
+              form="circle"
+              position={[0, -4, 0]}
+              scale={[5, 1, 5]}
+              intensity={0.5}
+              color="#2a3040"
+            />
+          </Environment>
+          {/* Stele 3D cu adancime — drift natural pe baza de fade + speed. */}
+          {!reduced && (
+            <Stars
+              radius={80}
+              depth={60}
+              count={2000}
+              factor={4}
+              saturation={0}
+              fade
+              speed={0.4}
+            />
+          )}
+          <MorphMeshes progressRef={progressRef} mouseRef={mouseRef} reduced={reduced} />
           {/* Umbre de contact moi sub obiect — ancorare vizuala. */}
           <ContactShadows
             position={[0, -1.6, 0]}
