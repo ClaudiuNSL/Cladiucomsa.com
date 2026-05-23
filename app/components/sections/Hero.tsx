@@ -59,26 +59,27 @@ export default function Hero() {
         id="section-1"
         data-cinematic-section
         aria-label="Section 1 — Intro"
-        className="relative flex min-h-screen items-center px-8 pb-24 pt-24 lg:px-12 lg:pb-12"
+        className="relative flex min-h-screen items-end pb-32 pt-24 px-8 lg:items-center lg:px-12 lg:pb-12"
       >
         <SectionCounter index={1} label={t('s1.counter')} />
         <PageCounter current={1} total={3} />
-        <div className="max-w-xl lg:max-w-2xl">
-          <p data-reveal className="text-[10px] font-medium uppercase tracking-[0.32em] text-zinc-500">
+        <div className="mx-auto w-full max-w-xl text-center lg:mx-0 lg:max-w-2xl lg:text-left">
+          {/* Eyebrow ascuns pe mobile — rail-ul vertical "WEB · AI · CINEMATIC" il inlocuieste. */}
+          <p data-reveal className="hidden text-[10px] font-medium uppercase tracking-[0.32em] text-zinc-500 lg:block">
             {t('s1.eyebrow')}
           </p>
-          <h1 data-reveal className="mt-8 text-5xl font-semibold leading-[0.95] tracking-[-0.04em] text-white sm:text-6xl lg:text-7xl xl:text-8xl">
+          <h1 data-reveal className="text-5xl font-semibold leading-[0.95] tracking-[-0.04em] text-white sm:text-6xl lg:mt-8 lg:text-7xl xl:text-8xl">
             {t('s1.title')}
           </h1>
-          <div data-reveal className="mt-12 h-px w-24 bg-white/10" aria-hidden="true" />
-          <p data-reveal className="mt-8 max-w-md text-base leading-[1.6] tracking-tight text-zinc-400 lg:text-lg">
+          <div data-reveal className="mx-auto mt-8 h-px w-24 bg-white/10 lg:mx-0 lg:mt-12" aria-hidden="true" />
+          <p data-reveal className="mx-auto mt-6 max-w-md text-sm leading-[1.6] tracking-tight text-zinc-400 sm:text-base lg:mx-0 lg:mt-8 lg:text-lg">
             {t('s1.body')}
           </p>
         </div>
-        {/* Cue de scroll subtil, doar pe Section 1 si numai pe desktop. */}
+        {/* Cue de scroll subtil, doar pe Section 1. */}
         <div
           data-reveal
-          className="absolute bottom-12 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-3 lg:flex"
+          className="absolute bottom-8 left-1/2 flex -translate-x-1/2 flex-col items-center gap-3 lg:bottom-12"
         >
           <span className="text-[10px] font-medium uppercase tracking-[0.4em] text-zinc-500">
             {t('scrollHint')}
@@ -94,25 +95,25 @@ export default function Hero() {
         id="section-2"
         data-cinematic-section
         aria-label="Section 2 — Work"
-        className="relative flex min-h-screen items-center px-8 pb-24 pt-24 lg:px-12 lg:pb-12"
+        className="relative flex min-h-screen items-end pb-24 pt-24 px-8 lg:items-center lg:px-12 lg:pb-12"
       >
         <SectionCounter index={2} label={t('s2.counter')} />
         <PageCounter current={2} total={3} />
-        <div className="max-w-xl lg:max-w-2xl">
+        <div className="mx-auto w-full max-w-xl text-center lg:mx-0 lg:max-w-2xl lg:text-left">
           <p data-reveal className="text-[10px] font-medium uppercase tracking-[0.32em] text-zinc-500">
             {t('s2.eyebrow')}
           </p>
           <p data-reveal className="mt-3 text-sm tracking-tight text-zinc-500">
             {t('s2.subtitle')}
           </p>
-          <h2 data-reveal className="mt-8 text-4xl font-semibold leading-[1.05] tracking-[-0.04em] text-white sm:text-5xl lg:text-6xl xl:text-7xl">
+          <h2 data-reveal className="mt-6 text-4xl font-semibold leading-[1.05] tracking-[-0.04em] text-white sm:text-5xl lg:mt-8 lg:text-6xl xl:text-7xl">
             {t('s2.title')}
           </h2>
-          <div data-reveal className="mt-12 h-px w-24 bg-white/10" aria-hidden="true" />
-          <p data-reveal className="mt-8 max-w-md text-base leading-[1.6] tracking-tight text-zinc-400 lg:text-lg">
+          <div data-reveal className="mx-auto mt-8 h-px w-24 bg-white/10 lg:mx-0 lg:mt-12" aria-hidden="true" />
+          <p data-reveal className="mx-auto mt-6 max-w-md text-sm leading-[1.6] tracking-tight text-zinc-400 sm:text-base lg:mx-0 lg:mt-8 lg:text-lg">
             {t('s2.body')}
           </p>
-          <div data-reveal className="mt-12">
+          <div data-reveal className="mt-10 flex justify-center lg:mt-12 lg:justify-start">
             <EffectButton text={t('s2.cta')} href={t('s2.ctaHref')} variant="secondary" trailing="→" />
           </div>
         </div>
@@ -123,25 +124,25 @@ export default function Hero() {
         id="section-3"
         data-cinematic-section
         aria-label="Section 3 — Studio"
-        className="relative flex min-h-screen items-center px-8 pb-24 pt-24 lg:px-12 lg:pb-12"
+        className="relative flex min-h-screen items-end pb-24 pt-24 px-8 lg:items-center lg:px-12 lg:pb-12"
       >
         <SectionCounter index={3} label={t('s3.counter')} />
         <PageCounter current={3} total={3} />
-        <div className="max-w-xl lg:max-w-2xl">
+        <div className="mx-auto w-full max-w-xl text-center lg:mx-0 lg:max-w-2xl lg:text-left">
           <p data-reveal className="text-[10px] font-medium uppercase tracking-[0.32em] text-zinc-500">
             {t('s3.eyebrow')}
           </p>
           <p data-reveal className="mt-3 text-sm tracking-tight text-zinc-500">
             {t('s3.subtitle')}
           </p>
-          <h2 data-reveal className="mt-8 text-4xl font-semibold leading-[1.05] tracking-[-0.04em] text-white sm:text-5xl lg:text-6xl xl:text-7xl">
+          <h2 data-reveal className="mt-6 text-4xl font-semibold leading-[1.05] tracking-[-0.04em] text-white sm:text-5xl lg:mt-8 lg:text-6xl xl:text-7xl">
             {t('s3.title')}
           </h2>
-          <div data-reveal className="mt-12 h-px w-24 bg-white/10" aria-hidden="true" />
-          <p data-reveal className="mt-8 max-w-md text-base leading-[1.6] tracking-tight text-zinc-400 lg:text-lg">
+          <div data-reveal className="mx-auto mt-8 h-px w-24 bg-white/10 lg:mx-0 lg:mt-12" aria-hidden="true" />
+          <p data-reveal className="mx-auto mt-6 max-w-md text-sm leading-[1.6] tracking-tight text-zinc-400 sm:text-base lg:mx-0 lg:mt-8 lg:text-lg">
             {t('s3.body')}
           </p>
-          <div data-reveal className="mt-12">
+          <div data-reveal className="mt-10 flex justify-center lg:mt-12 lg:justify-start">
             <EffectButton text={t('s3.cta')} href={t('s3.ctaHref')} variant="secondary" trailing="→" />
           </div>
         </div>
@@ -154,50 +155,55 @@ export default function Hero() {
 // ancorat de o linie subtila pe stanga.
 function SectionCounter({ index, label }: { index: number; label: string }) {
   return (
-    <div className="absolute left-8 top-24 lg:left-12 lg:top-32 flex items-center gap-3 border-l border-white/[0.08] pl-4 text-[10px] font-medium uppercase tracking-[0.3em] text-zinc-500">
+    <div className="absolute left-8 top-20 lg:left-12 lg:top-32 flex items-center gap-3 border-l border-white/[0.08] pl-4 text-[9px] font-medium uppercase tracking-[0.3em] text-zinc-500 lg:text-[10px]">
       <span className="h-1 w-1 rounded-full bg-white" aria-hidden="true" />
       <span className="text-white">{String(index).padStart(2, '0')}</span>
-      <span className="h-px w-8 bg-white/20" aria-hidden="true" />
+      <span className="h-px w-6 bg-white/20 lg:w-8" aria-hidden="true" />
       <span>{label}</span>
     </div>
   );
 }
 
 // Counter de pagina pe partea opusa: "01 / 03". Decorativ, simbolic.
+// Vizibil si pe mobile — apare in coltul dreapta-sus (vezi referinta).
 function PageCounter({ current, total }: { current: number; total: number }) {
   return (
-    <div className="absolute right-8 top-24 lg:right-12 lg:top-32 hidden text-[10px] font-medium uppercase tracking-[0.3em] text-zinc-500 lg:block">
+    <div className="absolute right-8 top-20 lg:right-12 lg:top-32 text-[9px] font-medium uppercase tracking-[0.3em] text-zinc-500 lg:text-[10px]">
       <span className="text-white">{String(current).padStart(2, '0')}</span>
       <span className="text-zinc-700"> / {String(total).padStart(2, '0')}</span>
     </div>
   );
 }
 
-// Side rails — text vertical pe stanga, navigatie verticala pe dreapta.
-// Dots intre item-uri pe dreapta, linie verticala subtila sub wordmark.
+// Side rails — pe stanga eyebrow-ul "WEB · AI · CINEMATIC" stacat vertical,
+// pe dreapta navigatia verticala. Vizibil si pe mobile (vezi referinta).
 function SideRails() {
   const tRails = useTranslations('cinematic.rails');
   return (
     <>
-      {/* Left rail */}
+      {/* Left rail — eyebrow brand stacat vertical, in loc de wordmark cu writing-mode. */}
       <div
         aria-hidden="true"
-        className="pointer-events-none fixed left-6 top-1/2 z-30 hidden -translate-y-1/2 flex-col items-center lg:flex"
+        className="pointer-events-none fixed left-4 top-1/2 z-30 flex -translate-y-1/2 lg:left-6"
       >
-        <span
-          className="block text-[10px] font-medium uppercase tracking-[0.4em] text-zinc-500"
-          style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
-        >
-          Claudiu Comsa
-        </span>
-        <span className="mx-auto mt-4 block h-12 w-px bg-white/10" />
+        <ul className="flex flex-col items-center gap-3 text-[9px] font-medium uppercase tracking-[0.4em] text-zinc-500 lg:text-[10px]">
+          <li>Web</li>
+          <li>
+            <span className="mx-auto block h-1 w-1 rounded-full bg-white/20" aria-hidden="true" />
+          </li>
+          <li>AI</li>
+          <li>
+            <span className="mx-auto block h-1 w-1 rounded-full bg-white/20" aria-hidden="true" />
+          </li>
+          <li>Cinematic</li>
+        </ul>
       </div>
       {/* Right rail */}
       <div
         aria-hidden="true"
-        className="pointer-events-none fixed right-6 top-1/2 z-30 hidden -translate-y-1/2 lg:flex"
+        className="pointer-events-none fixed right-4 top-1/2 z-30 flex -translate-y-1/2 lg:right-6"
       >
-        <ul className="flex flex-col items-center gap-3 text-[10px] font-medium uppercase tracking-[0.4em] text-zinc-500">
+        <ul className="flex flex-col items-center gap-3 text-[9px] font-medium uppercase tracking-[0.4em] text-zinc-500 lg:text-[10px]">
           <li>{tRails('menu')}</li>
           <li>
             <span className="mx-auto block h-1 w-1 rounded-full bg-white/20" aria-hidden="true" />
