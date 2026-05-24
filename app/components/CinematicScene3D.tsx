@@ -609,6 +609,12 @@ const SPARK_COUNT_MOBILE = 30;
 const TRAIL_LEN_DESKTOP = 10;
 const TRAIL_LEN_MOBILE = 5;
 
+// Sub-shatter — bucati mai mici care se desprind din debris-ul principal
+// mid-flight, intre 0.55 si 1.05s dupa impact. 70% chance per debris,
+// 6 sub-pieces per split.
+const SUB_DEBRIS_COUNT_DESKTOP = 60;
+const SUB_DEBRIS_COUNT_MOBILE = 30;
+
 interface MorphMeshesProps {
   progressRef: ProgressRef;
   mouseRef: MouseRef;
@@ -734,12 +740,19 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile, flashRef, bloom
 
   // Date pentru ExplosionDebris — bucatile mari rocky care apar la momentul
   // exploziei. Separat de fragmentData pentru ca au animatie diferita.
+  // Per-piece: splitAt (timestamp post-impact pentru sub-shatter), didSplit
+  // (flag oneshot), prevPos (pentru derivare velocity intre frame-uri),
+  // scaleMul (multiplier per-piece — devine 0.55 dupa split).
   const debrisData = useMemo(() => {
     const origins = buildDebrisOrigins(DEBRIS_COUNT);
     const targets = buildDebrisTargets(origins);
     const rotations = buildFragmentRotations(DEBRIS_COUNT);
     const scales = buildDebrisScales(DEBRIS_COUNT);
-    return { origins, targets, rotations, scales };
+    const splitAt = Array.from({ length: DEBRIS_COUNT }, () => 0.55 + Math.random() * 0.5);
+    const didSplit = Array.from({ length: DEBRIS_COUNT }, () => false);
+    const prevPos = Array.from({ length: DEBRIS_COUNT }, () => new THREE.Vector3());
+    const scaleMul = Array.from({ length: DEBRIS_COUNT }, () => 1);
+    return { origins, targets, rotations, scales, splitAt, didSplit, prevPos, scaleMul };
   }, []);
   const debrisRef = useRef<THREE.InstancedMesh>(null);
   const debrisMatRef = useRef<THREE.MeshStandardMaterial>(null);
@@ -786,6 +799,57 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile, flashRef, bloom
     );
     return { positions, colors, history, segsPerDebris };
   }, [trailLen]);
+
+  // === SUB-SHATTER — 60 (30 mobile) icosahedroane mici care apar cand un
+  // debris se sparge mid-flight. spawnSubDebris primeste pozitia + viteza
+  // parintelui, plaseaza 6 bucati cu velocity = parentVel*0.5 + dir*magnitude. ===
+  const subDebrisCount = isMobile ? SUB_DEBRIS_COUNT_MOBILE : SUB_DEBRIS_COUNT_DESKTOP;
+  const subDebrisRef = useRef<THREE.InstancedMesh>(null);
+  const subData = useMemo(
+    () =>
+      Array.from({ length: subDebrisCount }, () => ({
+        pos: new THREE.Vector3(),
+        vel: new THREE.Vector3(),
+        life: 0,
+        maxLife: 2,
+        alive: false,
+        quat: new THREE.Quaternion(),
+        rotAxis: new THREE.Vector3(),
+        rotSpeed: 0,
+      })),
+    [subDebrisCount]
+  );
+  const spawnSubDebris = useCallback(
+    (originPos: THREE.Vector3, originVel: THREE.Vector3) => {
+      let placed = 0;
+      for (let i = 0; i < subDebrisCount && placed < 6; i++) {
+        const s = subData[i];
+        if (s.alive) continue;
+        // Directie random uniforma + magnitudine 1.8-3.4.
+        const dir = new THREE.Vector3(
+          Math.random() * 2 - 1,
+          Math.random() * 2 - 1,
+          Math.random() * 2 - 1
+        ).normalize();
+        s.pos.copy(originPos);
+        s.vel
+          .copy(originVel)
+          .multiplyScalar(0.5)
+          .add(dir.multiplyScalar(1.8 + Math.random() * 1.6));
+        s.life = 0;
+        s.maxLife = 1.2 + Math.random() * 0.8;
+        s.rotAxis
+          .set(Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1)
+          .normalize();
+        s.rotSpeed = 3 + Math.random() * 6;
+        s.quat.identity();
+        s.alive = true;
+        placed++;
+      }
+      if (subDebrisRef.current) subDebrisRef.current.count = subDebrisCount;
+    },
+    [subDebrisCount, subData]
+  );
 
   const spawnSparks = useCallback(() => {
     for (let i = 0; i < sparkCount; i++) {
@@ -867,6 +931,7 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile, flashRef, bloom
   // Initial: ascundem sparks (count=0) — vor fi popped on impact.
   useEffect(() => {
     if (sparksRef.current) sparksRef.current.count = 0;
+    if (subDebrisRef.current) subDebrisRef.current.count = 0;
   }, []);
 
   // Rotatie continua pe asteroid — viata vizuala constanta.
@@ -908,6 +973,13 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile, flashRef, bloom
       if (bloomRef?.current) bloomRef.current.intensity = 2.4;
       // Spawn 80 sparks (30 mobile) la centrul asteroidului.
       spawnSparks();
+      // Reset per-debris state pentru sub-shatter — daca user-ul a oscilat
+      // sub/peste prag inainte, scapam de flag-uri ramase.
+      for (let i = 0; i < DEBRIS_COUNT; i++) {
+        debrisData.didSplit[i] = false;
+        debrisData.scaleMul[i] = 1;
+        debrisData.prevPos[i].copy(debrisData.origins[i]);
+      }
     }
     // Reset detect — dacă user-ul scrollează înapoi sub prag, anulăm shake.
     if (lastP >= 0.22 && p < 0.22) {
@@ -923,6 +995,16 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile, flashRef, bloom
         hist.forEach((v) => v.set(0, 0, 0));
       });
       if (trailObjRef.current) trailObjRef.current.visible = false;
+      // Reset sub-shatter — toate sub-debris dead, didSplit/scaleMul reset.
+      subData.forEach((s) => {
+        s.alive = false;
+      });
+      if (subDebrisRef.current) subDebrisRef.current.count = 0;
+      for (let i = 0; i < DEBRIS_COUNT; i++) {
+        debrisData.didSplit[i] = false;
+        debrisData.scaleMul[i] = 1;
+        debrisData.prevPos[i].set(0, 0, 0);
+      }
     }
     lastProgressRef.current = p;
 
@@ -1110,7 +1192,7 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile, flashRef, bloom
       const debrisActive = p >= 0.20 && p <= 0.55;
       debrisRef.current.visible = debrisActive;
       if (debrisActive) {
-        const { origins, targets, rotations, scales } = debrisData;
+        const { origins, targets, rotations, scales, splitAt, didSplit, prevPos, scaleMul } = debrisData;
         // Fade-in la inceput, fade-out la final.
         let opacity = 1;
         if (p < 0.24) opacity = (p - 0.20) / 0.04;
@@ -1121,6 +1203,14 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile, flashRef, bloom
         // Local progress: 0.20-0.42 = expansiunea principala (power4.out).
         const expandT = THREE.MathUtils.clamp((p - 0.20) / 0.22, 0, 1);
         const eased = 1 - Math.pow(1 - expandT, 4);
+
+        // Pre-calculam tShatter o data, folosit la check de split.
+        const tShatter =
+          shatterTimeRef.current !== null
+            ? (performance.now() - shatterTimeRef.current) / 1000
+            : 0;
+        // Vector reutilizat pentru derivare velocity din prevPos.
+        const velTmp = new THREE.Vector3();
 
         for (let i = 0; i < DEBRIS_COUNT; i++) {
           const origin = origins[i];
@@ -1143,9 +1233,31 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile, flashRef, bloom
           } else {
             dummy.rotation.set(0, 0, 0);
           }
-          dummy.scale.setScalar(scale);
+          // Aplicam scaleMul (devine 0.55 dupa ce debris-ul s-a sub-spart).
+          dummy.scale.setScalar(scale * scaleMul[i]);
           dummy.updateMatrix();
           debrisRef.current.setMatrixAt(i, dummy.matrix);
+
+          // Check sub-shatter — daca am trecut pragul splitAt si 70% prob,
+          // derivam velocity din pozitia precedenta si spawnam 6 sub-pieces.
+          // Doar daca avem deja un shatterTime activ (trigger trecut) si
+          // prevPos a fost initializat (delta > 0 ca sa evitam div by zero).
+          if (
+            !didSplit[i] &&
+            shatterTimeRef.current !== null &&
+            tShatter > splitAt[i] &&
+            delta > 0 &&
+            Math.random() < 0.7
+          ) {
+            didSplit[i] = true;
+            // Velocity = (currentPos - prevPos) / delta.
+            velTmp.subVectors(dummy.position, prevPos[i]).divideScalar(delta);
+            spawnSubDebris(dummy.position, velTmp);
+            // Parintele se micsoreaza in restul fly-out-ului.
+            scaleMul[i] = 0.55;
+          }
+          // Update prevPos pentru frame-ul urmator.
+          prevPos[i].copy(dummy.position);
 
           // Push pozitia curenta in trail history pentru bucata i.
           const hist = trailBuffers.history[i];
@@ -1197,6 +1309,45 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile, flashRef, bloom
       } else if (trailObjRef.current) {
         trailObjRef.current.visible = false;
       }
+    }
+
+    // === SUB-SHATTER update ===
+    // Sub-pieces independenti — life-based decay, rotatie via quaternion.
+    // Doar daca avem shatterTime activ (post-trigger).
+    const subMesh = subDebrisRef.current;
+    if (subMesh && shatterTimeRef.current !== null) {
+      const subDummy = new THREE.Object3D();
+      const m = new THREE.Matrix4();
+      const q = new THREE.Quaternion();
+      for (let i = 0; i < subDebrisCount; i++) {
+        const s = subData[i];
+        if (!s.alive) {
+          m.makeScale(0, 0, 0);
+          subMesh.setMatrixAt(i, m);
+          continue;
+        }
+        s.life += delta;
+        if (s.life >= s.maxLife) {
+          s.alive = false;
+          m.makeScale(0, 0, 0);
+          subMesh.setMatrixAt(i, m);
+          continue;
+        }
+        // Decay exponential pe velocity — sub-pieces incetinesc.
+        const decay = Math.exp(-s.life * 0.8);
+        s.pos.addScaledVector(s.vel, decay * delta);
+        // Rotatie pe axa proprie.
+        q.setFromAxisAngle(s.rotAxis, s.rotSpeed * delta);
+        s.quat.multiplyQuaternions(q, s.quat);
+        const fade = 1 - s.life / s.maxLife;
+        const sc = 0.7 * Math.pow(fade, 0.6);
+        subDummy.position.copy(s.pos);
+        subDummy.quaternion.copy(s.quat);
+        subDummy.scale.setScalar(sc);
+        subDummy.updateMatrix();
+        subMesh.setMatrixAt(i, subDummy.matrix);
+      }
+      subMesh.instanceMatrix.needsUpdate = true;
     }
 
     // === Camera dolly noua ===
@@ -1458,6 +1609,19 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile, flashRef, bloom
       <instancedMesh ref={sparksRef} args={[undefined, undefined, sparkCount]}>
         <sphereGeometry args={[0.025, 6, 6]} />
         <meshBasicMaterial color="#ffaa55" transparent toneMapped={false} />
+      </instancedMesh>
+
+      {/* SUB-SHATTER — InstancedMesh de icosahedroane mici care apar cand
+          un debris se sparge mid-flight. Material identic cu debris-ul
+          principal (color #0a0a0a, roughness 0.9, metalness 0.1) — declarat
+          separat ca sa nu atingem materialul asteroidului. */}
+      <instancedMesh
+        ref={subDebrisRef}
+        args={[undefined, undefined, subDebrisCount]}
+        castShadow
+      >
+        <icosahedronGeometry args={[0.07, 0]} />
+        <meshStandardMaterial color="#0a0a0a" roughness={0.9} metalness={0.1} />
       </instancedMesh>
 
       {/* DUST TRAILS — line segments aditive cu vertex colors care urmaresc
