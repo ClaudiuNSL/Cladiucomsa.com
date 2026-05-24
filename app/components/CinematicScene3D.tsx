@@ -631,7 +631,11 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile, flashRef, bloom
   // Pack-ul suplimentar — 10 forme distincte (Asteroid_no_1..10) folosite ca
   // debris extra (30 instante = 10 geometrii × 3). NU este Draco-compressed
   // (verificat: lipseste KHR_draco_mesh_compression in extensionsUsed).
-  const packGltf = useGLTF('/models/asteroids_pack.glb');
+  // useDraco=false explicit — fara el, drei trateaza undefined ca true si
+  // resetateaza decoder path-ul global din singleton-ul DRACOLoader la
+  // gstatic.com (CSP `connect-src 'self'` blocheaza) -> Failed to fetch
+  // pe bennu/belt cand parseaza Draco-compressed primitives.
+  const packGltf = useGLTF('/models/asteroids_pack.glb', false);
 
   // Extragem cele 24 geometrii din belt, fiecare normalizata la unit size
   // (extent max = 1) si centrata in origin. Asa le putem instantia la orice
@@ -1593,7 +1597,7 @@ useGLTF.preload('/models/bennu.glb', '/draco/');
 // Preload asteroid belt (24 forme reale Sketchfab CC-BY, Draco-compressed).
 useGLTF.preload('/models/asteroid_belt.glb', '/draco/');
 // Preload pack-ul cu 10 forme distincte (debris suplimentar). NU Draco-compressed.
-useGLTF.preload('/models/asteroids_pack.glb');
+useGLTF.preload('/models/asteroids_pack.glb', false);
 // BeltDebris — chunks reale orbiteaza in jurul asteroidului principal,
 // dau senzatie de "asteroid in mijlocul unui camp de roci".
 // Fade-out cand asteroidul incepe sa se sparga (p > 0.18) ca scena
