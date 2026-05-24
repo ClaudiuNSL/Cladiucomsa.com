@@ -604,9 +604,16 @@ interface MorphMeshesProps {
   reduced: boolean;
   isMobile: boolean;
   flashRef?: RefObject<HTMLDivElement | null>;
+  // Ref catre BloomEffect (postprocessing). Folosit pentru intensity spike
+  // la momentul impactului + damp inapoi la baseline. Tip `any` pentru ca
+  // wrapper-ul `<Bloom>` din @react-three/postprocessing nu expune Bloom
+  // ref typing publicly — instanta din .current este BloomEffect care are
+  // intensity setter/getter.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  bloomRef?: RefObject<any>;
 }
 
-function MorphMeshes({ progressRef, mouseRef, reduced, isMobile, flashRef }: MorphMeshesProps) {
+function MorphMeshes({ progressRef, mouseRef, reduced, isMobile, flashRef, bloomRef }: MorphMeshesProps) {
   const asteroidRef = useRef<THREE.Mesh>(null);
   const asteroidMatRef = useRef<THREE.MeshStandardMaterial>(null);
 
@@ -812,6 +819,10 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile, flashRef }: Mor
         { duration: 380, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' }
       );
       shatterTimeRef.current = performance.now();
+      // Bloom spike — sare de la baseline 0.55 la 2.4 instant, apoi damping
+      // lin inapoi la 0.55 prin THREE.MathUtils.damp mai jos. Pe mobile nu
+      // exista postprocesare deci bloomRef.current va fi null si nu facem nimic.
+      if (bloomRef?.current) bloomRef.current.intensity = 2.4;
     }
     // Reset detect — dacă user-ul scrollează înapoi sub prag, anulăm shake.
     if (lastP >= 0.22 && p < 0.22) {
@@ -1099,6 +1110,18 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile, flashRef }: Mor
         haloLight.intensity = 0;
       }
     }
+
+    // === Bloom intensity damp recovery ===
+    // Dupa spike-ul de la 0.55 -> 2.4 in blocul de trigger, lasam THREE.MathUtils.damp
+    // sa il aduca incet inapoi la 0.55. Rate 1.8 -> ~0.8s pana revine ~vizibil la baseline.
+    if (bloomRef?.current) {
+      bloomRef.current.intensity = THREE.MathUtils.damp(
+        bloomRef.current.intensity,
+        0.55,
+        1.8,
+        delta
+      );
+    }
   });
 
   // Float-ul aplica miscare idle "vie"; cu reduced motion dezactivam complet.
@@ -1308,6 +1331,12 @@ export default function CinematicScene3D() {
   const mouseRef = useRef({ x: 0, y: 0 });
   // Ref catre flash overlay DOM — declansat la momentul impactului (p=0.22).
   const flashRef = useRef<HTMLDivElement | null>(null);
+  // Ref catre BloomEffect — intensity face spike la 2.4 in trigger, damp inapoi
+  // la 0.55. Tipul concret e BloomEffect din `postprocessing`; folosim `any`
+  // pentru ca wrapper-ul `<Bloom>` din @react-three/postprocessing nu expune
+  // typing public iar instanta atribuita via R3F ref e BloomEffect.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const bloomRef = useRef<any>(null);
 
   // ScrollTrigger urmareste DOAR wrapper-ul cinematic (primele 3 sectiuni).
   // Asa progresul 0->1 se face fix in secventa explozie + CC, iar dupa
@@ -1450,7 +1479,7 @@ export default function CinematicScene3D() {
               speed={0.4}
             />
           )}
-          <MorphMeshes progressRef={progressRef} mouseRef={mouseRef} reduced={reduced} isMobile={isMobile} flashRef={flashRef} />
+          <MorphMeshes progressRef={progressRef} mouseRef={mouseRef} reduced={reduced} isMobile={isMobile} flashRef={flashRef} bloomRef={bloomRef} />
           {/* Umbre de contact moi sub obiect — ancorare vizuala. */}
           <ContactShadows
             position={[0, -1.6, 0]}
@@ -1465,6 +1494,7 @@ export default function CinematicScene3D() {
         {!isMobile && (
           <EffectComposer>
             <Bloom
+              ref={bloomRef}
               intensity={0.55}
               luminanceThreshold={0.82}
               luminanceSmoothing={0.6}
