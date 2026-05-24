@@ -9,9 +9,7 @@
 import { Canvas, useFrame } from '@react-three/fiber';
 import {
   ContactShadows,
-  Environment,
   Float,
-  Lightformer,
   Sparkles,
   Stars,
   useGLTF,
@@ -456,12 +454,14 @@ function sampleCCTargets(count: number) {
 function sampleFloatTargets(originPoints: THREE.Vector3[]) {
   return originPoints.map((origin) => {
     const direction = origin.clone().normalize();
-    const distance = 2.8 + Math.random() * 1.5; // 2.8-4.3 unitati de la centru
+    // Distanta 1.8-3.2 — aproape de asteroid, in cadru clar. Fragmente mari
+    // close-up pentru impact dramatic, nu spread larg care le facea sa para mici.
+    const distance = 1.8 + Math.random() * 1.4;
     return direction.multiplyScalar(distance).add(
       new THREE.Vector3(
-        (Math.random() - 0.5) * 1.2,
-        (Math.random() - 0.5) * 1.2,
-        (Math.random() - 0.5) * 1.2
+        (Math.random() - 0.5) * 1.0,
+        (Math.random() - 0.5) * 1.0,
+        (Math.random() - 0.5) * 1.0
       )
     );
   });
@@ -479,19 +479,105 @@ function buildFragmentRotations(count: number) {
         Math.random() - 0.5,
         Math.random() - 0.5
       ).normalize(),
-      speed: 0.5 + Math.random() * 1.5,
+      // Rotatii mult mai chaotice — fragmentele se tumble haotic ca o explozie
+      // reala. Range marit 4x fata de original.
+      speed: 1.5 + Math.random() * 5.0,
     });
   }
   return rotations;
 }
 
-// Scale-uri aleatoare per-fragment. Acelasi motiv ca buildFragmentRotations.
+// Scale luminitilor albe — 0.04-0.12, exact ca stelele/sparkles, ca sa
+// sclipeasca pe orbita asteroidului si sa citeasca clar litera CC la final.
 function buildFragmentScales(count: number) {
   const scales: number[] = [];
   for (let i = 0; i < count; i++) {
-    scales.push(0.05 + Math.random() * 0.07);
+    scales.push(0.04 + Math.random() * 0.08);
   }
   return scales;
+}
+
+// Pozitii orbitale aleatoare pe o sfera in jurul asteroidului, raza 1.6-2.4.
+// Fragmentele "plutesc" aici inainte de explozie (p<0.20), apoi tranziteaza
+// spre floatPos in faza de explozie.
+function buildOrbitalPositions(count: number) {
+  const positions: THREE.Vector3[] = [];
+  for (let i = 0; i < count; i++) {
+    const phi = Math.random() * Math.PI * 2;
+    const theta = Math.acos(2 * Math.random() - 1); // uniform pe sfera
+    const r = 1.6 + Math.random() * 0.8;
+    positions.push(new THREE.Vector3(
+      r * Math.sin(theta) * Math.cos(phi),
+      r * Math.sin(theta) * Math.sin(phi),
+      r * Math.cos(theta)
+    ));
+  }
+  return positions;
+}
+
+// Pentru ExplosionDebris — puncte de origine random pe suprafata asteroidului
+// (sfera radius 1.2) + tinte fly-out radiale (5-8 unitati).
+function buildDebrisOrigins(count: number) {
+  const origins: THREE.Vector3[] = [];
+  for (let i = 0; i < count; i++) {
+    const phi = Math.random() * Math.PI * 2;
+    const theta = Math.acos(2 * Math.random() - 1);
+    const r = 1.2;
+    origins.push(new THREE.Vector3(
+      r * Math.sin(theta) * Math.cos(phi),
+      r * Math.sin(theta) * Math.sin(phi),
+      r * Math.cos(theta)
+    ));
+  }
+  return origins;
+}
+
+function buildDebrisTargets(origins: THREE.Vector3[]) {
+  return origins.map((o) => {
+    const dir = o.clone().normalize();
+    const dist = 5.0 + Math.random() * 3.0; // 5-8 zboara departe
+    return dir.multiplyScalar(dist).add(new THREE.Vector3(
+      (Math.random() - 0.5) * 1.5,
+      (Math.random() - 0.5) * 1.5,
+      (Math.random() - 0.5) * 1.5
+    ));
+  });
+}
+
+function buildDebrisScales(count: number) {
+  const scales: number[] = [];
+  for (let i = 0; i < count; i++) {
+    scales.push(0.40 + Math.random() * 0.35); // 0.40-0.75, mari si vizibile
+  }
+  return scales;
+}
+
+// Genereaza pozitii pentru belt-ul orbital de debris in jurul asteroidului.
+// 8 chunks distribuiti pe o orbita circulara cu jitter random pe distanta
+// + height. Scale individual marit ca sa fie clar vizibile (0.20-0.40).
+function buildBeltDebris(count: number) {
+  const items: {
+    chunkIndex: number;
+    position: [number, number, number];
+    scale: number;
+    rotation: [number, number, number];
+  }[] = [];
+  for (let i = 0; i < count; i++) {
+    const angle = (i / count) * Math.PI * 2 + Math.random() * 0.6;
+    const distance = 2.6 + Math.random() * 1.4;
+    const yOff = (Math.random() - 0.5) * 0.9;
+    items.push({
+      chunkIndex: i, // mapat % 24 in render ca sa wrap-uiasca pe geometriile disponibile
+      position: [Math.cos(angle) * distance, yOff, Math.sin(angle) * distance],
+      scale: 0.22 + Math.random() * 0.20,
+      rotation: [
+        Math.random() * Math.PI * 2,
+        Math.random() * Math.PI * 2,
+        Math.random() * Math.PI * 2,
+      ],
+    });
+  }
+  return items;
 }
 
 // Delay-uri aleatoare per-fragment — variatie pe explozie/atragere.
@@ -504,8 +590,13 @@ function buildFragmentDelays(count: number) {
   return delays;
 }
 
-const FRAGMENT_COUNT_PER_GROUP = 75;
+// 25 per grup × 4 grupuri = 100 fragmente. Acestea sunt "luminitele albe" care
+// orbiteaza in jurul asteroidului inainte de explozie, apoi formeaza CC. Pentru
+// pietrele mari rocky ale exploziei propriu-zise vezi ExplosionDebris (alt sistem).
+const FRAGMENT_COUNT_PER_GROUP = 25;
 const FRAGMENT_COUNT = FRAGMENT_COUNT_PER_GROUP * 4;
+
+const DEBRIS_COUNT = 25; // bucati mari rocky pentru momentul exploziei
 
 interface MorphMeshesProps {
   progressRef: ProgressRef;
@@ -517,6 +608,12 @@ interface MorphMeshesProps {
 function MorphMeshes({ progressRef, mouseRef, reduced, isMobile }: MorphMeshesProps) {
   const asteroidRef = useRef<THREE.Mesh>(null);
   const asteroidMatRef = useRef<THREE.MeshStandardMaterial>(null);
+
+  // Halo extern pre-impact — sfera aditiva portocalie in jurul asteroidului
+  // care pulsează în window-ul p ∈ [0.16, 0.22]. Plus point light co-locat.
+  const haloRef = useRef<THREE.Mesh>(null);
+  const haloMatRef = useRef<THREE.MeshBasicMaterial>(null);
+  const haloLightRef = useRef<THREE.PointLight>(null);
 
   // Pulse ring + fragments.
   const pulseRef = useRef<THREE.Mesh>(null);
@@ -536,6 +633,39 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile }: MorphMeshesPr
   // NU folosim try/catch fiindca useGLTF arunca un Promise pe Suspense (mecanism
   // intern React), iar try/catch ar bloca suspendarea legitima.
   const gltf = useGLTF('/models/bennu.glb', '/draco/');
+
+  // Asteroid belt — 24 forme reale de roci de la Sketchfab (CC-BY,
+  // gianlucadistefano1998). Folosit pentru fragmente reale in loc de
+  // primitive icosa/octa/tetra/dodeca, plus pentru debris-ul orbital.
+  // Draco-compressed (47MB raw -> 4.5MB).
+  const beltGltf = useGLTF('/models/asteroid_belt.glb', '/draco/');
+
+  // Extragem cele 24 geometrii din belt, fiecare normalizata la unit size
+  // (extent max = 1) si centrata in origin. Asa le putem instantia la orice
+  // scale fara sa ne batem cu transformarile originale Sketchfab.
+  const chunkGeometries = useMemo(() => {
+    const geos: THREE.BufferGeometry[] = [];
+    beltGltf.scene.traverse((obj) => {
+      if (obj instanceof THREE.Mesh) {
+        const geo = (obj.geometry as THREE.BufferGeometry).clone();
+        geo.computeBoundingBox();
+        const bbox = geo.boundingBox!;
+        const extent = Math.max(
+          bbox.max.x - bbox.min.x,
+          bbox.max.y - bbox.min.y,
+          bbox.max.z - bbox.min.z
+        ) || 1;
+        const s = 1 / extent;
+        geo.scale(s, s, s);
+        geo.computeBoundingBox();
+        const center = geo.boundingBox!.getCenter(new THREE.Vector3());
+        geo.translate(-center.x, -center.y, -center.z);
+        if (!geo.attributes.normal) geo.computeVertexNormals();
+        geos.push(geo);
+      }
+    });
+    return geos;
+  }, [beltGltf]);
 
   // Geometria procesata: scalata + UV-uri sferice generate + centrata.
   const asteroidGeometry = useMemo(() => {
@@ -570,19 +700,35 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile }: MorphMeshesPr
     const targets = sampleCCTargets(FRAGMENT_COUNT);
     const rotations = buildFragmentRotations(FRAGMENT_COUNT);
     const scales = buildFragmentScales(FRAGMENT_COUNT);
-    // Delay per-fragment in unitati de scroll — variatie timing pe explozie/atragere.
     const delays = buildFragmentDelays(FRAGMENT_COUNT);
-    return { origins, floats, targets, rotations, scales, delays };
+    // Pozitii orbitale pre-explozie — fragmentele plutesc aici de la p=0.
+    const orbitals = buildOrbitalPositions(FRAGMENT_COUNT);
+    return { origins, floats, targets, rotations, scales, delays, orbitals };
   }, [asteroidGeometry]);
 
-  // Geometrii fragmente — 4 forme diferite pentru aspect variat, real.
-  // Icosaedru (20 fete), octaedru (8), tetraedru (4), dodecaedru (12).
+  // Date pentru ExplosionDebris — bucatile mari rocky care apar la momentul
+  // exploziei. Separat de fragmentData pentru ca au animatie diferita.
+  const debrisData = useMemo(() => {
+    const origins = buildDebrisOrigins(DEBRIS_COUNT);
+    const targets = buildDebrisTargets(origins);
+    const rotations = buildFragmentRotations(DEBRIS_COUNT);
+    const scales = buildDebrisScales(DEBRIS_COUNT);
+    return { origins, targets, rotations, scales };
+  }, []);
+  const debrisRef = useRef<THREE.InstancedMesh>(null);
+  const debrisMatRef = useRef<THREE.MeshStandardMaterial>(null);
+
+  // Geometrii fragmente — 4 chunks reale din asteroid_belt (forme rocky
+  // neregulate), nu primitive geometrice. Asta face fragmentele sa arate ca
+  // bucati reale de asteroid, nu ca dice in spatiu. Pastram cheile vechi
+  // (icosa/octa/tetra/dodeca) ca sa nu modificam restul codului care le
+  // referentiaza. Fallback la primitive daca asset-ul nu s-a incarcat.
   const fragmentGeometries = useMemo(() => ({
-    icosa: new THREE.IcosahedronGeometry(1, 0),
-    octa: new THREE.OctahedronGeometry(1, 0),
-    tetra: new THREE.TetrahedronGeometry(1, 0),
-    dodeca: new THREE.DodecahedronGeometry(1, 0),
-  }), []);
+    icosa: chunkGeometries[2] || new THREE.IcosahedronGeometry(1, 0),
+    octa: chunkGeometries[7] || new THREE.OctahedronGeometry(1, 0),
+    tetra: chunkGeometries[14] || new THREE.TetrahedronGeometry(1, 0),
+    dodeca: chunkGeometries[21] || new THREE.DodecahedronGeometry(1, 0),
+  }), [chunkGeometries]);
 
   // Material shared pentru toate cele 4 grupe de fragmente — citeste aceleasi
   // texturi ca asteroidul, deci chunkurile arata ca bucati din suprafata lui.
@@ -599,10 +745,10 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile }: MorphMeshesPr
     const fragMatAtMount = fragmentMatRef.current;
     return () => {
       asteroidGeometry.dispose();
-      fragmentGeometries.icosa.dispose();
-      fragmentGeometries.octa.dispose();
-      fragmentGeometries.tetra.dispose();
-      fragmentGeometries.dodeca.dispose();
+      // Toate cele 24 chunk-uri (cele 4 folosite in fragmente + cele folosite
+      // in belt). fragmentGeometries refera la 4 din chunkGeometries deci nu
+      // mai trebuie disposed separat.
+      chunkGeometries.forEach((g) => g.dispose());
       fragMatAtMount?.dispose();
       if (surfaceMaps) {
         surfaceMaps.diffuseMap.dispose();
@@ -613,7 +759,7 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile }: MorphMeshesPr
         surfaceMaps.emissiveMap.dispose();
       }
     };
-  }, [asteroidGeometry, fragmentGeometries, surfaceMaps]);
+  }, [asteroidGeometry, chunkGeometries, surfaceMaps]);
 
   // Atasam materialul fragmentelor (definit inline pe icosa) la celelalte 3
   // instanced meshes — astfel toate cele 4 grupuri share aceeasi instanta de material.
@@ -688,11 +834,11 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile }: MorphMeshesPr
     if (dustRef.current && dustMatRef.current) {
       if (p > 0.20 && p < 0.34) {
         const dustT = THREE.MathUtils.clamp((p - 0.20) / 0.14, 0, 1);
-        // sqrt curve — expansiune rapida initial, apoi incetinire.
-        const scale = THREE.MathUtils.lerp(0.5, 5.0, Math.pow(dustT, 0.5));
+        // Shockwave subtil — scale 4.5 max, opacity 0.18 max. Doar sugereaza
+        // unda de soc, nu blocheaza vizualizarea fragmentelor.
+        const scale = THREE.MathUtils.lerp(0.5, 4.5, Math.pow(dustT, 0.5));
         dustRef.current.scale.setScalar(scale);
-        // Opacitatea scade mai repede decat expansiunea (puterea 1.5).
-        dustMatRef.current.opacity = (1 - Math.pow(dustT, 1.5)) * 0.35;
+        dustMatRef.current.opacity = (1 - Math.pow(dustT, 1.5)) * 0.18;
         dustRef.current.visible = true;
       } else {
         dustRef.current.visible = false;
@@ -731,38 +877,46 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile }: MorphMeshesPr
       fragmentTetraRef.current,
       fragmentDodecaRef.current,
     ];
-    if (meshes.every((m) => m) && p > 0.20) {
+    // Fragmentele albe sunt vizibile MEREU acum (orbital la p<0.20, apoi
+    // explode-float-CC ca inainte). Asta da decor in jurul asteroidului.
+    if (meshes.every((m) => m)) {
       meshes.forEach((m) => {
         m!.visible = true;
       });
-      const { origins, floats, targets, rotations, scales, delays } = fragmentData;
+      const { origins, floats, targets, rotations, scales, delays, orbitals } = fragmentData;
 
       for (let i = 0; i < FRAGMENT_COUNT; i++) {
-        const groupIdx = Math.floor(i / FRAGMENT_COUNT_PER_GROUP); // 0-3
-        const localIdx = i % FRAGMENT_COUNT_PER_GROUP;             // 0-74
+        const groupIdx = Math.floor(i / FRAGMENT_COUNT_PER_GROUP);
+        const localIdx = i % FRAGMENT_COUNT_PER_GROUP;
         const origin = origins[i];
         const floatPos = floats[i];
         const target = targets[i];
         const rot = rotations[i];
         const scale = scales[i];
         const delay = delays[i];
+        const orbital = orbitals[i];
 
         let x: number, y: number, z: number;
 
-        if (p < 0.32) {
-          // Faza explozie: origin -> float, ease power3.out, cu delay per-fragment.
-          const local = THREE.MathUtils.clamp((p - 0.22 - delay) / 0.10, 0, 1);
-          if (local <= 0) {
-            // Inca nu a iesit — stationar la origin (acoperit de asteroid).
-            x = origin.x;
-            y = origin.y;
-            z = origin.z;
-          } else {
-            const eased = 1 - Math.pow(1 - local, 3); // power3.out
-            x = THREE.MathUtils.lerp(origin.x, floatPos.x, eased);
-            y = THREE.MathUtils.lerp(origin.y, floatPos.y, eased);
-            z = THREE.MathUtils.lerp(origin.z, floatPos.z, eased);
-          }
+        if (p < 0.20) {
+          // === FAZA ORBITAL: luminitele pluttesc in jurul asteroidului ===
+          // Drift subtil pe pozitia orbitala (oscilatie sinusoidala).
+          const drift = reduced ? 0 : Math.sin(t * 0.4 + i * 0.7) * 0.06;
+          x = orbital.x + drift * rot.axis.x;
+          y = orbital.y + drift * rot.axis.y;
+          z = orbital.z + drift * rot.axis.z;
+        } else if (p < 0.32) {
+          // Faza explozie: origin -> float, ease power5.out — burst initial
+          // foarte sharp (90% din miscare se intampla in prima jumatate de
+          // local progress), apoi deceleratie lenta. Simuleaza explozia reala
+          // unde fragmentele primesc tot momentumul instant la t=0.
+          // Tranzitie din pozitie orbitala in floatPos. Luminitele sunt deja
+          // afara din asteroid (pe orbita), deci doar se imprastie mai larg.
+          const local = THREE.MathUtils.clamp((p - 0.20 - delay) / 0.12, 0, 1);
+          const eased = 1 - Math.pow(1 - local, 3);
+          x = THREE.MathUtils.lerp(orbital.x, floatPos.x, eased);
+          y = THREE.MathUtils.lerp(orbital.y, floatPos.y, eased);
+          z = THREE.MathUtils.lerp(orbital.z, floatPos.z, eased);
         } else if (p < 0.55) {
           // Faza float: stationar la pozitia float cu drift subtil.
           const drift = reduced ? 0 : Math.sin(t * rot.speed + i) * 0.04;
@@ -792,7 +946,9 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile }: MorphMeshesPr
 
         // Rotatie individuala — diferita per fragment, mai rapida in float, mai lenta in solid.
         if (!reduced) {
-          const rotSpeed = p > 0.78 ? 0.05 : 0.4;
+          // Tumble agresiv in faza float (chunks reale se rotesc rapid in spatiu),
+          // calm dupa formarea blocului solid CC.
+          const rotSpeed = p > 0.78 ? 0.05 : 0.9;
           const angle = t * rot.speed * rotSpeed;
           dummy.rotation.set(
             rot.axis.x * angle,
@@ -816,6 +972,52 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile }: MorphMeshesPr
       });
     }
 
+    // === STAGE 0.20-0.55: ExplosionDebris (pietre mari rocky, dark) ===
+    if (debrisRef.current && debrisMatRef.current) {
+      const debrisActive = p >= 0.20 && p <= 0.55;
+      debrisRef.current.visible = debrisActive;
+      if (debrisActive) {
+        const { origins, targets, rotations, scales } = debrisData;
+        // Fade-in la inceput, fade-out la final.
+        let opacity = 1;
+        if (p < 0.24) opacity = (p - 0.20) / 0.04;
+        else if (p > 0.45) opacity = 1 - (p - 0.45) / 0.10;
+        debrisMatRef.current.opacity = THREE.MathUtils.clamp(opacity, 0, 1);
+
+        // Pozitie: origin (suprafata asteroid) -> target (5-8 unit afara).
+        // Local progress: 0.20-0.42 = expansiunea principala (power4.out).
+        const expandT = THREE.MathUtils.clamp((p - 0.20) / 0.22, 0, 1);
+        const eased = 1 - Math.pow(1 - expandT, 4);
+
+        for (let i = 0; i < DEBRIS_COUNT; i++) {
+          const origin = origins[i];
+          const target = targets[i];
+          const rot = rotations[i];
+          const scale = scales[i];
+
+          dummy.position.set(
+            THREE.MathUtils.lerp(origin.x, target.x, eased),
+            THREE.MathUtils.lerp(origin.y, target.y, eased),
+            THREE.MathUtils.lerp(origin.z, target.z, eased)
+          );
+          if (!reduced) {
+            const angle = t * rot.speed * 1.2;
+            dummy.rotation.set(
+              rot.axis.x * angle,
+              rot.axis.y * angle,
+              rot.axis.z * angle
+            );
+          } else {
+            dummy.rotation.set(0, 0, 0);
+          }
+          dummy.scale.setScalar(scale);
+          dummy.updateMatrix();
+          debrisRef.current.setMatrixAt(i, dummy.matrix);
+        }
+        debrisRef.current.instanceMatrix.needsUpdate = true;
+      }
+    }
+
     // === Camera dolly noua ===
     // 0.0-0.22: z=5, slight orbit
     // 0.22-0.32: z pulls back to 6.5 to see explosion
@@ -835,6 +1037,27 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile }: MorphMeshesPr
     camera.position.x = THREE.MathUtils.lerp(camera.position.x, mouseX, delta * 1.2);
     camera.position.y = THREE.MathUtils.lerp(camera.position.y, scrollY + mouseY, delta * 1.5);
     camera.lookAt(0, 0, 0);
+
+    // === Halo extern pre-impact ===
+    // Sferă aditivă portocalie + point light co-locat. Pulsează în
+    // window-ul p ∈ [0.16, 0.22] crescând până la momentul shatter.
+    const halo = haloRef.current;
+    const haloMat = haloMatRef.current;
+    const haloLight = haloLightRef.current;
+    if (halo && haloMat && haloLight) {
+      if (p >= 0.16 && p < 0.22) {
+        const hp = (p - 0.16) / 0.06;
+        const pulse = 0.5 + 0.5 * Math.sin(state.clock.elapsedTime * 12);
+        haloMat.opacity = hp * (0.4 + pulse * 0.15);
+        haloLight.intensity = hp * (1.5 + pulse * 0.5);
+        halo.scale.setScalar(1 + hp * 0.06);
+        halo.visible = true;
+      } else {
+        halo.visible = false;
+        haloMat.opacity = 0;
+        haloLight.intensity = 0;
+      }
+    }
   });
 
   // Float-ul aplica miscare idle "vie"; cu reduced motion dezactivam complet.
@@ -844,6 +1067,10 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile }: MorphMeshesPr
 
   return (
     <>
+      {/* BELT DEBRIS — chunks 3D reale (Sketchfab CC-BY) orbitand in jurul
+          asteroidului principal. Vizibil pana la inceputul exploziei (p<0.18). */}
+      <BeltDebris geometries={chunkGeometries} progressRef={progressRef} reduced={reduced} />
+
       {/* ASTEROID — masiv, neregulat, mat, debris in jur. */}
       <Float
         speed={asteroidFloat.speed}
@@ -871,6 +1098,28 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile }: MorphMeshesPr
         </group>
       </Float>
 
+      {/* HALO EXTERN PRE-IMPACT — sferă aditivă portocalie în jurul asteroidului
+          + point light co-locat. Pulsează în window-ul p ∈ [0.16, 0.22]. */}
+      <mesh ref={haloRef} visible={false}>
+        <sphereGeometry args={[1.32, 32, 32]} />
+        <meshBasicMaterial
+          ref={haloMatRef}
+          color="#ff6a2a"
+          transparent
+          opacity={0}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </mesh>
+      <pointLight
+        ref={haloLightRef}
+        position={[0, 0, 0]}
+        intensity={0}
+        distance={4}
+        decay={2}
+        color="#ff6a2a"
+      />
+
       {/* ENERGY PULSE — torus care se expandeaza din asteroid si fade out. */}
       <mesh ref={pulseRef} scale={0.01}>
         <torusGeometry args={[1, 0.04, 16, 64]} />
@@ -895,12 +1144,11 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile }: MorphMeshesPr
         />
       </mesh>
 
-      {/* DUST PARTICLES FINE — vizibile in faza explozie + float. */}
-      <group ref={dustParticlesRef}>
-        {!reduced && !isMobile && (
-          <Sparkles count={200} scale={8} size={0.6} speed={0.15} color="#7a7570" />
-        )}
-      </group>
+      {/* DUST PARTICLES FINE — dezactivate. Cele 200 sparkles dense obscurau
+          vederea fragmentelor reale. Pastram doar fragmentele rocky + shockwave
+          subtil pentru un look mai curat. */}
+      <group ref={dustParticlesRef} />
+
 
       {/* FRAGMENTE — 4 grupuri x 75 instante, geometrii diferite, material shared.
           Primul mesh defineste materialul inline (cu ref); celelalte trei il
@@ -910,11 +1158,13 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile }: MorphMeshesPr
         args={[fragmentGeometries.icosa, undefined, FRAGMENT_COUNT_PER_GROUP]}
         castShadow
       >
-        {/* Material fragment — acelasi look ca asteroidul (chunks din el). */}
+        {/* Material fragment — alb-piatra (#d4d4d4) ca sa contrasteze cu
+            background-ul dark si sa fie clar vizibile. Roughness mare =
+            mat (nu plastic), metalness mica = piatra (nu metal). */}
         <meshStandardMaterial
           ref={fragmentMatRef}
-          color="#0a0a0a"
-          roughness={0.9}
+          color="#d4d4d4"
+          roughness={0.85}
           metalness={0.1}
         />
       </instancedMesh>
@@ -933,12 +1183,81 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile }: MorphMeshesPr
         args={[fragmentGeometries.dodeca, undefined, FRAGMENT_COUNT_PER_GROUP]}
         castShadow
       />
+
+      {/* EXPLOSION DEBRIS — 25 pietre MARI rocky cu material like asteroidul
+          (color #0a0a0a, roughness 0.9, metalness 0.1). Vizibile doar in
+          fereastra exploziei 0.20-0.55, apoi fade-out. Geometria reutilizata
+          e chunk-ul mare din asteroid_belt[8]. */}
+      <instancedMesh
+        ref={debrisRef}
+        args={[chunkGeometries[8] || fragmentGeometries.icosa, undefined, DEBRIS_COUNT]}
+        castShadow
+      >
+        <meshStandardMaterial
+          ref={debrisMatRef}
+          color="#0a0a0a"
+          roughness={0.9}
+          metalness={0.1}
+          transparent
+          opacity={1}
+        />
+      </instancedMesh>
     </>
   );
 }
 
 // Preload Bennu GLB la nivel de modul — porneste cat mai devreme.
 useGLTF.preload('/models/bennu.glb', '/draco/');
+// Preload asteroid belt (24 forme reale Sketchfab CC-BY, Draco-compressed).
+useGLTF.preload('/models/asteroid_belt.glb', '/draco/');
+// BeltDebris — chunks reale orbiteaza in jurul asteroidului principal,
+// dau senzatie de "asteroid in mijlocul unui camp de roci".
+// Fade-out cand asteroidul incepe sa se sparga (p > 0.18) ca scena
+// sa nu fie ocupata in timpul exploziei.
+interface BeltDebrisProps {
+  geometries: THREE.BufferGeometry[];
+  progressRef: ProgressRef;
+  reduced: boolean;
+}
+
+function BeltDebris({ geometries, progressRef, reduced }: BeltDebrisProps) {
+  const groupRef = useRef<THREE.Group>(null);
+  // 8 chunks distribuiti pe orbita.
+  const items = useMemo(() => buildBeltDebris(8), []);
+
+  useFrame((state, delta) => {
+    const p = progressRef.current;
+    // Fade-out incepand cu inceputul exploziei.
+    const alpha = THREE.MathUtils.clamp(1 - (p - 0.18) / 0.06, 0, 1);
+    if (groupRef.current) {
+      groupRef.current.visible = alpha > 0.01;
+      if (!reduced) {
+        // Rotatie lenta a intregului belt + scale pulsing subtil pe fiecare child.
+        groupRef.current.rotation.y += delta * 0.04;
+      }
+    }
+  });
+
+  if (geometries.length === 0) return null;
+
+  return (
+    <group ref={groupRef}>
+      {items.map((d, i) => (
+        <mesh
+          key={i}
+          geometry={geometries[d.chunkIndex % geometries.length]}
+          position={d.position}
+          scale={d.scale}
+          rotation={d.rotation}
+          castShadow
+          receiveShadow
+        >
+          <meshStandardMaterial color="#0a0a0a" roughness={0.9} metalness={0.1} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
 
 export default function CinematicScene3D() {
   const reduced = useReducedMotion() ?? false;
@@ -1016,67 +1335,55 @@ export default function CinematicScene3D() {
         }}
       >
         <fog attach="fog" args={['#050505', 6, 12]} />
-        {/* Iluminare cinematica balansata — toate intensitatile reduse
-            ca asteroidul sa nu mai fie blow-out pe diffuse #121417. */}
+        {/* Iluminare cinematica "single sun" — un singur soare puternic din
+            dreapta, aproape de orizont, creeaza rim crescent alb pop pe
+            marginea asteroidului. Restul luminilor reduse la soapta ca sa
+            nu concureze si sa pastreze contrastul dramatic din referinta. */}
         <ambientLight intensity={0.08} color="#ffffff" />
-        {/* Key light — directionalul principal. */}
+        {/* Key light — soarele din dreapta-SPATE, dominant. Pozitionat in
+            spatele asteroidului (z negativ) ca razele sa cada pe muchia
+            din partea opusa camerei -> rim crescent alb pe edge. */}
         <directionalLight
-          position={[6, 8, 6]}
-          intensity={0.6}
+          position={[8, 2, -4]}
+          intensity={3.5}
           color="#ffffff"
           castShadow
         />
-        {/* Rim — accent rece subtil, contureaza silueta. */}
-        <directionalLight position={[-7, 2, -5]} intensity={0.7} color="#555F6B" />
+        {/* Rim — soapta rece pe partea opusa, doar ca sa nu fie complet plat. */}
+        <directionalLight position={[-7, 2, -5]} intensity={0.15} color="#555F6B" />
         {/* Fill de jos — bounce subtil. */}
         <directionalLight position={[0, -4, 4]} intensity={0.2} color="#9aa0b0" />
         {/* Hemisfera — gradient cer/sol pentru ambianta. */}
         <hemisphereLight args={['#1a2030', '#050505', 0.25]} />
-        {/* Highlight pe suprafata — pointLight alb din stanga-sus,
-            creeaza specular subtil pe asteroid fara sa-i schimbe culoarea. */}
+        {/* Highlight subtil pe partea de umbra — redus puternic ca sa nu
+            mai concureze cu key-ul dominant din dreapta. */}
         <pointLight
           position={[-3, 3, 4]}
-          intensity={0.85}
+          intensity={0.2}
           distance={9}
           decay={2}
           color="#ffffff"
         />
-        {/* Backlight — creeaza un edge glow pe marginea asteroidului dinspre
-            partea opusa camerei. Acopera spatiul "in jurul" lui fara halou
-            sprite (care bleed-uia in spatiul gol). */}
+        {/* Backlight — pointLight cald in spate-dreapta, suport pentru rim
+            crescent creat de key. Mutat din centru (0) la x=5 ca sa sustina
+            partea dreapta a muchiei; boostat de la 1.4 la 5 si distance la
+            12 ca lumina sa nu cada prea repede. */}
         <pointLight
-          position={[0, 0.5, -3]}
-          intensity={1.4}
-          distance={6}
+          position={[5, 1.5, -3]}
+          intensity={5}
+          distance={12}
           decay={2}
-          color="#5a708a"
+          color="#fff0d8"
         />
         <Suspense fallback={null}>
-          {/* Environment IBL generat din Lightformer-i — fara HDR extern.
-              Da reflexii reale pe asteroid + fragmente. */}
-          <Environment background={false} resolution={256}>
-            <Lightformer
-              form="rect"
-              position={[5, 4, 5]}
-              scale={[3, 3, 1]}
-              intensity={2}
-              color="#ffffff"
-            />
-            <Lightformer
-              form="rect"
-              position={[-5, 2, -3]}
-              scale={[3, 4, 1]}
-              intensity={1.6}
-              color="#6b8aa8"
-            />
-            <Lightformer
-              form="circle"
-              position={[0, -4, 0]}
-              scale={[5, 1, 5]}
-              intensity={0.5}
-              color="#2a3040"
-            />
-          </Environment>
+          {/* Environment IBL — HDRI dezactivat temporar (mutat in
+              _disabled_assets/) ca sa testam daca el cauza Turbopack panic.
+              Reactivam dupa ce primim varianta 1k de la utilizator. */}
+          {/* <Environment
+            files="/hdri/kloppenheim_02_puresky_4k.exr"
+            background={false}
+            resolution={512}
+          /> */}
           {/* Stele 3D cu adancime — drift natural pe baza de fade + speed.
               Skip pe mobile — costul de geometrie pentru 2000 puncte e prea mare. */}
           {!reduced && !isMobile && (
@@ -1105,8 +1412,8 @@ export default function CinematicScene3D() {
         {!isMobile && (
           <EffectComposer>
             <Bloom
-              intensity={0.4}
-              luminanceThreshold={0.92}
+              intensity={0.55}
+              luminanceThreshold={0.82}
               luminanceSmoothing={0.6}
               mipmapBlur
             />
