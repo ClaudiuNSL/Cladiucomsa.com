@@ -603,6 +603,12 @@ const DEBRIS_COUNT = 25; // bucati mari rocky pentru momentul exploziei
 const SPARK_COUNT_DESKTOP = 80;
 const SPARK_COUNT_MOBILE = 30;
 
+// Dust trails — line segments care urmaresc debris-ul. TRAIL_LEN puncte pe
+// trail, history-based — fiecare frame shift-am toate punctele cu unul si
+// pushim noua pozitie in slot 0.
+const TRAIL_LEN_DESKTOP = 10;
+const TRAIL_LEN_MOBILE = 5;
+
 interface MorphMeshesProps {
   progressRef: ProgressRef;
   mouseRef: MouseRef;
@@ -756,6 +762,31 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile, flashRef, bloom
       })),
     [sparkCount]
   );
+  // === DUST TRAILS — line segments urmarind fiecare bucata de debris ===
+  // Folosim LineSegments cu vertex colors si AdditiveBlending. Avem
+  // DEBRIS_COUNT (25) trails × trailLen pozitii fiecare. Per frame:
+  //   1. Shift history-ul (slot j ia valoarea din slot j-1).
+  //   2. Push pozitia curenta a debris-ului in slot 0.
+  //   3. Generam line segments: pentru fiecare pereche (j, j+1) de puncte,
+  //      doua entry-uri in buffer (start + end). Total = trailLen-1 segmente
+  //      per debris = (trailLen-1)*2 pozitii. Folosim drawRange ca sa
+  //      lasam buffer-ul cu trailLen-1 segmente per debris (forma fix).
+  const trailLen = isMobile ? TRAIL_LEN_MOBILE : TRAIL_LEN_DESKTOP;
+  const trailObjRef = useRef<THREE.LineSegments>(null);
+  const trailBuffers = useMemo(() => {
+    // Fiecare segment are 2 puncte (start+end), deci (trailLen-1) segmente
+    // per debris -> (trailLen-1)*2 vertici per debris.
+    const segsPerDebris = trailLen - 1;
+    const vertsPerDebris = segsPerDebris * 2;
+    const totalVerts = DEBRIS_COUNT * vertsPerDebris;
+    const positions = new Float32Array(totalVerts * 3);
+    const colors = new Float32Array(totalVerts * 3);
+    const history = Array.from({ length: DEBRIS_COUNT }, () =>
+      Array.from({ length: trailLen }, () => new THREE.Vector3())
+    );
+    return { positions, colors, history, segsPerDebris };
+  }, [trailLen]);
+
   const spawnSparks = useCallback(() => {
     for (let i = 0; i < sparkCount; i++) {
       const s = sparkData[i];
@@ -886,6 +917,12 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile, flashRef, bloom
         s.alive = false;
       });
       if (sparksRef.current) sparksRef.current.count = 0;
+      // Reset trail history — toate slotturile inapoi la (0,0,0) ca sa nu
+      // ramana segmente "stuck" intre frame-uri cand revii la shatter.
+      trailBuffers.history.forEach((hist) => {
+        hist.forEach((v) => v.set(0, 0, 0));
+      });
+      if (trailObjRef.current) trailObjRef.current.visible = false;
     }
     lastProgressRef.current = p;
 
@@ -1109,8 +1146,56 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile, flashRef, bloom
           dummy.scale.setScalar(scale);
           dummy.updateMatrix();
           debrisRef.current.setMatrixAt(i, dummy.matrix);
+
+          // Push pozitia curenta in trail history pentru bucata i.
+          const hist = trailBuffers.history[i];
+          for (let j = hist.length - 1; j > 0; j--) hist[j].copy(hist[j - 1]);
+          hist[0].copy(dummy.position);
         }
         debrisRef.current.instanceMatrix.needsUpdate = true;
+
+        // Rebuild line-segments buffer: 2 vertici per segment, vertex colors
+        // cu fade pe lungimea trail-ului si fade global pe timp scurs de la shatter.
+        const tShatterTrail =
+          shatterTimeRef.current !== null
+            ? (performance.now() - shatterTimeRef.current) / 1000
+            : 0;
+        const trailFade = Math.max(0, 1 - tShatterTrail * 0.5);
+        const segs = trailBuffers.segsPerDebris;
+        for (let i = 0; i < DEBRIS_COUNT; i++) {
+          const hist = trailBuffers.history[i];
+          for (let j = 0; j < segs; j++) {
+            // Segment j conecteaza punctul j cu j+1.
+            const baseIdx = (i * segs + j) * 2 * 3;
+            // Start point (slot j) — alpha mai mare aproape de debris.
+            trailBuffers.positions[baseIdx] = hist[j].x;
+            trailBuffers.positions[baseIdx + 1] = hist[j].y;
+            trailBuffers.positions[baseIdx + 2] = hist[j].z;
+            // End point (slot j+1) — mai vechi -> alpha mai mic.
+            trailBuffers.positions[baseIdx + 3] = hist[j + 1].x;
+            trailBuffers.positions[baseIdx + 4] = hist[j + 1].y;
+            trailBuffers.positions[baseIdx + 5] = hist[j + 1].z;
+            // Alpha per slot: (1 - slot/trailLen) * 0.85 * trailFade
+            const aStart = (1 - j / trailLen) * 0.85 * trailFade;
+            const aEnd = (1 - (j + 1) / trailLen) * 0.85 * trailFade;
+            trailBuffers.colors[baseIdx] = 0.55 * aStart;
+            trailBuffers.colors[baseIdx + 1] = 0.5 * aStart;
+            trailBuffers.colors[baseIdx + 2] = 0.45 * aStart;
+            trailBuffers.colors[baseIdx + 3] = 0.55 * aEnd;
+            trailBuffers.colors[baseIdx + 4] = 0.5 * aEnd;
+            trailBuffers.colors[baseIdx + 5] = 0.45 * aEnd;
+          }
+        }
+        const trailGeom = trailObjRef.current?.geometry as
+          | THREE.BufferGeometry
+          | undefined;
+        if (trailGeom) {
+          (trailGeom.attributes.position as THREE.BufferAttribute).needsUpdate = true;
+          (trailGeom.attributes.color as THREE.BufferAttribute).needsUpdate = true;
+        }
+        if (trailObjRef.current) trailObjRef.current.visible = true;
+      } else if (trailObjRef.current) {
+        trailObjRef.current.visible = false;
       }
     }
 
@@ -1374,6 +1459,35 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile, flashRef, bloom
         <sphereGeometry args={[0.025, 6, 6]} />
         <meshBasicMaterial color="#ffaa55" transparent toneMapped={false} />
       </instancedMesh>
+
+      {/* DUST TRAILS — line segments aditive cu vertex colors care urmaresc
+          fiecare bucata de debris. Construite dinamic in useFrame din
+          trailBuffers.history. Visible=false initial, true cand debris e activ. */}
+      <lineSegments ref={trailObjRef} visible={false}>
+        <bufferGeometry>
+          <bufferAttribute
+            attach="attributes-position"
+            args={[trailBuffers.positions, 3]}
+            count={trailBuffers.positions.length / 3}
+            array={trailBuffers.positions}
+            itemSize={3}
+          />
+          <bufferAttribute
+            attach="attributes-color"
+            args={[trailBuffers.colors, 3]}
+            count={trailBuffers.colors.length / 3}
+            array={trailBuffers.colors}
+            itemSize={3}
+          />
+        </bufferGeometry>
+        <lineBasicMaterial
+          vertexColors
+          transparent
+          opacity={0.85}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </lineSegments>
     </>
   );
 }
