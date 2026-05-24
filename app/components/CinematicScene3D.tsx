@@ -498,6 +498,63 @@ function buildBeltDebris(count: number) {
 
 const DEBRIS_COUNT = 25; // bucati mari rocky pentru momentul exploziei
 
+// Pack debris — bucati suplimentare din /models/asteroids_pack.glb (10 forme
+// distincte × 3 instante = 30 pietre extra). Mai lente si usor mai mari decat
+// debris-ul principal, ca sa citeasca vizual ca "bolovani grei". Lifecycle
+// identic cu cele 25 chunks existente: trigger la p>=0.22, gate p ∈ [0.20, 0.55].
+const PACK_GEO_COUNT = 10;
+const PACK_PER_GEO = 3;
+const PACK_DEBRIS_COUNT = PACK_GEO_COUNT * PACK_PER_GEO;
+
+type PackDatum = {
+  origin: THREE.Vector3;
+  target: THREE.Vector3;
+  rotAxis: THREE.Vector3;
+  rotSpeed: number;
+  scale: number;
+};
+
+// Per-instance random data pentru cele 30 bucati extra. Math.random()
+// in init e impur, deci helper-ul e la nivel de modul (lint react-hooks/purity).
+function buildPackDebrisData(count: number): PackDatum[] {
+  const out: PackDatum[] = [];
+  for (let i = 0; i < count; i++) {
+    // Origin pe sfera radius 1.2 (suprafata asteroidului), uniform pe sfera.
+    const phi = Math.random() * Math.PI * 2;
+    const theta = Math.acos(2 * Math.random() - 1);
+    const r = 1.2;
+    const origin = new THREE.Vector3(
+      r * Math.sin(theta) * Math.cos(phi),
+      r * Math.sin(theta) * Math.sin(phi),
+      r * Math.cos(theta)
+    );
+    // Target = directie radial * dist. Cele 25 chunks principale folosesc 5-8.
+    // Aici scadem usor (4.5-7.0) ca sa rezulte o "viteza" perceputa de 2.0-3.5
+    // u/s in fereastra activa p ∈ [0.20, 0.55] (slightly slower decat principal,
+    // citeste ca "bigger / heavier" cum cere planul).
+    const dist = 4.5 + Math.random() * 2.5;
+    const dir = origin.clone().normalize();
+    const target = dir
+      .multiplyScalar(dist)
+      .add(
+        new THREE.Vector3(
+          (Math.random() - 0.5) * 1.5,
+          (Math.random() - 0.5) * 1.5,
+          (Math.random() - 0.5) * 1.5
+        )
+      );
+    const rotAxis = new THREE.Vector3(
+      Math.random() - 0.5,
+      Math.random() - 0.5,
+      Math.random() - 0.5
+    ).normalize();
+    const rotSpeed = 1.0 + Math.random() * 2.5; // 1.0-3.5 rad/s
+    const scale = 0.25 + Math.random() * 0.30; // 0.25-0.55
+    out.push({ origin, target, rotAxis, rotSpeed, scale });
+  }
+  return out;
+}
+
 // Fallback geometric pentru debris-ul mare daca asset-ul asteroid_belt n-a
 // apucat sa se incarce inca. Module-level pentru stabilitate referentiala
 // in JSX args (re-render-ul nu trebuie sa instantieze geometrie noua).
@@ -571,6 +628,11 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile, flashRef, bloom
   // Draco-compressed (47MB raw -> 4.5MB).
   const beltGltf = useGLTF('/models/asteroid_belt.glb', '/draco/');
 
+  // Pack-ul suplimentar — 10 forme distincte (Asteroid_no_1..10) folosite ca
+  // debris extra (30 instante = 10 geometrii × 3). NU este Draco-compressed
+  // (verificat: lipseste KHR_draco_mesh_compression in extensionsUsed).
+  const packGltf = useGLTF('/models/asteroids_pack.glb');
+
   // Extragem cele 24 geometrii din belt, fiecare normalizata la unit size
   // (extent max = 1) si centrata in origin. Asa le putem instantia la orice
   // scale fara sa ne batem cu transformarile originale Sketchfab.
@@ -597,6 +659,28 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile, flashRef, bloom
     });
     return geos;
   }, [beltGltf]);
+
+  // Pack debris — extragem cele 10 geometrii distincte din asteroids_pack.glb,
+  // le centram si le normalizam la bounding-sphere radius ~1.0 ca sa putem
+  // multiplica scale-ul per-instanta pentru varietate vizuala.
+  const packGeometries = useMemo(() => {
+    const geos: THREE.BufferGeometry[] = [];
+    packGltf.scene.traverse((obj) => {
+      if (obj instanceof THREE.Mesh) {
+        const geo = (obj.geometry as THREE.BufferGeometry).clone();
+        // Centreaza pe origin.
+        geo.center();
+        // Normalizare la bounding-sphere radius ~1.0.
+        geo.computeBoundingSphere();
+        const radius = geo.boundingSphere?.radius || 1;
+        const s = 1 / radius;
+        geo.scale(s, s, s);
+        if (!geo.attributes.normal) geo.computeVertexNormals();
+        geos.push(geo);
+      }
+    });
+    return geos;
+  }, [packGltf]);
 
   // Geometria procesata: scalata + UV-uri sferice generate + centrata.
   const asteroidGeometry = useMemo(() => {
@@ -658,6 +742,21 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile, flashRef, bloom
   const debrisData = debrisDataRef.current;
   const debrisRef = useRef<THREE.InstancedMesh>(null);
   const debrisMatRef = useRef<THREE.MeshStandardMaterial>(null);
+
+  // === PACK DEBRIS — 30 bucati suplimentare (10 geometrii × 3 instante) ===
+  // Lifecycle identic cu cele 25 chunks. Date per-instanta initialize lazy
+  // ca sa nu trigger-uim react-hooks/purity pe Math.random().
+  const packDataRef = useRef<PackDatum[] | null>(null);
+  if (packDataRef.current === null) {
+    packDataRef.current = buildPackDebrisData(PACK_DEBRIS_COUNT);
+  }
+  const packData = packDataRef.current;
+  // 10 refs pentru 10 InstancedMesh-uri (cate unul per geometrie). Array
+  // declarat o singura data si populat prin callback ref-uri in JSX.
+  const packMeshRefs = useRef<(THREE.InstancedMesh | null)[]>([]);
+  // Material partajat pentru toate cele 10 InstancedMesh-uri din pack.
+  // Acelasi #0a0a0a / 0.9 / 0.1 ca debris-ul principal.
+  const packMatRef = useRef<THREE.MeshStandardMaterial>(null);
 
   // === SPARKS — 80 (30 mobile) puncte emisive portocalii ===
   // Spawn la impact (p>=0.22), zboara radial cu drag, lifetime 0.6-1.4s,
@@ -813,6 +912,8 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile, flashRef, bloom
       asteroidGeometry.dispose();
       // Toate cele 24 chunk-uri folosite de BeltDebris + debris-ul mare rocky.
       chunkGeometries.forEach((g) => g.dispose());
+      // Cele 10 geometrii din pack (debris suplimentar).
+      packGeometries.forEach((g) => g.dispose());
       if (surfaceMaps) {
         surfaceMaps.diffuseMap.dispose();
         surfaceMaps.normalMap.dispose();
@@ -822,7 +923,7 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile, flashRef, bloom
         surfaceMaps.emissiveMap.dispose();
       }
     };
-  }, [asteroidGeometry, chunkGeometries, surfaceMaps]);
+  }, [asteroidGeometry, chunkGeometries, packGeometries, surfaceMaps]);
 
   // Initial: ascundem sparks (count=0) — vor fi popped on impact.
   useEffect(() => {
@@ -1131,6 +1232,56 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile, flashRef, bloom
       subMesh.instanceMatrix.needsUpdate = true;
     }
 
+    // === STAGE 0.20-0.55: PACK DEBRIS (30 bucati extra, 10 geo × 3 inst) ===
+    // Lifecycle identic cu cele 25 chunks principale. Aceeasi fereastra
+    // p ∈ [0.20, 0.55], aceeasi gate pe shatterTimeRef. Material partajat.
+    const packActive = p >= 0.20 && p <= 0.55;
+    if (packMatRef.current) {
+      // Fade pe inceput/sfarsit identic cu debris-ul principal.
+      let packOpacity = 1;
+      if (p < 0.24) packOpacity = (p - 0.20) / 0.04;
+      else if (p > 0.45) packOpacity = 1 - (p - 0.45) / 0.10;
+      packMatRef.current.opacity = THREE.MathUtils.clamp(packOpacity, 0, 1);
+    }
+    if (packActive) {
+      // Aceeasi pereche progress/easing ca la cele 25 chunks (power4.out).
+      const packExpandT = THREE.MathUtils.clamp((p - 0.20) / 0.22, 0, 1);
+      const packEased = 1 - Math.pow(1 - packExpandT, 4);
+      for (let g = 0; g < PACK_GEO_COUNT; g++) {
+        const mesh = packMeshRefs.current[g];
+        if (!mesh) continue;
+        mesh.visible = true;
+        for (let k = 0; k < PACK_PER_GEO; k++) {
+          const idx = g * PACK_PER_GEO + k;
+          const d = packData[idx];
+          dummy.position.set(
+            THREE.MathUtils.lerp(d.origin.x, d.target.x, packEased),
+            THREE.MathUtils.lerp(d.origin.y, d.target.y, packEased),
+            THREE.MathUtils.lerp(d.origin.z, d.target.z, packEased)
+          );
+          if (!reduced) {
+            const angle = t * d.rotSpeed;
+            dummy.rotation.set(
+              d.rotAxis.x * angle,
+              d.rotAxis.y * angle,
+              d.rotAxis.z * angle
+            );
+          } else {
+            dummy.rotation.set(0, 0, 0);
+          }
+          dummy.scale.setScalar(d.scale);
+          dummy.updateMatrix();
+          mesh.setMatrixAt(k, dummy.matrix);
+        }
+        mesh.instanceMatrix.needsUpdate = true;
+      }
+    } else {
+      for (let g = 0; g < PACK_GEO_COUNT; g++) {
+        const mesh = packMeshRefs.current[g];
+        if (mesh) mesh.visible = false;
+      }
+    }
+
     // === Camera dolly noua ===
     // 0.0-0.22: z=5, slight orbit
     // 0.22-0.32: z pulls back to 6.5 to see explosion
@@ -1349,6 +1500,40 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile, flashRef, bloom
         />
       </instancedMesh>
 
+      {/* PACK DEBRIS — 30 bucati extra rocky din asteroids_pack.glb. Sunt
+          10 forme distincte instanted x3 (deci 10 InstancedMesh, fiecare cu
+          3 instante). Material partajat (declarat o singura data si ref-uit
+          via packMatRef pentru fade global pe opacity in useFrame). */}
+      {packGeometries.map((geo, g) => (
+        <instancedMesh
+          key={`pack-${g}`}
+          ref={(el) => {
+            packMeshRefs.current[g] = el;
+          }}
+          args={[geo, undefined, PACK_PER_GEO]}
+          castShadow
+        >
+          {g === 0 ? (
+            <meshStandardMaterial
+              ref={packMatRef}
+              color="#0a0a0a"
+              roughness={0.9}
+              metalness={0.1}
+              transparent
+              opacity={1}
+            />
+          ) : (
+            <meshStandardMaterial
+              color="#0a0a0a"
+              roughness={0.9}
+              metalness={0.1}
+              transparent
+              opacity={1}
+            />
+          )}
+        </instancedMesh>
+      ))}
+
       {/* SPARKS — 80 (30 mobile) puncte mici emisive portocalii care explodeaza
           din centru la impact. MeshBasicMaterial nu primeste lumina; culoarea
           calda + bloom creeaza streaks vizuale. Instance count=0 initial,
@@ -1407,6 +1592,8 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile, flashRef, bloom
 useGLTF.preload('/models/bennu.glb', '/draco/');
 // Preload asteroid belt (24 forme reale Sketchfab CC-BY, Draco-compressed).
 useGLTF.preload('/models/asteroid_belt.glb', '/draco/');
+// Preload pack-ul cu 10 forme distincte (debris suplimentar). NU Draco-compressed.
+useGLTF.preload('/models/asteroids_pack.glb');
 // BeltDebris — chunks reale orbiteaza in jurul asteroidului principal,
 // dau senzatie de "asteroid in mijlocul unui camp de roci".
 // Fade-out cand asteroidul incepe sa se sparga (p > 0.18) ca scena
