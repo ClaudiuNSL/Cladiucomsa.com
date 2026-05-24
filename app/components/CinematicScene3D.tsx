@@ -16,7 +16,7 @@ import {
 } from '@react-three/drei';
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import { useReducedMotion } from 'framer-motion';
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, Suspense } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, Suspense, type RefObject } from 'react';
 
 // Hook intern: detecteaza viewport sub Tailwind lg (1024px). Pe mobile,
 // reducem costul scenei 3D — fara post-processing, fara particule decorative,
@@ -603,9 +603,10 @@ interface MorphMeshesProps {
   mouseRef: MouseRef;
   reduced: boolean;
   isMobile: boolean;
+  flashRef?: RefObject<HTMLDivElement | null>;
 }
 
-function MorphMeshes({ progressRef, mouseRef, reduced, isMobile }: MorphMeshesProps) {
+function MorphMeshes({ progressRef, mouseRef, reduced, isMobile, flashRef }: MorphMeshesProps) {
   const asteroidRef = useRef<THREE.Mesh>(null);
   const asteroidMatRef = useRef<THREE.MeshStandardMaterial>(null);
 
@@ -614,6 +615,10 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile }: MorphMeshesPr
   const haloRef = useRef<THREE.Mesh>(null);
   const haloMatRef = useRef<THREE.MeshBasicMaterial>(null);
   const haloLightRef = useRef<THREE.PointLight>(null);
+
+  // Tracking progres anterior — folosit pentru detecția trecerii peste pragul
+  // 0.22 (declanșatorul efectelor de impact: flash, shake, sparks etc).
+  const lastProgressRef = useRef(0);
 
   // Pulse ring + fragments.
   const pulseRef = useRef<THREE.Mesh>(null);
@@ -792,6 +797,18 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile }: MorphMeshesPr
     const p = progressRef.current;
     const t = state.clock.elapsedTime;
     const camera = state.camera;
+
+    // === Detecție trecere prag impact (p crosses 0.22 forward) ===
+    // Declanșează flash overlay DOM. Comparăm cu valoarea anterioară a lui p
+    // ca să prindem doar tranziția forward → impact, nu fiecare frame.
+    const lastP = lastProgressRef.current;
+    if (lastP < 0.22 && p >= 0.22) {
+      flashRef?.current?.animate(
+        [{ opacity: 0.95 }, { opacity: 0 }],
+        { duration: 380, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' }
+      );
+    }
+    lastProgressRef.current = p;
 
     // === STAGE 0-1: Asteroid solid -> emissive intensifies -> fade out ===
     const asteroidAlpha = THREE.MathUtils.clamp(1 - (p - 0.22) / 0.1, 0, 1);
@@ -1265,6 +1282,8 @@ export default function CinematicScene3D() {
   const progressRef = useRef<number>(0);
   // Pozitia mouse-ului normalizata in [-1, 1]. Citita per-frame in MorphMeshes.
   const mouseRef = useRef({ x: 0, y: 0 });
+  // Ref catre flash overlay DOM — declansat la momentul impactului (p=0.22).
+  const flashRef = useRef<HTMLDivElement | null>(null);
 
   // ScrollTrigger urmareste DOAR wrapper-ul cinematic (primele 3 sectiuni).
   // Asa progresul 0->1 se face fix in secventa explozie + CC, iar dupa
@@ -1316,10 +1335,20 @@ export default function CinematicScene3D() {
   }, [reduced]);
 
   return (
-    <div
-      aria-hidden
-      className="pointer-events-none fixed inset-0 -z-10"
-    >
+    <>
+      {/* FLASH OVERLAY — div alb full-screen care flashește la momentul impactului
+          (p crosses 0.22 forward). z-50 ca să apară deasupra canvas-ului (care
+          stă pe -z-10). Animat prin Web Animations API direct din useFrame. */}
+      <div
+        ref={flashRef}
+        className="pointer-events-none fixed inset-0 z-50 bg-white"
+        style={{ opacity: 0 }}
+        aria-hidden
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 -z-10"
+      >
       <Canvas
         camera={{ position: [0, 0, 5], fov: 35 }}
         dpr={isMobile ? [1, 1] : [1, 1.75]}
@@ -1397,7 +1426,7 @@ export default function CinematicScene3D() {
               speed={0.4}
             />
           )}
-          <MorphMeshes progressRef={progressRef} mouseRef={mouseRef} reduced={reduced} isMobile={isMobile} />
+          <MorphMeshes progressRef={progressRef} mouseRef={mouseRef} reduced={reduced} isMobile={isMobile} flashRef={flashRef} />
           {/* Umbre de contact moi sub obiect — ancorare vizuala. */}
           <ContactShadows
             position={[0, -1.6, 0]}
@@ -1421,6 +1450,7 @@ export default function CinematicScene3D() {
           </EffectComposer>
         )}
       </Canvas>
-    </div>
+      </div>
+    </>
   );
 }
