@@ -552,6 +552,17 @@ function buildDebrisScales(count: number) {
   return scales;
 }
 
+// Pre-rolled per-piece "splitAt" timestamps pentru sub-shatter — 0.55-1.05s
+// post-impact. Scos ca helper functie (in afara componentei) ca sa nu trigger-
+// uim react-hooks/purity la apel inline pe Math.random.
+function buildDebrisSplitAt(count: number) {
+  const splitAt: number[] = [];
+  for (let i = 0; i < count; i++) {
+    splitAt.push(0.55 + Math.random() * 0.5);
+  }
+  return splitAt;
+}
+
 // Genereaza pozitii pentru belt-ul orbital de debris in jurul asteroidului.
 // 8 chunks distribuiti pe o orbita circulara cu jitter random pe distanta
 // + height. Scale individual marit ca sa fie clar vizibile (0.20-0.40).
@@ -743,17 +754,33 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile, flashRef, bloom
   // Per-piece: splitAt (timestamp post-impact pentru sub-shatter), didSplit
   // (flag oneshot), prevPos (pentru derivare velocity intre frame-uri),
   // scaleMul (multiplier per-piece — devine 0.55 dupa split).
-  const debrisData = useMemo(() => {
+  // useRef cu lazy init — valorile sunt mutate in useFrame, deci NU pot fi
+  // returnate dintr-un useMemo (regula react-hooks/immutability le marcheaza
+  // ca imutabile). Math.random() in init e impur, deci e si motiv suplimentar
+  // pentru a iesi din useMemo.
+  type DebrisData = {
+    origins: THREE.Vector3[];
+    targets: THREE.Vector3[];
+    rotations: { axis: THREE.Vector3; speed: number }[];
+    scales: number[];
+    splitAt: number[];
+    didSplit: boolean[];
+    prevPos: THREE.Vector3[];
+    scaleMul: number[];
+  };
+  const debrisDataRef = useRef<DebrisData | null>(null);
+  if (debrisDataRef.current === null) {
     const origins = buildDebrisOrigins(DEBRIS_COUNT);
     const targets = buildDebrisTargets(origins);
     const rotations = buildFragmentRotations(DEBRIS_COUNT);
     const scales = buildDebrisScales(DEBRIS_COUNT);
-    const splitAt = Array.from({ length: DEBRIS_COUNT }, () => 0.55 + Math.random() * 0.5);
+    const splitAt = buildDebrisSplitAt(DEBRIS_COUNT);
     const didSplit = Array.from({ length: DEBRIS_COUNT }, () => false);
     const prevPos = Array.from({ length: DEBRIS_COUNT }, () => new THREE.Vector3());
     const scaleMul = Array.from({ length: DEBRIS_COUNT }, () => 1);
-    return { origins, targets, rotations, scales, splitAt, didSplit, prevPos, scaleMul };
-  }, []);
+    debrisDataRef.current = { origins, targets, rotations, scales, splitAt, didSplit, prevPos, scaleMul };
+  }
+  const debrisData = debrisDataRef.current;
   const debrisRef = useRef<THREE.InstancedMesh>(null);
   const debrisMatRef = useRef<THREE.MeshStandardMaterial>(null);
 
@@ -764,17 +791,26 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile, flashRef, bloom
   // sunt deja "emisive" prin culoare + bloom).
   const sparkCount = isMobile ? SPARK_COUNT_MOBILE : SPARK_COUNT_DESKTOP;
   const sparksRef = useRef<THREE.InstancedMesh>(null);
-  const sparkData = useMemo(
-    () =>
-      Array.from({ length: sparkCount }, () => ({
-        pos: new THREE.Vector3(),
-        vel: new THREE.Vector3(),
-        life: 0,
-        maxLife: 1,
-        alive: false,
-      })),
-    [sparkCount]
-  );
+  // useRef cu lazy init — sparkData e mutat in useFrame (life, vel, pos etc.),
+  // deci nu poate veni dintr-un hook care returneaza valori imutabile.
+  type SparkDatum = {
+    pos: THREE.Vector3;
+    vel: THREE.Vector3;
+    life: number;
+    maxLife: number;
+    alive: boolean;
+  };
+  const sparkDataRef = useRef<SparkDatum[] | null>(null);
+  if (sparkDataRef.current === null) {
+    sparkDataRef.current = Array.from({ length: sparkCount }, () => ({
+      pos: new THREE.Vector3(),
+      vel: new THREE.Vector3(),
+      life: 0,
+      maxLife: 1,
+      alive: false,
+    }));
+  }
+  const sparkData = sparkDataRef.current;
   // === DUST TRAILS — line segments urmarind fiecare bucata de debris ===
   // Folosim LineSegments cu vertex colors si AdditiveBlending. Avem
   // DEBRIS_COUNT (25) trails × trailLen pozitii fiecare. Per frame:
@@ -786,6 +822,12 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile, flashRef, bloom
   //      lasam buffer-ul cu trailLen-1 segmente per debris (forma fix).
   const trailLen = isMobile ? TRAIL_LEN_MOBILE : TRAIL_LEN_DESKTOP;
   const trailObjRef = useRef<THREE.LineSegments>(null);
+  // trailBuffers e consumat in JSX (bufferAttribute primeste array/count) si
+  // mutat in useFrame (positions/colors typed arrays + history vectorii).
+  // Pastrat in useMemo pentru ca JSX-ul are nevoie de buffer-ul stabil; muta-
+  // rile pe typed array sunt safe in practica (referinta e aceeasi, Three.js
+  // citeste din acelasi buffer GPU) si sunt eligibile la eslint-disable pe
+  // linia respectiva.
   const trailBuffers = useMemo(() => {
     // Fiecare segment are 2 puncte (start+end), deci (trailLen-1) segmente
     // per debris -> (trailLen-1)*2 vertici per debris.
@@ -805,20 +847,32 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile, flashRef, bloom
   // parintelui, plaseaza 6 bucati cu velocity = parentVel*0.5 + dir*magnitude. ===
   const subDebrisCount = isMobile ? SUB_DEBRIS_COUNT_MOBILE : SUB_DEBRIS_COUNT_DESKTOP;
   const subDebrisRef = useRef<THREE.InstancedMesh>(null);
-  const subData = useMemo(
-    () =>
-      Array.from({ length: subDebrisCount }, () => ({
-        pos: new THREE.Vector3(),
-        vel: new THREE.Vector3(),
-        life: 0,
-        maxLife: 2,
-        alive: false,
-        quat: new THREE.Quaternion(),
-        rotAxis: new THREE.Vector3(),
-        rotSpeed: 0,
-      })),
-    [subDebrisCount]
-  );
+  // useRef cu lazy init — subData e mutat in useFrame (life, pos, quat etc.),
+  // deci nu poate veni dintr-un hook care returneaza valori imutabile.
+  type SubDatum = {
+    pos: THREE.Vector3;
+    vel: THREE.Vector3;
+    life: number;
+    maxLife: number;
+    alive: boolean;
+    quat: THREE.Quaternion;
+    rotAxis: THREE.Vector3;
+    rotSpeed: number;
+  };
+  const subDataRef = useRef<SubDatum[] | null>(null);
+  if (subDataRef.current === null) {
+    subDataRef.current = Array.from({ length: subDebrisCount }, () => ({
+      pos: new THREE.Vector3(),
+      vel: new THREE.Vector3(),
+      life: 0,
+      maxLife: 2,
+      alive: false,
+      quat: new THREE.Quaternion(),
+      rotAxis: new THREE.Vector3(),
+      rotSpeed: 0,
+    }));
+  }
+  const subData = subDataRef.current;
   const spawnSubDebris = useCallback(
     (originPos: THREE.Vector3, originVel: THREE.Vector3) => {
       let placed = 0;
@@ -1098,12 +1152,14 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile, flashRef, bloom
       meshes.forEach((m) => {
         m!.visible = true;
       });
-      const { origins, floats, targets, rotations, scales, delays, orbitals } = fragmentData;
+      // `origins` din fragmentData nu mai e folosit aici — noua coregrafie e
+      // orbital -> explode -> float -> CC, plecam din `orbitals`, nu din
+      // suprafata asteroidului.
+      const { floats, targets, rotations, scales, delays, orbitals } = fragmentData;
 
       for (let i = 0; i < FRAGMENT_COUNT; i++) {
         const groupIdx = Math.floor(i / FRAGMENT_COUNT_PER_GROUP);
         const localIdx = i % FRAGMENT_COUNT_PER_GROUP;
-        const origin = origins[i];
         const floatPos = floats[i];
         const target = targets[i];
         const rot = rotations[i];
@@ -1274,6 +1330,12 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile, flashRef, bloom
             : 0;
         const trailFade = Math.max(0, 1 - tShatterTrail * 0.5);
         const segs = trailBuffers.segsPerDebris;
+        // Scriem direct in Float32Array-urile din trailBuffers (positions/colors)
+        // — same-buffer mutation pentru bufferAttribute-ul GPU. Three.js
+        // citeste din acelasi pointer; alocarea unui buffer nou ar invalida
+        // referinta din JSX. react-hooks/immutability nu permite asta pe
+        // valori de useMemo, dar e safe aici (lifecycle owned, no React state).
+        /* eslint-disable react-hooks/immutability */
         for (let i = 0; i < DEBRIS_COUNT; i++) {
           const hist = trailBuffers.history[i];
           for (let j = 0; j < segs; j++) {
@@ -1298,6 +1360,7 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile, flashRef, bloom
             trailBuffers.colors[baseIdx + 5] = 0.45 * aEnd;
           }
         }
+        /* eslint-enable react-hooks/immutability */
         const trailGeom = trailObjRef.current?.geometry as
           | THREE.BufferGeometry
           | undefined;
