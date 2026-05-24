@@ -5,6 +5,7 @@
 // Polish premium: tracking strans, whitespace marit, linii de 1px,
 // dot indicators, scroll cue pe Section 1.
 import { useEffect, useRef } from 'react';
+import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -63,18 +64,56 @@ export default function Hero() {
       >
         <SectionCounter index={1} label={t('s1.counter')} />
         <PageCounter current={1} total={3} />
-        <div className="mx-auto w-full max-w-xl text-center lg:mx-0 lg:max-w-2xl lg:text-left">
-          {/* Eyebrow ascuns pe mobile — rail-ul vertical "WEB · AI · CINEMATIC" il inlocuieste. */}
-          <p data-reveal className="hidden text-[10px] font-medium uppercase tracking-[0.32em] text-zinc-500 lg:block">
-            {t('s1.eyebrow')}
-          </p>
-          <h1 data-reveal className="text-5xl font-semibold leading-[0.95] tracking-[-0.04em] text-white sm:text-6xl lg:mt-8 lg:text-7xl xl:text-8xl">
-            {t('s1.title')}
-          </h1>
-          <div data-reveal className="mx-auto mt-8 h-px w-24 bg-white/10 lg:mx-0 lg:mt-12" aria-hidden="true" />
-          <p data-reveal className="mx-auto mt-6 max-w-md text-sm leading-[1.6] tracking-tight text-zinc-400 sm:text-base lg:mx-0 lg:mt-8 lg:text-lg">
-            {t('s1.body')}
-          </p>
+        {/* Grid 2-col pe lg+: text stanga, poza dreapta. Pe mobile poza apare
+            deasupra textului ca sa nu fie ascunsa. */}
+        <div className="mx-auto flex w-full max-w-6xl flex-col items-center gap-10 lg:flex-row lg:items-center lg:justify-between lg:gap-20">
+          {/* Photo — ordinea: pe mobile sus, pe desktop dreapta. */}
+          <div data-reveal className="relative order-1 shrink-0 lg:order-2">
+            {/* Glow finut — radial soft alb in spate. Strat dublu pentru blana
+                catifelata: inel apropiat (10% alb) + halo larg (4% alb). */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -inset-16 -z-10 rounded-full"
+              style={{
+                background:
+                  'radial-gradient(closest-side, rgba(255,255,255,0.12), rgba(255,255,255,0.04) 55%, rgba(255,255,255,0) 80%)',
+              }}
+            />
+            <div className="relative h-[300px] w-[225px] overflow-hidden rounded-2xl border border-white/10 sm:h-[380px] sm:w-[285px] lg:h-[460px] lg:w-[345px] xl:h-[540px] xl:w-[405px]">
+              <Image
+                src="/profil.jpg"
+                alt="Claudiu Comșa"
+                fill
+                sizes="(min-width: 1280px) 405px, (min-width: 1024px) 345px, (min-width: 640px) 285px, 225px"
+                className="object-cover"
+                priority
+              />
+              {/* Vignette interna foarte subtila ca poza sa nu pluteasca prea
+                  ascutit pe fundalul intunecat. */}
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-0"
+                style={{
+                  background:
+                    'radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.35) 100%)',
+                }}
+              />
+            </div>
+          </div>
+          {/* Text */}
+          <div className="order-2 w-full max-w-xl text-center lg:order-1 lg:max-w-2xl lg:text-left">
+            {/* Eyebrow ascuns pe mobile — rail-ul vertical "WEB · AI · CINEMATIC" il inlocuieste. */}
+            <p data-reveal className="hidden text-[10px] font-medium uppercase tracking-[0.32em] text-zinc-500 lg:block">
+              {t('s1.eyebrow')}
+            </p>
+            <h1 data-reveal className="text-5xl font-semibold leading-[0.95] tracking-[-0.04em] text-white sm:text-6xl lg:mt-8 lg:text-7xl xl:text-8xl">
+              {t('s1.title')}
+            </h1>
+            <div data-reveal className="mx-auto mt-8 h-px w-24 bg-white/10 lg:mx-0 lg:mt-12" aria-hidden="true" />
+            <p data-reveal className="mx-auto mt-6 max-w-md text-sm leading-[1.6] tracking-tight text-zinc-400 sm:text-base lg:mx-0 lg:mt-8 lg:text-lg">
+              {t('s1.body')}
+            </p>
+          </div>
         </div>
         {/* Cue de scroll subtil, doar pe Section 1. */}
         <div
