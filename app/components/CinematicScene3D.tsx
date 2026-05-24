@@ -619,6 +619,9 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile, flashRef }: Mor
   // Tracking progres anterior — folosit pentru detecția trecerii peste pragul
   // 0.22 (declanșatorul efectelor de impact: flash, shake, sparks etc).
   const lastProgressRef = useRef(0);
+  // Timestamp capturat la momentul impactului — folosit pentru camera shake
+  // time-decayed (500ms). null când nu suntem post-impact.
+  const shatterTimeRef = useRef<number | null>(null);
 
   // Pulse ring + fragments.
   const pulseRef = useRef<THREE.Mesh>(null);
@@ -799,14 +802,20 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile, flashRef }: Mor
     const camera = state.camera;
 
     // === Detecție trecere prag impact (p crosses 0.22 forward) ===
-    // Declanșează flash overlay DOM. Comparăm cu valoarea anterioară a lui p
-    // ca să prindem doar tranziția forward → impact, nu fiecare frame.
+    // Declanșează flash overlay DOM + capturează timestamp pentru camera shake.
+    // Comparăm cu valoarea anterioară a lui p ca să prindem doar tranziția
+    // forward → impact, nu fiecare frame.
     const lastP = lastProgressRef.current;
     if (lastP < 0.22 && p >= 0.22) {
       flashRef?.current?.animate(
         [{ opacity: 0.95 }, { opacity: 0 }],
         { duration: 380, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' }
       );
+      shatterTimeRef.current = performance.now();
+    }
+    // Reset detect — dacă user-ul scrollează înapoi sub prag, anulăm shake.
+    if (lastP >= 0.22 && p < 0.22) {
+      shatterTimeRef.current = null;
     }
     lastProgressRef.current = p;
 
@@ -1053,6 +1062,21 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile, flashRef }: Mor
     const scrollY = (p - 0.5) * -0.3;
     camera.position.x = THREE.MathUtils.lerp(camera.position.x, mouseX, delta * 1.2);
     camera.position.y = THREE.MathUtils.lerp(camera.position.y, scrollY + mouseY, delta * 1.5);
+
+    // === Camera shake post-impact ===
+    // 500ms decay quadratic — offset random aplicat peste lerp-ul existent.
+    // Se vede tremor la impact, apoi dispare lin. Se adună pe poziția deja
+    // calculată, lookAt-ul de mai jos păstrează ținta pe centru.
+    if (shatterTimeRef.current !== null) {
+      const elapsed = (performance.now() - shatterTimeRef.current) / 1000;
+      if (elapsed < 0.5) {
+        const decay = (1 - elapsed / 0.5) ** 2;
+        camera.position.x += (Math.random() * 2 - 1) * 0.08 * decay;
+        camera.position.y += (Math.random() * 2 - 1) * 0.08 * decay;
+        camera.position.z += (Math.random() * 2 - 1) * 0.032 * decay;
+      }
+    }
+
     camera.lookAt(0, 0, 0);
 
     // === Halo extern pre-impact ===
