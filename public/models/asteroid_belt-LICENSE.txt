@@ -1,0 +1,11 @@
+Model Information:
+* title:	Asteroid belt
+* source:	https://sketchfab.com/3d-models/asteroid-belt-bd01732b4e074c8cae90200b9d169431
+* author:	gianlucadistefano1998 (https://sketchfab.com/gianlucadistefano1998)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Asteroid belt" (https://sketchfab.com/3d-models/asteroid-belt-bd01732b4e074c8cae90200b9d169431) by gianlucadistefano1998 (https://sketchfab.com/gianlucadistefano1998) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
