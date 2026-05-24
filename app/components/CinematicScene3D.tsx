@@ -598,6 +598,11 @@ const FRAGMENT_COUNT = FRAGMENT_COUNT_PER_GROUP * 4;
 
 const DEBRIS_COUNT = 25; // bucati mari rocky pentru momentul exploziei
 
+// Sparks — puncte emisive portocalii care explodeaza din centru la impact.
+// Mai putine pe mobile pentru perf (30 vs 80 instances + per-frame update).
+const SPARK_COUNT_DESKTOP = 80;
+const SPARK_COUNT_MOBILE = 30;
+
 interface MorphMeshesProps {
   progressRef: ProgressRef;
   mouseRef: MouseRef;
@@ -733,6 +738,48 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile, flashRef, bloom
   const debrisRef = useRef<THREE.InstancedMesh>(null);
   const debrisMatRef = useRef<THREE.MeshStandardMaterial>(null);
 
+  // === SPARKS — 80 (30 mobile) puncte emisive portocalii ===
+  // Spawn la impact (p>=0.22), zboara radial cu drag, lifetime 0.6-1.4s,
+  // scale flicker. Instance count = 0 initial; setam la sparkCount la spawn,
+  // resetam la 0 pe scroll-back. Material MeshBasic (nu primesc lumina,
+  // sunt deja "emisive" prin culoare + bloom).
+  const sparkCount = isMobile ? SPARK_COUNT_MOBILE : SPARK_COUNT_DESKTOP;
+  const sparksRef = useRef<THREE.InstancedMesh>(null);
+  const sparkData = useMemo(
+    () =>
+      Array.from({ length: sparkCount }, () => ({
+        pos: new THREE.Vector3(),
+        vel: new THREE.Vector3(),
+        life: 0,
+        maxLife: 1,
+        alive: false,
+      })),
+    [sparkCount]
+  );
+  const spawnSparks = useCallback(() => {
+    for (let i = 0; i < sparkCount; i++) {
+      const s = sparkData[i];
+      // Direcție random uniformă pe sferă.
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      s.pos
+        .set(
+          Math.sin(phi) * Math.cos(theta),
+          Math.sin(phi) * Math.sin(theta),
+          Math.cos(phi)
+        )
+        .multiplyScalar(0.9 + Math.random() * 0.4);
+      // Viteza radiala 4-12 unit/s + jitter lateral pentru variatie.
+      s.vel.copy(s.pos).normalize().multiplyScalar(4 + Math.random() * 8);
+      s.vel.x += (Math.random() - 0.5) * 1.5;
+      s.vel.y += (Math.random() - 0.5) * 1.5;
+      s.life = 0;
+      s.maxLife = 0.6 + Math.random() * 0.8;
+      s.alive = true;
+    }
+    if (sparksRef.current) sparksRef.current.count = sparkCount;
+  }, [sparkCount, sparkData]);
+
   // Geometrii fragmente — 4 chunks reale din asteroid_belt (forme rocky
   // neregulate), nu primitive geometrice. Asta face fragmentele sa arate ca
   // bucati reale de asteroid, nu ca dice in spatiu. Pastram cheile vechi
@@ -786,6 +833,11 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile, flashRef, bloom
     if (fragmentDodecaRef.current) fragmentDodecaRef.current.material = mat;
   }, [surfaceMaps]);
 
+  // Initial: ascundem sparks (count=0) — vor fi popped on impact.
+  useEffect(() => {
+    if (sparksRef.current) sparksRef.current.count = 0;
+  }, []);
+
   // Rotatie continua pe asteroid — viata vizuala constanta.
   // Tween inrolat intr-un context scoped pentru cleanup automat.
   useEffect(() => {
@@ -823,10 +875,17 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile, flashRef, bloom
       // lin inapoi la 0.55 prin THREE.MathUtils.damp mai jos. Pe mobile nu
       // exista postprocesare deci bloomRef.current va fi null si nu facem nimic.
       if (bloomRef?.current) bloomRef.current.intensity = 2.4;
+      // Spawn 80 sparks (30 mobile) la centrul asteroidului.
+      spawnSparks();
     }
     // Reset detect — dacă user-ul scrollează înapoi sub prag, anulăm shake.
     if (lastP >= 0.22 && p < 0.22) {
       shatterTimeRef.current = null;
+      // Reset sparks — count=0 ascunde meshul; alive=false opreste update.
+      sparkData.forEach((s) => {
+        s.alive = false;
+      });
+      if (sparksRef.current) sparksRef.current.count = 0;
     }
     lastProgressRef.current = p;
 
@@ -1090,6 +1149,46 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile, flashRef, bloom
 
     camera.lookAt(0, 0, 0);
 
+    // === SPARKS update ===
+    // Doar daca am deja un shatterTime activ (i.e. dupa trigger).
+    const sparks = sparksRef.current;
+    if (sparks && shatterTimeRef.current !== null) {
+      const sparkDummy = new THREE.Object3D();
+      const m = new THREE.Matrix4();
+      for (let i = 0; i < sparkCount; i++) {
+        const s = sparkData[i];
+        if (!s.alive) {
+          m.makeScale(0, 0, 0);
+          sparks.setMatrixAt(i, m);
+          continue;
+        }
+        s.life += delta;
+        if (s.life >= s.maxLife) {
+          s.alive = false;
+          m.makeScale(0, 0, 0);
+          sparks.setMatrixAt(i, m);
+          continue;
+        }
+        // Decay exponential pe miscare — sparkul incetineste rapid in primele
+        // 100ms, apoi aproape stationar.
+        const decay = Math.exp(-s.life * 1.6);
+        s.pos.addScaledVector(s.vel, decay * delta);
+        s.vel.multiplyScalar(0.985);
+        const fade = 1 - s.life / s.maxLife;
+        // Scale flicker — sinusoida rapida * fade. Sin*0.4 da impresia de
+        // lumini intermitente (sparks reale "tremura" pe ecran).
+        const scl =
+          (0.5 + fade * 0.8) *
+          (0.6 + Math.sin(state.clock.elapsedTime * 60 + i) * 0.4);
+        sparkDummy.position.copy(s.pos);
+        sparkDummy.scale.setScalar(scl);
+        sparkDummy.rotation.set(0, 0, 0);
+        sparkDummy.updateMatrix();
+        sparks.setMatrixAt(i, sparkDummy.matrix);
+      }
+      sparks.instanceMatrix.needsUpdate = true;
+    }
+
     // === Halo extern pre-impact ===
     // Sferă aditivă portocalie + point light co-locat. Pulsează în
     // window-ul p ∈ [0.16, 0.22] crescând până la momentul shatter.
@@ -1265,6 +1364,15 @@ function MorphMeshes({ progressRef, mouseRef, reduced, isMobile, flashRef, bloom
           transparent
           opacity={1}
         />
+      </instancedMesh>
+
+      {/* SPARKS — 80 (30 mobile) puncte mici emisive portocalii care explodeaza
+          din centru la impact. MeshBasicMaterial nu primeste lumina; culoarea
+          calda + bloom creeaza streaks vizuale. Instance count=0 initial,
+          setat la sparkCount in spawnSparks() la trigger. */}
+      <instancedMesh ref={sparksRef} args={[undefined, undefined, sparkCount]}>
+        <sphereGeometry args={[0.025, 6, 6]} />
+        <meshBasicMaterial color="#ffaa55" transparent toneMapped={false} />
       </instancedMesh>
     </>
   );
