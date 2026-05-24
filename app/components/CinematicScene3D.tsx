@@ -1786,18 +1786,48 @@ export default function CinematicScene3D() {
             background={false}
             resolution={512}
           /> */}
-          {/* Stele 3D cu adancime — drift natural pe baza de fade + speed.
-              Skip pe mobile — costul de geometrie pentru 2000 puncte e prea mare. */}
-          {!reduced && !isMobile && (
-            <Stars
-              radius={80}
-              depth={60}
-              count={2000}
-              factor={4}
-              saturation={0}
-              fade
-              speed={0.4}
-            />
+          {/* GALAXY STARFIELD — doua straturi de Stars pentru adancime.
+              Layer 1 (background, dim): densitate mare, dimensiune mica
+              Layer 2 (foreground accents, bright): putine puncte mai luminoase
+              cu saturatie usoara — adauga sclipiri vizibile.
+              Pe mobile reducem count-ul (cost de geometrie). */}
+          {!reduced && (
+            <>
+              <Stars
+                radius={100}
+                depth={80}
+                count={isMobile ? 2500 : 6000}
+                factor={3}
+                saturation={0}
+                fade
+                speed={isMobile ? 0.2 : 0.3}
+              />
+              <Stars
+                radius={60}
+                depth={50}
+                count={isMobile ? 150 : 400}
+                factor={6}
+                saturation={0.5}
+                fade
+                speed={isMobile ? 0.3 : 0.5}
+              />
+              {/* Nebula tint — sfera uriasa transparenta cu backside in spatele
+                  tuturor elementelor. Tema monochrome permite un hint subtil
+                  de purpuriu-albastru. renderOrder=-1 ca sa fie randata
+                  inaintea oricarei alte mesh-uri. depthWrite=false + fog=false
+                  ca sa nu interfereze cu z-buffer-ul restului scenei. */}
+              <mesh scale={[80, 80, 80]} renderOrder={-1}>
+                <sphereGeometry args={[1, 16, 16]} />
+                <meshBasicMaterial
+                  side={THREE.BackSide}
+                  color="#1a1530"
+                  transparent
+                  opacity={0.18}
+                  depthWrite={false}
+                  fog={false}
+                />
+              </mesh>
+            </>
           )}
           <MorphMeshes progressRef={progressRef} mouseRef={mouseRef} reduced={reduced} isMobile={isMobile} flashRef={flashRef} bloomRef={bloomRef} />
           {/* Umbre de contact moi sub obiect — ancorare vizuala. */}
