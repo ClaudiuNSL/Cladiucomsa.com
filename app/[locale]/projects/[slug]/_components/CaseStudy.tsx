@@ -73,7 +73,7 @@ export default function CaseStudy({ caseSlug }: { caseSlug: CaseSlug }) {
       >
         <SectionCounter index={1} label={`${t('case.counter')} · ${current.number}`} />
         <div className="mx-auto max-w-3xl">
-          <p data-reveal className="text-[10px] font-medium uppercase tracking-[0.32em] text-zinc-500">
+          <p data-reveal className="text-[10px] font-medium uppercase tracking-[0.32em] text-[var(--text-quiet)]">
             {t('eyebrow')}
           </p>
           <h1
@@ -82,11 +82,11 @@ export default function CaseStudy({ caseSlug }: { caseSlug: CaseSlug }) {
           >
             {t(`items.${itemKey}.title`)}
           </h1>
-          <p data-reveal className="mt-6 text-sm font-medium uppercase tracking-[0.2em] text-zinc-500">
+          <p data-reveal className="mt-6 text-sm font-medium uppercase tracking-[0.2em] text-[var(--text-quiet)]">
             {t(`items.${itemKey}.kicker`)}
           </p>
-          <div data-reveal className="mt-10 h-px w-24 bg-white/15" aria-hidden="true" />
-          <p data-reveal className="mt-8 max-w-2xl text-base leading-[1.6] text-zinc-400 lg:text-lg">
+          <div data-reveal className="mt-10 h-px w-24 bg-[var(--border-soft)]" aria-hidden="true" />
+          <p data-reveal className="mt-8 max-w-2xl text-base leading-[1.6] text-[var(--text-mid)] lg:text-lg">
             {t(`items.${itemKey}.body`)}
           </p>
 
@@ -94,7 +94,7 @@ export default function CaseStudy({ caseSlug }: { caseSlug: CaseSlug }) {
             {techChips.map((tech, i) => (
               <span
                 key={i}
-                className="rounded-full border border-white/[0.08] bg-white/[0.02] px-4 py-1.5 font-mono text-[10px] uppercase tracking-[0.2em] text-zinc-400"
+                className="rounded-full border border-[var(--border-soft)] bg-white/[0.02] px-4 py-1.5 font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--text-mid)]"
               >
                 {tech}
               </span>
@@ -103,7 +103,7 @@ export default function CaseStudy({ caseSlug }: { caseSlug: CaseSlug }) {
 
           <div data-reveal className="mt-12 flex flex-wrap items-center gap-6">
             <EffectButton text={t('viewLive')} href={current.live} variant="secondary" trailing="↗" />
-            <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-600">
+            <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[var(--text-quiet)]/70">
               {current.live.replace(/^https?:\/\//, '')}
             </span>
           </div>
@@ -113,7 +113,7 @@ export default function CaseStudy({ caseSlug }: { caseSlug: CaseSlug }) {
       {/* COVER IMAGE — full-bleed-ish, rounded, subtle border */}
       <section className="px-8 pb-24 lg:px-12">
         <div data-reveal className="mx-auto max-w-5xl">
-          <div className="overflow-hidden rounded-2xl border border-white/[0.06] bg-zinc-900">
+          <div className="overflow-hidden rounded-2xl border border-[var(--border-soft)] bg-zinc-900">
             <Image
               src={current.image}
               alt={t(`items.${itemKey}.title`)}
@@ -145,10 +145,10 @@ export default function CaseStudy({ caseSlug }: { caseSlug: CaseSlug }) {
       />
 
       {/* RESULT sectiune + metrics */}
-      <section className="relative border-t border-white/[0.04] px-8 py-32 lg:px-12">
+      <section className="relative border-t border-[var(--border-hair)] px-8 py-32 lg:px-12">
         <SectionCounter index={4} label={t('case.result.eyebrow')} />
         <div className="mx-auto max-w-3xl">
-          <p data-reveal className="text-[10px] font-medium uppercase tracking-[0.32em] text-zinc-500">
+          <p data-reveal className="text-[10px] font-medium uppercase tracking-[0.32em] text-[var(--text-quiet)]">
             {t('case.result.eyebrow')}
           </p>
           <h2
@@ -157,8 +157,8 @@ export default function CaseStudy({ caseSlug }: { caseSlug: CaseSlug }) {
           >
             {t('case.result.title')}
           </h2>
-          <div data-reveal className="mt-10 h-px w-24 bg-white/10" aria-hidden="true" />
-          <p data-reveal className="mt-10 text-base leading-[1.7] text-zinc-400 lg:text-lg">
+          <div data-reveal className="mt-10 h-px w-24 bg-[var(--border-soft)]" aria-hidden="true" />
+          <p data-reveal className="mt-10 text-base leading-[1.7] text-[var(--text-mid)] lg:text-lg">
             {resultBody}
           </p>
           <MetricGrid metrics={metrics} />
@@ -172,16 +172,16 @@ export default function CaseStudy({ caseSlug }: { caseSlug: CaseSlug }) {
       />
 
       {/* FOOTER case — back / next */}
-      <section className="border-t border-white/[0.04] px-8 py-20 lg:px-12">
+      <section className="border-t border-[var(--border-hair)] px-8 py-20 lg:px-12">
         <div className="mx-auto flex max-w-4xl items-center justify-between">
           <Link
             href="/projects"
             className="group flex flex-col gap-2 text-left hover:text-white"
           >
-            <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-600">
+            <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[var(--text-quiet)]/70">
               ← {t('backToIndex')}
             </span>
-            <span className="text-sm text-zinc-400 transition-colors group-hover:text-white">
+            <span className="text-sm text-[var(--text-mid)] transition-colors group-hover:text-white">
               {t('sectionTitle')}
             </span>
           </Link>
@@ -189,10 +189,10 @@ export default function CaseStudy({ caseSlug }: { caseSlug: CaseSlug }) {
             href={`/projects/${next.slug}`}
             className="group flex flex-col gap-2 text-right"
           >
-            <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-600">
+            <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[var(--text-quiet)]/70">
               {t('nextCase')} →
             </span>
-            <span className="text-sm text-zinc-300 transition-colors group-hover:text-white">
+            <span className="text-sm text-[var(--text-soft)] transition-colors group-hover:text-white">
               {next.number} · {t(`items.${next.key}.title`)}
             </span>
           </Link>
@@ -206,10 +206,10 @@ export default function CaseStudy({ caseSlug }: { caseSlug: CaseSlug }) {
 // ancorat de o linie subtila pe stanga. Identic cu cele din Hero/Story.
 function SectionCounter({ index, label }: { index: number; label: string }) {
   return (
-    <div className="absolute left-8 top-24 flex items-center gap-3 border-l border-white/[0.08] pl-4 text-[10px] font-medium uppercase tracking-[0.3em] text-zinc-500 lg:left-12 lg:top-32">
+    <div className="absolute left-8 top-24 flex items-center gap-3 border-l border-[var(--border-soft)] pl-4 text-[10px] font-medium uppercase tracking-[0.3em] text-[var(--text-quiet)] lg:left-12 lg:top-32">
       <span className="h-1 w-1 rounded-full bg-white" aria-hidden="true" />
       <span className="text-white">{String(index).padStart(2, '0')}</span>
-      <span className="h-px w-8 bg-white/20" aria-hidden="true" />
+      <span className="h-px w-8 bg-[var(--border-soft)]" aria-hidden="true" />
       <span>{label}</span>
     </div>
   );
@@ -230,10 +230,10 @@ function CaseSection({
   paragraphs: string[];
 }) {
   return (
-    <section className="relative border-t border-white/[0.04] px-8 py-32 lg:px-12">
+    <section className="relative border-t border-[var(--border-hair)] px-8 py-32 lg:px-12">
       <SectionCounter index={index} label={counter} />
       <div className="mx-auto max-w-3xl">
-        <p data-reveal className="text-[10px] font-medium uppercase tracking-[0.32em] text-zinc-500">
+        <p data-reveal className="text-[10px] font-medium uppercase tracking-[0.32em] text-[var(--text-quiet)]">
           {eyebrow}
         </p>
         <h2
@@ -242,10 +242,10 @@ function CaseSection({
         >
           {title}
         </h2>
-        <div data-reveal className="mt-10 h-px w-24 bg-white/10" aria-hidden="true" />
+        <div data-reveal className="mt-10 h-px w-24 bg-[var(--border-soft)]" aria-hidden="true" />
         <div className="mt-10 space-y-6">
           {paragraphs.map((p, i) => (
-            <p key={i} data-reveal className="text-base leading-[1.7] text-zinc-400 lg:text-lg">
+            <p key={i} data-reveal className="text-base leading-[1.7] text-[var(--text-mid)] lg:text-lg">
               {p}
             </p>
           ))}

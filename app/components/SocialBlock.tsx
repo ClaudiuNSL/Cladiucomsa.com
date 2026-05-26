@@ -54,7 +54,7 @@ export default function SocialBlock({
       className="border-t border-white/[0.04] px-8 py-20 lg:px-12"
     >
       <div className="mx-auto max-w-3xl">
-        <p data-reveal className="text-center text-[10px] font-medium uppercase tracking-[0.32em] text-zinc-500">
+        <p data-reveal className="text-center text-[10px] font-medium uppercase tracking-[0.32em] text-[var(--text-quiet)]">
           {t('eyebrow')}
         </p>
         <h3
@@ -86,13 +86,13 @@ export default function SocialBlock({
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-white">{label}</p>
-                    <p className="truncate text-[11px] text-zinc-500">
+                    <p className="truncate text-[11px] text-[var(--text-quiet)]">
                       {shortenUrl(url)}
                     </p>
                   </div>
                   <span
                     aria-hidden="true"
-                    className="text-zinc-600 transition-all duration-500 group-hover:translate-x-0.5 group-hover:text-white"
+                    className="text-[var(--text-quiet)]/70 transition-all duration-500 group-hover:translate-x-0.5 group-hover:text-white"
                   >
                     ↗
                   </span>
