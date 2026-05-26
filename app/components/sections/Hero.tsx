@@ -52,9 +52,6 @@ export default function Hero() {
 
   return (
     <div ref={rootRef} data-cinematic-wrapper className="relative">
-      {/* Side rails — fixed across all sections */}
-      <SideRails />
-
       {/* Section 1 — Hero image-led, fullbleed cu peisaj cinematic */}
       <section
         id="section-1"
@@ -264,33 +261,3 @@ function PageCounter({ current, total }: { current: number; total: number }) {
   );
 }
 
-// Side rails — pe stanga eyebrow-ul "WEB · AI · CINEMATIC" stacat vertical,
-// pe dreapta navigatia verticala. Vizibil si pe mobile (vezi referinta).
-function SideRails() {
-  const tRails = useTranslations('cinematic.rails');
-  return (
-    <>
-      {/* Right rail — vizibil doar pe desktop, pe mobile inghesuie continutul */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none fixed right-4 top-1/2 z-30 hidden -translate-y-1/2 lg:right-6 lg:flex"
-      >
-        <ul className="flex flex-col items-center gap-3 text-[9px] font-medium uppercase tracking-[0.4em] text-[var(--text-quiet)] lg:text-[10px]">
-          <li>{tRails('menu')}</li>
-          <li>
-            <span className="mx-auto block h-1 w-1 rounded-full bg-[var(--text-soft)]/30" aria-hidden="true" />
-          </li>
-          <li>{tRails('work')}</li>
-          <li>
-            <span className="mx-auto block h-1 w-1 rounded-full bg-[var(--text-soft)]/30" aria-hidden="true" />
-          </li>
-          <li>{tRails('studio')}</li>
-          <li>
-            <span className="mx-auto block h-1 w-1 rounded-full bg-[var(--text-soft)]/30" aria-hidden="true" />
-          </li>
-          <li>{tRails('network')}</li>
-        </ul>
-      </div>
-    </>
-  );
-}
