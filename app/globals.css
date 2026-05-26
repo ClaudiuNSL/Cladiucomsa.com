@@ -219,3 +219,22 @@ body {
 .wordmark-dot {
   animation: wordmark-pulse 3s ease-in-out infinite;
 }
+
+/* Footer tech marquee — rotire infinita dreapta -> stanga.
+   Continutul e dublat in JSX (2x TECH); -50% = exact o tura completa. */
+@keyframes marquee-rtl {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.animate-marquee {
+  animation: marquee-rtl 40s linear infinite;
+  width: max-content;
+}
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee {
+    animation: none;
+  }
+}
