@@ -186,17 +186,17 @@ export default function Hero() {
         <SectionCounter index={2} label={t('s2.counter')} />
         <PageCounter current={2} total={3} />
         <div className="mx-auto w-full max-w-xl text-center lg:mx-0 lg:max-w-2xl lg:text-left">
-          <p data-reveal className="text-[10px] font-medium uppercase tracking-[0.32em] text-zinc-500">
+          <p data-reveal className="text-[10px] font-medium uppercase tracking-[0.32em] text-[var(--text-quiet)]">
             {t('s2.eyebrow')}
           </p>
-          <p data-reveal className="mt-3 text-sm tracking-tight text-zinc-500">
+          <p data-reveal className="mt-3 text-sm tracking-tight text-[var(--text-quiet)]">
             {t('s2.subtitle')}
           </p>
           <h2 data-reveal className="mt-6 text-4xl font-semibold leading-[1.05] tracking-[-0.04em] text-white sm:text-5xl lg:mt-8 lg:text-6xl xl:text-7xl">
             {t('s2.title')}
           </h2>
-          <div data-reveal className="mx-auto mt-8 h-px w-24 bg-white/10 lg:mx-0 lg:mt-12" aria-hidden="true" />
-          <p data-reveal className="mx-auto mt-6 max-w-md text-sm leading-[1.6] tracking-tight text-zinc-400 sm:text-base lg:mx-0 lg:mt-8 lg:text-lg">
+          <div data-reveal className="mx-auto mt-8 h-px w-24 bg-[var(--border-soft)] lg:mx-0 lg:mt-12" aria-hidden="true" />
+          <p data-reveal className="mx-auto mt-6 max-w-md text-sm leading-[1.6] tracking-tight text-[var(--text-mid)] sm:text-base lg:mx-0 lg:mt-8 lg:text-lg">
             {t('s2.body')}
           </p>
           <div data-reveal className="mt-10 flex justify-center lg:mt-12 lg:justify-start">
@@ -215,17 +215,17 @@ export default function Hero() {
         <SectionCounter index={3} label={t('s3.counter')} />
         <PageCounter current={3} total={3} />
         <div className="mx-auto w-full max-w-xl text-center lg:mx-0 lg:max-w-2xl lg:text-left">
-          <p data-reveal className="text-[10px] font-medium uppercase tracking-[0.32em] text-zinc-500">
+          <p data-reveal className="text-[10px] font-medium uppercase tracking-[0.32em] text-[var(--text-quiet)]">
             {t('s3.eyebrow')}
           </p>
-          <p data-reveal className="mt-3 text-sm tracking-tight text-zinc-500">
+          <p data-reveal className="mt-3 text-sm tracking-tight text-[var(--text-quiet)]">
             {t('s3.subtitle')}
           </p>
           <h2 data-reveal className="mt-6 text-4xl font-semibold leading-[1.05] tracking-[-0.04em] text-white sm:text-5xl lg:mt-8 lg:text-6xl xl:text-7xl">
             {t('s3.title')}
           </h2>
-          <div data-reveal className="mx-auto mt-8 h-px w-24 bg-white/10 lg:mx-0 lg:mt-12" aria-hidden="true" />
-          <p data-reveal className="mx-auto mt-6 max-w-md text-sm leading-[1.6] tracking-tight text-zinc-400 sm:text-base lg:mx-0 lg:mt-8 lg:text-lg">
+          <div data-reveal className="mx-auto mt-8 h-px w-24 bg-[var(--border-soft)] lg:mx-0 lg:mt-12" aria-hidden="true" />
+          <p data-reveal className="mx-auto mt-6 max-w-md text-sm leading-[1.6] tracking-tight text-[var(--text-mid)] sm:text-base lg:mx-0 lg:mt-8 lg:text-lg">
             {t('s3.body')}
           </p>
           <div data-reveal className="mt-10 flex justify-center lg:mt-12 lg:justify-start">
@@ -241,10 +241,10 @@ export default function Hero() {
 // ancorat de o linie subtila pe stanga.
 function SectionCounter({ index, label }: { index: number; label: string }) {
   return (
-    <div className="absolute left-8 top-20 lg:left-12 lg:top-32 flex items-center gap-3 border-l border-white/[0.08] pl-4 text-[9px] font-medium uppercase tracking-[0.3em] text-zinc-500 lg:text-[10px]">
+    <div className="absolute left-8 top-20 lg:left-12 lg:top-32 flex items-center gap-3 border-l border-[var(--border-soft)] pl-4 text-[9px] font-medium uppercase tracking-[0.3em] text-[var(--text-quiet)] lg:text-[10px]">
       <span className="h-1 w-1 rounded-full bg-white" aria-hidden="true" />
       <span className="text-white">{String(index).padStart(2, '0')}</span>
-      <span className="h-px w-6 bg-white/20 lg:w-8" aria-hidden="true" />
+      <span className="h-px w-6 bg-[var(--border-soft)] lg:w-8" aria-hidden="true" />
       <span>{label}</span>
     </div>
   );
@@ -254,9 +254,9 @@ function SectionCounter({ index, label }: { index: number; label: string }) {
 // Vizibil si pe mobile — apare in coltul dreapta-sus (vezi referinta).
 function PageCounter({ current, total }: { current: number; total: number }) {
   return (
-    <div className="absolute right-8 top-20 lg:right-12 lg:top-32 text-[9px] font-medium uppercase tracking-[0.3em] text-zinc-500 lg:text-[10px]">
+    <div className="absolute right-8 top-20 lg:right-12 lg:top-32 text-[9px] font-medium uppercase tracking-[0.3em] text-[var(--text-quiet)] lg:text-[10px]">
       <span className="text-white">{String(current).padStart(2, '0')}</span>
-      <span className="text-zinc-700"> / {String(total).padStart(2, '0')}</span>
+      <span className="text-[var(--text-quiet)]/40"> / {String(total).padStart(2, '0')}</span>
     </div>
   );
 }
@@ -272,14 +272,14 @@ function SideRails() {
         aria-hidden="true"
         className="pointer-events-none fixed left-4 top-1/2 z-30 flex -translate-y-1/2 lg:left-6"
       >
-        <ul className="flex flex-col items-center gap-3 text-[9px] font-medium uppercase tracking-[0.4em] text-zinc-500 lg:text-[10px]">
+        <ul className="flex flex-col items-center gap-3 text-[9px] font-medium uppercase tracking-[0.4em] text-[var(--text-quiet)] lg:text-[10px]">
           <li>Web</li>
           <li>
-            <span className="mx-auto block h-1 w-1 rounded-full bg-white/20" aria-hidden="true" />
+            <span className="mx-auto block h-1 w-1 rounded-full bg-[var(--text-soft)]/30" aria-hidden="true" />
           </li>
           <li>AI</li>
           <li>
-            <span className="mx-auto block h-1 w-1 rounded-full bg-white/20" aria-hidden="true" />
+            <span className="mx-auto block h-1 w-1 rounded-full bg-[var(--text-soft)]/30" aria-hidden="true" />
           </li>
           <li>Cinematic</li>
         </ul>
@@ -289,18 +289,18 @@ function SideRails() {
         aria-hidden="true"
         className="pointer-events-none fixed right-4 top-1/2 z-30 flex -translate-y-1/2 lg:right-6"
       >
-        <ul className="flex flex-col items-center gap-3 text-[9px] font-medium uppercase tracking-[0.4em] text-zinc-500 lg:text-[10px]">
+        <ul className="flex flex-col items-center gap-3 text-[9px] font-medium uppercase tracking-[0.4em] text-[var(--text-quiet)] lg:text-[10px]">
           <li>{tRails('menu')}</li>
           <li>
-            <span className="mx-auto block h-1 w-1 rounded-full bg-white/20" aria-hidden="true" />
+            <span className="mx-auto block h-1 w-1 rounded-full bg-[var(--text-soft)]/30" aria-hidden="true" />
           </li>
           <li>{tRails('work')}</li>
           <li>
-            <span className="mx-auto block h-1 w-1 rounded-full bg-white/20" aria-hidden="true" />
+            <span className="mx-auto block h-1 w-1 rounded-full bg-[var(--text-soft)]/30" aria-hidden="true" />
           </li>
           <li>{tRails('studio')}</li>
           <li>
-            <span className="mx-auto block h-1 w-1 rounded-full bg-white/20" aria-hidden="true" />
+            <span className="mx-auto block h-1 w-1 rounded-full bg-[var(--text-soft)]/30" aria-hidden="true" />
           </li>
           <li>{tRails('network')}</li>
         </ul>
