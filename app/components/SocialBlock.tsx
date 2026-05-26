@@ -54,7 +54,7 @@ export default function SocialBlock({
       className="border-t border-white/[0.04] px-8 py-20 lg:px-12"
     >
       <div className="mx-auto max-w-3xl">
-        <p data-reveal className="text-center text-[10px] font-medium uppercase tracking-[0.32em] text-zinc-500">
+        <p data-reveal className="text-center text-[10px] font-medium uppercase tracking-[0.32em] text-[var(--text-quiet)]">
           {t('eyebrow')}
         </p>
         <h3
@@ -73,7 +73,7 @@ export default function SocialBlock({
                 href={url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5 transition-all duration-500 hover:border-white/30 hover:bg-white/[0.04] hover:shadow-[0_0_60px_-15px_rgba(255,255,255,0.18)] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+                className="group relative overflow-hidden rounded-2xl border border-[var(--border-soft)] bg-white/[0.02] p-5 transition-all duration-500 hover:border-white/30 hover:bg-white/[0.04] hover:shadow-[0_0_60px_-15px_rgba(255,255,255,0.18)] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
               >
                 {/* Sweep gradient pe hover — left to right */}
                 <span
@@ -81,18 +81,18 @@ export default function SocialBlock({
                   className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/[0.06] to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full"
                 />
                 <div className="relative flex items-center gap-4">
-                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/[0.06] bg-white/[0.02] text-white transition-all duration-500 group-hover:scale-110 group-hover:border-white/25 group-hover:bg-white/[0.06]">
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[var(--border-soft)] bg-white/[0.02] text-white transition-all duration-500 group-hover:scale-110 group-hover:border-white/25 group-hover:bg-white/[0.06]">
                     <Icon size={20} aria-hidden="true" />
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-white">{label}</p>
-                    <p className="truncate text-[11px] text-zinc-500">
+                    <p className="truncate text-[11px] text-[var(--text-quiet)]">
                       {shortenUrl(url)}
                     </p>
                   </div>
                   <span
                     aria-hidden="true"
-                    className="text-zinc-600 transition-all duration-500 group-hover:translate-x-0.5 group-hover:text-white"
+                    className="text-[var(--text-quiet)]/70 transition-all duration-500 group-hover:translate-x-0.5 group-hover:text-white"
                   >
                     ↗
                   </span>

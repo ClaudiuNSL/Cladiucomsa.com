@@ -1,25 +1,43 @@
 @import "tailwindcss";
 
 :root {
-  --bg-base: #050505;
-  --bg-elev: #0a0a0a;
-  --text-primary: #FFFFFF;
-  --text-secondary: #9ca3af;
-  --text-muted: #71717A;
-  --border: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.16);
+  /* Cinematic Blue Explorer palette */
+  --bg-deep: #07090f;
+  --bg-base: #0a0d14;
+  --bg-elev: #11151e;
+  --text-primary: #ffffff;
+  --text-soft: #cfe3ff;
+  --text-mid: #9eb2c8;
+  --text-quiet: #5a6678;
+  --accent: #7aa7d9;
+  --border-soft: rgba(207, 227, 255, 0.08);
+  --border-hair: rgba(207, 227, 255, 0.04);
+  /* Legacy aliases pastrate ca sa nu sparga fisiere ne-migrate mid-refactor */
+  --border: var(--border-soft);
+  --border-strong: rgba(207, 227, 255, 0.16);
+  --text-secondary: var(--text-mid);
+  --text-muted: var(--text-quiet);
 }
 
 @theme inline {
+  --color-bg-deep: var(--bg-deep);
   --color-bg-base: var(--bg-base);
   --color-bg-elev: var(--bg-elev);
   --color-text-primary: var(--text-primary);
-  --color-text-secondary: var(--text-secondary);
-  --color-text-muted: var(--text-muted);
-  --color-border: var(--border);
+  --color-text-soft: var(--text-soft);
+  --color-text-mid: var(--text-mid);
+  --color-text-quiet: var(--text-quiet);
+  --color-accent: var(--accent);
+  --color-border-soft: var(--border-soft);
+  --color-border-hair: var(--border-hair);
+  /* Legacy aliases */
+  --color-text-secondary: var(--text-mid);
+  --color-text-muted: var(--text-quiet);
+  --color-border: var(--border-soft);
   --color-border-strong: var(--border-strong);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-serif: var(--font-fraunces);
 }
 
 html {
@@ -27,7 +45,7 @@ html {
 }
 
 body {
-  background: var(--bg-base);
+  background: var(--bg-deep);
   color: var(--text-primary);
   font-family: var(--font-sans), system-ui, sans-serif;
 }
@@ -191,4 +209,32 @@ body {
 .a11y-underline-links a {
   text-decoration: underline !important;
   text-underline-offset: 3px !important;
+}
+
+/* Navbar wordmark dot — pulse subtil ca semn de "live" */
+@keyframes wordmark-pulse {
+  0%, 100% { opacity: 0.6; }
+  50%      { opacity: 1; }
+}
+.wordmark-dot {
+  animation: wordmark-pulse 3s ease-in-out infinite;
+}
+
+/* Footer tech marquee — rotire infinita dreapta -> stanga.
+   Continutul e dublat in JSX (2x TECH); -50% = exact o tura completa. */
+@keyframes marquee-rtl {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.animate-marquee {
+  animation: marquee-rtl 40s linear infinite;
+  width: max-content;
+}
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee {
+    animation: none;
+  }
 }

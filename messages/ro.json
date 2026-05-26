@@ -8,22 +8,35 @@
   },
   "nav": {
     "langSwitcherLabel": "Limba",
-    "openMenu": "Deschide meniul",
-    "closeMenu": "Închide meniul"
+    "openMenu": "Meniu",
+    "closeMenu": "Închide",
+    "work": "Work",
+    "about": "About",
+    "contact": "Contact",
+    "cta": "Hai să vorbim",
+    "ctaHref": "#contact"
   },
   "cinematic": {
     "scrollHint": "Scroll",
-    "rails": {
-      "menu": "Menu",
-      "work": "Work",
-      "studio": "Studio",
-      "network": "Network"
-    },
     "s1": {
       "counter": "Intro",
-      "eyebrow": "Web · AI · Cinematic",
-      "title": "Claudiu Comsa",
-      "body": "Construim site-uri și automatizări AI pentru afaceri care vor mai mult decât un site de prezentare."
+      "eyebrow": "Full-Stack Web Developer · România",
+      "titleLine1": "Sunt Claudiu Comșa.",
+      "titleLine2Pre": "",
+      "titleAccent": "Transform",
+      "titleLine2Post": " ideile în proiecte digitale reale.",
+      "body": "Te-ai făcut cunoscut local. Pasul următor e să fii vizibil online — cu un brand care funcționează la fel de bine în România și oriunde altundeva.",
+      "services": [
+        "Site-uri de prezentare",
+        "Magazine online",
+        "Automatizări",
+        "Optimizări",
+        "SEO & creștere online"
+      ],
+      "ctaPrimary": "Hai să vorbim",
+      "ctaPrimaryHref": "#contact",
+      "ctaSecondary": "Vezi proiecte",
+      "ctaSecondaryHref": "#projects"
     },
     "s2": {
       "counter": "Work",

@@ -25,7 +25,7 @@ const SLUG_FOR_KEY: Record<ProjectKey, string> = {
 export default function Projects() {
   const t = useTranslations('projects');
   return (
-    <div>
+    <div id="projects">
       {PROJECT_KEYS.map((key, idx) => (
         <ProjectScreen key={key} projectKey={key} idx={idx} t={t} />
       ))}
@@ -131,10 +131,10 @@ function ProjectScreen({ projectKey, idx, t }: ProjectScreenProps) {
       className="relative flex min-h-screen items-center justify-center overflow-hidden px-8 py-32 lg:px-12"
     >
       {/* Contor sectiune top-left */}
-      <div className="absolute left-8 top-24 flex items-center gap-3 border-l border-white/[0.08] pl-4 text-[10px] font-medium uppercase tracking-[0.3em] text-zinc-500 lg:left-12 lg:top-32">
+      <div className="absolute left-8 top-24 flex items-center gap-3 border-l border-[var(--border-soft)] pl-4 text-[10px] font-medium uppercase tracking-[0.3em] text-[var(--text-quiet)] lg:left-12 lg:top-32">
         <span className="h-1 w-1 rounded-full bg-white" aria-hidden="true" />
         <span className="text-white">{counterIndex}</span>
-        <span className="h-px w-8 bg-white/20" aria-hidden="true" />
+        <span className="h-px w-8 bg-[var(--border-soft)]" aria-hidden="true" />
         <span>
           {t('counter')} · {projectNumber}
         </span>
@@ -146,14 +146,14 @@ function ProjectScreen({ projectKey, idx, t }: ProjectScreenProps) {
         data-bg-number
         className="pointer-events-none absolute inset-0 flex select-none items-center justify-center"
       >
-        <span className="text-[16rem] font-bold leading-none tracking-tighter text-white/[0.025] sm:text-[20rem] lg:text-[24rem] xl:text-[28rem]">
+        <span className="text-[16rem] font-bold leading-none tracking-tighter text-[var(--text-soft)]/[0.06] sm:text-[20rem] lg:text-[24rem] xl:text-[28rem]">
           {projectNumber}
         </span>
       </span>
 
       {/* Stack continut centrat */}
       <div className="relative z-10 mx-auto max-w-2xl text-center">
-        <p data-reveal className="text-[10px] font-medium uppercase tracking-[0.32em] text-zinc-500">
+        <p data-reveal className="text-[10px] font-medium uppercase tracking-[0.32em] text-[var(--text-quiet)]">
           {t('eyebrow')} · {projectNumber}
         </p>
         <h3
@@ -167,14 +167,14 @@ function ProjectScreen({ projectKey, idx, t }: ProjectScreenProps) {
             </span>
           ))}
         </h3>
-        <p data-reveal className="mt-6 text-sm font-medium uppercase tracking-[0.2em] text-zinc-500">
+        <p data-reveal className="mt-6 text-sm font-medium uppercase tracking-[0.2em] text-[var(--text-quiet)]">
           {t(`items.${projectKey}.kicker`)}
         </p>
-        <div data-reveal className="mx-auto mt-12 h-px w-24 bg-white/15" aria-hidden="true" />
-        <p data-reveal className="mx-auto mt-10 max-w-xl text-base leading-[1.6] text-zinc-400 lg:text-lg">
+        <div data-reveal className="mx-auto mt-12 h-px w-24 bg-[var(--border-soft)]" aria-hidden="true" />
+        <p data-reveal className="mx-auto mt-10 max-w-xl text-base leading-[1.6] text-[var(--text-mid)] lg:text-lg">
           {t(`items.${projectKey}.body`)}
         </p>
-        <p data-reveal className="mt-6 text-xs font-medium uppercase tracking-[0.28em] text-zinc-600">
+        <p data-reveal className="mt-6 text-xs font-medium uppercase tracking-[0.28em] text-[var(--text-quiet)]/70">
           {t(`items.${projectKey}.tech`)}
         </p>
         <div data-reveal className="mt-12 flex flex-wrap items-center justify-center gap-4">

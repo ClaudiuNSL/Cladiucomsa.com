@@ -36,7 +36,7 @@ export default function LanguageSwitcher() {
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={t('langSwitcherLabel')}
-        className="text-sm font-medium text-zinc-400 hover:text-white transition-colors px-3 py-1.5 rounded-md border border-white/[0.08] hover:border-white/[0.16] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+        className="text-sm font-medium text-[var(--text-mid)] hover:text-white transition-colors px-3 py-1.5 rounded-md border border-[var(--border-soft)] hover:border-[var(--text-soft)]/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
       >
         {locale.toUpperCase()}
         <span aria-hidden="true" className="ml-1.5 opacity-60">▾</span>
@@ -44,7 +44,7 @@ export default function LanguageSwitcher() {
       {open && (
         <ul
           role="listbox"
-          className="absolute right-0 mt-2 min-w-[8rem] rounded-lg border border-white/[0.08] bg-[#0a0a0a] py-1 shadow-xl shadow-black/40"
+          className="absolute right-0 mt-2 min-w-[8rem] rounded-lg border border-[var(--border-soft)] bg-[var(--bg-elev)] py-1 shadow-xl shadow-black/40"
         >
           {routing.locales.map((loc) => (
             <li key={loc}>
@@ -56,7 +56,7 @@ export default function LanguageSwitcher() {
                 className={`block w-full text-left px-3 py-2 text-sm transition-colors ${
                   locale === loc
                     ? 'text-white'
-                    : 'text-zinc-400 hover:text-white hover:bg-white/[0.04]'
+                    : 'text-[var(--text-mid)] hover:text-white hover:bg-white/[0.04]'
                 }`}
               >
                 {labels[loc]}
