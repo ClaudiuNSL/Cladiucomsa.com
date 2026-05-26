@@ -6,7 +6,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { completeIntro } from '@/app/lib/intro-state';
+
+if (typeof window !== 'undefined') {
+  gsap.registerPlugin(ScrollTrigger);
+}
 
 const SESSION_KEY = 'intro-seen-v1';
 
@@ -51,6 +56,16 @@ export default function IntroAnimation() {
       document.body.style.overflow = prevOverflow;
       completeIntro();
       setActive(false);
+      // Forteaza ScrollTrigger sa recalibreze pozitiile dupa intro dismiss.
+      // Restaurarea overflow + eliminarea DOM-ului intro pot modifica
+      // dimensiunile viewportului (scrollbar appear), facand trigger-ele
+      // pe S2/S3/Story sa fie offset. Double rAF — primul lasa React sa
+      // flush DOM-ul, al doilea lasa browser-ul sa repaint.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          ScrollTrigger.refresh();
+        });
+      });
     };
 
     const ctx = gsap.context(() => {
@@ -118,6 +133,12 @@ export default function IntroAnimation() {
     document.body.style.overflow = '';
     completeIntro();
     setActive(false);
+    // Acelasi refresh ca in finish() — vezi comentariul de acolo.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        ScrollTrigger.refresh();
+      });
+    });
   };
 
   return (
