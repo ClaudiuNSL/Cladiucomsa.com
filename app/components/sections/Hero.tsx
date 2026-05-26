@@ -267,23 +267,6 @@ function SideRails() {
   const tRails = useTranslations('cinematic.rails');
   return (
     <>
-      {/* Left rail — eyebrow brand stacat vertical, in loc de wordmark cu writing-mode. */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none fixed left-4 top-1/2 z-30 flex -translate-y-1/2 lg:left-6"
-      >
-        <ul className="flex flex-col items-center gap-3 text-[9px] font-medium uppercase tracking-[0.4em] text-[var(--text-quiet)] lg:text-[10px]">
-          <li>Web</li>
-          <li>
-            <span className="mx-auto block h-1 w-1 rounded-full bg-[var(--text-soft)]/30" aria-hidden="true" />
-          </li>
-          <li>AI</li>
-          <li>
-            <span className="mx-auto block h-1 w-1 rounded-full bg-[var(--text-soft)]/30" aria-hidden="true" />
-          </li>
-          <li>Cinematic</li>
-        </ul>
-      </div>
       {/* Right rail */}
       <div
         aria-hidden="true"
