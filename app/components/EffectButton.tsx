@@ -46,7 +46,7 @@ function isExternalHref(href: string): boolean {
 }
 
 const BASE = 'effect-btn group inline-flex items-center gap-3 rounded-full px-7 py-3 text-xs font-medium uppercase tracking-[0.2em] transition-all duration-300 hover:scale-[1.03] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40';
-const PRIMARY = 'bg-white text-black hover:bg-zinc-100';
+const PRIMARY = 'bg-white text-black hover:bg-[var(--text-soft)]';
 const SECONDARY = 'border border-[var(--text-soft)]/30 text-white hover:border-[var(--text-soft)]/60 hover:bg-[var(--text-soft)]/[0.06]';
 
 function variantClass(v: Variant) {

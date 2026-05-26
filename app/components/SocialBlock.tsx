@@ -73,7 +73,7 @@ export default function SocialBlock({
                 href={url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5 transition-all duration-500 hover:border-white/30 hover:bg-white/[0.04] hover:shadow-[0_0_60px_-15px_rgba(255,255,255,0.18)] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+                className="group relative overflow-hidden rounded-2xl border border-[var(--border-soft)] bg-white/[0.02] p-5 transition-all duration-500 hover:border-white/30 hover:bg-white/[0.04] hover:shadow-[0_0_60px_-15px_rgba(255,255,255,0.18)] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
               >
                 {/* Sweep gradient pe hover — left to right */}
                 <span
@@ -81,7 +81,7 @@ export default function SocialBlock({
                   className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/[0.06] to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full"
                 />
                 <div className="relative flex items-center gap-4">
-                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/[0.06] bg-white/[0.02] text-white transition-all duration-500 group-hover:scale-110 group-hover:border-white/25 group-hover:bg-white/[0.06]">
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[var(--border-soft)] bg-white/[0.02] text-white transition-all duration-500 group-hover:scale-110 group-hover:border-white/25 group-hover:bg-white/[0.06]">
                     <Icon size={20} aria-hidden="true" />
                   </span>
                   <div className="min-w-0 flex-1">

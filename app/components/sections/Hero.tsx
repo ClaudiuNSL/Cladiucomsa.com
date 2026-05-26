@@ -69,8 +69,11 @@ export default function Hero() {
             alt=""
             fill
             sizes="100vw"
+            quality={80}
             className="object-cover"
             style={{ objectPosition: 'center 35%' }}
+            placeholder="blur"
+            blurDataURL="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxMCI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iIzA3MDkwZiIvPjwvc3ZnPg=="
             priority
           />
           {/* Layer 1: gradient stanga — face textul lizibil pe partea cu continut */}
