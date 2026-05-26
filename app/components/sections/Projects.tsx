@@ -25,7 +25,7 @@ const SLUG_FOR_KEY: Record<ProjectKey, string> = {
 export default function Projects() {
   const t = useTranslations('projects');
   return (
-    <div>
+    <div id="projects">
       {PROJECT_KEYS.map((key, idx) => (
         <ProjectScreen key={key} projectKey={key} idx={idx} t={t} />
       ))}
@@ -146,7 +146,7 @@ function ProjectScreen({ projectKey, idx, t }: ProjectScreenProps) {
         data-bg-number
         className="pointer-events-none absolute inset-0 flex select-none items-center justify-center"
       >
-        <span className="text-[16rem] font-bold leading-none tracking-tighter text-[var(--text-soft)]/[0.03] sm:text-[20rem] lg:text-[24rem] xl:text-[28rem]">
+        <span className="text-[16rem] font-bold leading-none tracking-tighter text-[var(--text-soft)]/[0.06] sm:text-[20rem] lg:text-[24rem] xl:text-[28rem]">
           {projectNumber}
         </span>
       </span>

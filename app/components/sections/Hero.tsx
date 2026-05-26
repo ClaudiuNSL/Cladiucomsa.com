@@ -267,10 +267,10 @@ function SideRails() {
   const tRails = useTranslations('cinematic.rails');
   return (
     <>
-      {/* Right rail */}
+      {/* Right rail — vizibil doar pe desktop, pe mobile inghesuie continutul */}
       <div
         aria-hidden="true"
-        className="pointer-events-none fixed right-4 top-1/2 z-30 flex -translate-y-1/2 lg:right-6"
+        className="pointer-events-none fixed right-4 top-1/2 z-30 hidden -translate-y-1/2 lg:right-6 lg:flex"
       >
         <ul className="flex flex-col items-center gap-3 text-[9px] font-medium uppercase tracking-[0.4em] text-[var(--text-quiet)] lg:text-[10px]">
           <li>{tRails('menu')}</li>
