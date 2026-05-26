@@ -8,8 +8,13 @@
   },
   "nav": {
     "langSwitcherLabel": "Language",
-    "openMenu": "Open menu",
-    "closeMenu": "Close menu"
+    "openMenu": "Menu",
+    "closeMenu": "Close",
+    "work": "Work",
+    "about": "About",
+    "contact": "Contact",
+    "cta": "Let's talk",
+    "ctaHref": "#contact"
   },
   "cinematic": {
     "scrollHint": "Scroll",
@@ -21,9 +26,23 @@
     },
     "s1": {
       "counter": "Intro",
-      "eyebrow": "Web · AI · Cinematic",
-      "title": "Claudiu Comsa",
-      "body": "We build websites and AI automations for businesses that want more than a brochure site."
+      "eyebrow": "Full-Stack Web Developer · Romania",
+      "titleLine1": "I'm Claudiu Comșa.",
+      "titleLine2Pre": "I ",
+      "titleAccent": "turn",
+      "titleLine2Post": " ideas into real digital products.",
+      "body": "You've made a name locally. The next step is being visible online — with a brand that works as well in Romania as anywhere else.",
+      "services": [
+        "Websites",
+        "E-commerce",
+        "Automation",
+        "Optimization",
+        "SEO & Growth"
+      ],
+      "ctaPrimary": "Let's talk",
+      "ctaPrimaryHref": "#contact",
+      "ctaSecondary": "See projects",
+      "ctaSecondaryHref": "#projects"
     },
     "s2": {
       "counter": "Work",
