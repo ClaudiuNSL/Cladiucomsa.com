@@ -18,12 +18,6 @@
   },
   "cinematic": {
     "scrollHint": "Scroll",
-    "rails": {
-      "menu": "Menu",
-      "work": "Work",
-      "studio": "Studio",
-      "network": "Network"
-    },
     "s1": {
       "counter": "Intro",
       "eyebrow": "Full-Stack Web Developer · Romania",
