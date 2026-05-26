@@ -25,6 +25,7 @@ export default function Hero() {
     if (reduced) return;
 
     const ctx = gsap.context(() => {
+      // Reveal standard pe [data-reveal] — Sections 1, 3 si elemente non-S2.
       const sections = gsap.utils.toArray<HTMLElement>('[data-cinematic-section]');
       sections.forEach((section) => {
         const items = section.querySelectorAll('[data-reveal]');
@@ -45,6 +46,67 @@ export default function Hero() {
           }
         );
       });
+
+      // Section 2 — timeline dedicat cu letter cascade pe H2 + restul cascada.
+      const s2 = document.getElementById('section-2');
+      if (s2) {
+        // Stare initiala — ascundere imediata, ca sa nu existe flash de continut
+        // vizibil intre mount si trigger. Aplicat doar in non-reduced-motion (am
+        // returnat deja early in caz contrar).
+        gsap.set(s2.querySelectorAll<HTMLElement>('[data-s2-pre], [data-s2-post]'), {
+          opacity: 0,
+          y: 24,
+        });
+        gsap.set(s2.querySelectorAll<HTMLElement>('[data-s2-letter]'), {
+          opacity: 0,
+          y: -70,
+          rotateX: -90,
+        });
+        const divider = s2.querySelector<HTMLElement>('[data-s2-divider]');
+        if (divider) gsap.set(divider, { scaleX: 0 });
+
+        const letters = s2.querySelectorAll<HTMLElement>('[data-s2-letter]');
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: s2,
+            start: 'top 72%',
+            toggleActions: 'play none none reverse',
+          },
+        });
+        tl.fromTo(
+          s2.querySelectorAll<HTMLElement>('[data-s2-pre]'),
+          { y: 24, opacity: 0 },
+          { y: 0, opacity: 1, duration: 0.8, stagger: 0.1, ease: 'expo.out' }
+        );
+        if (letters.length > 0) {
+          tl.fromTo(
+            letters,
+            { y: -70, opacity: 0, rotateX: -90 },
+            { y: 0, opacity: 1, rotateX: 0, duration: 0.9, stagger: 0.04, ease: 'expo.out' },
+            '-=0.4'
+          );
+        }
+        tl.fromTo(
+          s2.querySelectorAll<HTMLElement>('[data-s2-post]'),
+          { y: 24, opacity: 0 },
+          { y: 0, opacity: 1, duration: 0.8, stagger: 0.12, ease: 'expo.out' },
+          '-=0.2'
+        );
+
+        // Scroll-scrubbed divider — scaleX legat de pozitia in viewport (efect C).
+        if (divider) {
+          gsap.to(divider, {
+            scaleX: 1,
+            ease: 'none',
+            scrollTrigger: {
+              trigger: s2,
+              start: 'top 85%',
+              end: 'top 35%',
+              scrub: 0.8,
+            },
+          });
+        }
+      }
     }, rootRef);
 
     return () => ctx.revert();
@@ -176,30 +238,63 @@ export default function Hero() {
         </div>
       </section>
 
-      {/* Section 2 */}
+      {/* Section 2 — centrat pe mijloc + letter cascade pe H2 (efect A) + divider scrub (efect C) */}
       <section
         id="section-2"
         data-cinematic-section
         aria-label="Section 2 — Work"
-        className="relative flex min-h-screen items-end pb-24 pt-24 px-8 lg:items-center lg:px-12 lg:pb-12"
+        className="relative flex min-h-screen items-center pb-24 pt-24 px-8 lg:px-12"
       >
         <SectionCounter index={2} label={t('s2.counter')} />
         <PageCounter current={2} total={3} />
-        <div className="mx-auto w-full max-w-xl text-center lg:mx-0 lg:max-w-2xl lg:text-left">
-          <p data-reveal className="text-[10px] font-medium uppercase tracking-[0.32em] text-[var(--text-quiet)]">
+        <div className="mx-auto w-full max-w-3xl text-center">
+          <p data-s2-pre className="text-[10px] font-medium uppercase tracking-[0.32em] text-[var(--text-quiet)]">
             {t('s2.eyebrow')}
           </p>
-          <p data-reveal className="mt-3 text-sm tracking-tight text-[var(--text-quiet)]">
+          <p data-s2-pre className="mt-3 text-sm tracking-tight text-[var(--text-quiet)]">
             {t('s2.subtitle')}
           </p>
-          <h2 data-reveal className="mt-6 text-4xl font-semibold leading-[1.05] tracking-[-0.04em] text-white sm:text-5xl lg:mt-8 lg:text-6xl xl:text-7xl">
-            {t('s2.title')}
+          {/* H2 — fiecare litera intra individual cu rotateX + stagger.
+              Cuvintele sunt incapsulate intr-un <span inline-block whitespace-nowrap>
+              ca sa nu se sparga in linii diferite la wrap. */}
+          <h2
+            aria-label={t('s2.title')}
+            className="mt-6 text-4xl font-semibold leading-[1.05] tracking-[-0.04em] text-white sm:text-5xl lg:mt-8 lg:text-6xl xl:text-7xl"
+            style={{ perspective: '800px' }}
+          >
+            {t('s2.title').split(' ').map((word, wi, words) => (
+              <span key={wi} className="inline-block whitespace-nowrap">
+                {Array.from(word).map((ch, ci) => (
+                  <span
+                    key={ci}
+                    data-s2-letter
+                    aria-hidden="true"
+                    className="inline-block"
+                    style={{ transformOrigin: '50% 100%' }}
+                  >
+                    {ch}
+                  </span>
+                ))}
+                {wi < words.length - 1 && (
+                  <span data-s2-letter aria-hidden="true" className="inline-block">
+                    {' '}
+                  </span>
+                )}
+              </span>
+            ))}
           </h2>
-          <div data-reveal className="mx-auto mt-8 h-px w-24 bg-[var(--border-soft)] lg:mx-0 lg:mt-12" aria-hidden="true" />
-          <p data-reveal className="mx-auto mt-6 max-w-md text-sm leading-[1.6] tracking-tight text-[var(--text-mid)] sm:text-base lg:mx-0 lg:mt-8 lg:text-lg">
+          {/* Divider — scroll-scrubbed scaleX legat de pozitia in viewport.
+              Starea initiala (scaleX 0) e setata din GSAP, nu inline, ca sa
+              ramana vizibil pe `prefers-reduced-motion`. */}
+          <div
+            data-s2-divider
+            aria-hidden="true"
+            className="mx-auto mt-8 h-px w-32 origin-center bg-[var(--text-soft)]/40 lg:mt-12"
+          />
+          <p data-s2-post className="mx-auto mt-6 max-w-md text-sm leading-[1.6] tracking-tight text-[var(--text-mid)] sm:text-base lg:mt-8 lg:text-lg">
             {t('s2.body')}
           </p>
-          <div data-reveal className="mt-10 flex justify-center lg:mt-12 lg:justify-start">
+          <div data-s2-post className="mt-10 flex justify-center lg:mt-12">
             <EffectButton text={t('s2.cta')} href={t('s2.ctaHref')} variant="secondary" trailing="→" />
           </div>
         </div>
