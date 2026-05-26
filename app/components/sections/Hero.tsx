@@ -10,6 +10,7 @@ import { useTranslations } from 'next-intl';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import EffectButton from '@/app/components/EffectButton';
+import { onIntroComplete } from '@/app/lib/intro-state';
 
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(ScrollTrigger);
@@ -24,7 +25,10 @@ export default function Hero() {
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduced) return;
 
-    const ctx = gsap.context(() => {
+    let ctx: gsap.Context | null = null;
+
+    const setupAnimations = () => {
+      ctx = gsap.context(() => {
       // Reveal standard pe [data-reveal] — Sections 1, 3 si elemente non-S2.
       const sections = gsap.utils.toArray<HTMLElement>('[data-cinematic-section]');
       sections.forEach((section) => {
@@ -108,9 +112,18 @@ export default function Hero() {
 
       applyTitleCascade('section-2', 's2');
       applyTitleCascade('section-3', 's3');
-    }, rootRef);
+      }, rootRef);
+    };
 
-    return () => ctx.revert();
+    // Asteapta sfarsitul intro animation inainte sa porneasca reveal-ul Hero.
+    // Pentru utilizatorii care au vazut deja intro-ul (sessionStorage),
+    // onIntroComplete fire-uieste sincron.
+    const unsubscribe = onIntroComplete(setupAnimations);
+
+    return () => {
+      unsubscribe();
+      if (ctx) ctx.revert();
+    };
   }, []);
 
   return (

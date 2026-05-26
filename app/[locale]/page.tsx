@@ -1,7 +1,8 @@
-// Homepage cinematic: Hero (3 sectiuni cu 3D fix) + Story + Projects (3 stacked) + Contact.
+// Homepage cinematic: IntroAnimation (prima vizita) + Hero (3 sectiuni) + Story + Projects + Contact.
 import { setRequestLocale } from 'next-intl/server';
 import Navbar from '@/app/components/Navbar';
 import Footer from '@/app/components/Footer';
+import IntroAnimation from '@/app/components/IntroAnimation';
 import Hero from '@/app/components/sections/Hero';
 import Story from '@/app/components/sections/Story';
 import Projects from '@/app/components/sections/Projects';
@@ -20,6 +21,7 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
       >
         Skip to main content
       </a>
+      <IntroAnimation />
       <Navbar />
       <main>
         <Hero />
