@@ -55,76 +55,123 @@ export default function Hero() {
       {/* Side rails — fixed across all sections */}
       <SideRails />
 
-      {/* Section 1 */}
+      {/* Section 1 — Hero image-led, fullbleed cu peisaj cinematic */}
       <section
         id="section-1"
         data-cinematic-section
         aria-label="Section 1 — Intro"
-        className="relative flex min-h-screen items-end pb-32 pt-24 px-8 lg:items-center lg:px-12 lg:pb-12"
+        className="relative flex min-h-screen items-end overflow-hidden px-8 pb-24 pt-24 lg:px-16 lg:pb-20"
       >
+        {/* Imagine fullbleed + 3 layere overlay pentru lizibilitate */}
+        <div className="absolute inset-0 -z-10">
+          <Image
+            src="/hero/cave-explorer.png"
+            alt=""
+            fill
+            sizes="100vw"
+            className="object-cover"
+            style={{ objectPosition: 'center 35%' }}
+            priority
+          />
+          {/* Layer 1: gradient stanga — face textul lizibil pe partea cu continut */}
+          <div
+            aria-hidden
+            className="absolute inset-0"
+            style={{
+              background:
+                'linear-gradient(to right, var(--bg-deep) 0%, rgba(7,9,15,0.55) 35%, transparent 75%)',
+            }}
+          />
+          {/* Layer 2: vignette jos — fade catre culoarea de base a paginii */}
+          <div
+            aria-hidden
+            className="absolute inset-0"
+            style={{
+              background:
+                'linear-gradient(to top, var(--bg-deep) 0%, transparent 35%)',
+            }}
+          />
+          {/* Layer 3: grain noise overlay subtil — textura cinematic */}
+          <div
+            aria-hidden
+            className="absolute inset-0 opacity-[0.03] mix-blend-overlay"
+            style={{
+              backgroundImage:
+                "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>\")",
+            }}
+          />
+        </div>
+
         <SectionCounter index={1} label={t('s1.counter')} />
         <PageCounter current={1} total={3} />
-        {/* Grid 2-col pe lg+: text stanga, poza dreapta. Pe mobile poza apare
-            deasupra textului ca sa nu fie ascunsa. */}
-        <div className="mx-auto flex w-full max-w-6xl flex-col items-center gap-10 lg:flex-row lg:items-center lg:justify-between lg:gap-20">
-          {/* Photo — ordinea: pe mobile sus, pe desktop dreapta. */}
-          <div data-reveal className="relative order-1 shrink-0 lg:order-2">
-            {/* Glow finut — radial soft alb in spate. Strat dublu pentru blana
-                catifelata: inel apropiat (10% alb) + halo larg (4% alb). */}
-            <div
-              aria-hidden
-              className="pointer-events-none absolute -inset-16 -z-10 rounded-full"
-              style={{
-                background:
-                  'radial-gradient(closest-side, rgba(255,255,255,0.12), rgba(255,255,255,0.04) 55%, rgba(255,255,255,0) 80%)',
-              }}
+
+        {/* Continut — stanga-jos pe desktop, centru pe mobile. Wrappat in max-w
+            pentru aerisire si lizibilitate. */}
+        <div className="relative mx-auto w-full max-w-2xl text-center lg:mx-0 lg:max-w-3xl lg:text-left">
+          <p data-reveal className="text-[10px] font-medium uppercase tracking-[0.32em] text-[var(--text-soft)]">
+            {t('s1.eyebrow')}
+          </p>
+          <h1
+            data-reveal
+            className="mt-6 text-4xl font-semibold leading-[0.95] tracking-[-0.04em] text-white sm:text-5xl lg:mt-8 lg:text-6xl xl:text-7xl"
+          >
+            <span className="block">{t('s1.titleLine1')}</span>
+            <span className="mt-1 block">
+              {t('s1.titleLine2Pre')}
+              <span
+                className="italic font-normal"
+                style={{ fontFamily: 'var(--font-fraunces), serif' }}
+              >
+                {t('s1.titleAccent')}
+              </span>
+              {t('s1.titleLine2Post')}
+            </span>
+          </h1>
+          <div data-reveal className="mx-auto mt-8 h-px w-24 bg-[var(--border-soft)] lg:mx-0 lg:mt-10" aria-hidden="true" />
+          <p data-reveal className="mx-auto mt-6 max-w-xl text-base leading-[1.65] text-[var(--text-mid)] sm:text-lg lg:mx-0 lg:mt-8">
+            {t('s1.body')}
+          </p>
+          {/* Strip de servicii — editorial, separat cu middot */}
+          <ul
+            data-reveal
+            className="mx-auto mt-8 flex max-w-2xl flex-wrap items-center justify-center gap-x-3 gap-y-2 text-[10px] font-medium uppercase tracking-[0.28em] text-[var(--text-soft)] lg:mx-0 lg:justify-start"
+          >
+            {(t.raw('s1.services') as string[]).map((svc, i, arr) => (
+              <li key={svc} className="inline-flex items-center gap-3">
+                <span>{svc}</span>
+                {i < arr.length - 1 && (
+                  <span aria-hidden="true" className="text-[var(--text-quiet)]/60">·</span>
+                )}
+              </li>
+            ))}
+          </ul>
+          {/* CTA pair — primary alb focal + secondary border ice-blue */}
+          <div data-reveal className="mt-10 flex flex-wrap items-center justify-center gap-4 lg:justify-start">
+            <EffectButton
+              text={t('s1.ctaPrimary')}
+              href={t('s1.ctaPrimaryHref')}
+              variant="primary"
+              trailing="→"
             />
-            <div className="relative h-[300px] w-[225px] overflow-hidden rounded-2xl border border-white/10 sm:h-[380px] sm:w-[285px] lg:h-[460px] lg:w-[345px] xl:h-[540px] xl:w-[405px]">
-              <Image
-                src="/profil.jpg"
-                alt="Claudiu Comșa"
-                fill
-                sizes="(min-width: 1280px) 405px, (min-width: 1024px) 345px, (min-width: 640px) 285px, 225px"
-                className="object-cover"
-                priority
-              />
-              {/* Vignette interna foarte subtila ca poza sa nu pluteasca prea
-                  ascutit pe fundalul intunecat. */}
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-0"
-                style={{
-                  background:
-                    'radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.35) 100%)',
-                }}
-              />
-            </div>
-          </div>
-          {/* Text */}
-          <div className="order-2 w-full max-w-xl text-center lg:order-1 lg:max-w-2xl lg:text-left">
-            {/* Eyebrow ascuns pe mobile — rail-ul vertical "WEB · AI · CINEMATIC" il inlocuieste. */}
-            <p data-reveal className="hidden text-[10px] font-medium uppercase tracking-[0.32em] text-zinc-500 lg:block">
-              {t('s1.eyebrow')}
-            </p>
-            <h1 data-reveal className="text-5xl font-semibold leading-[0.95] tracking-[-0.04em] text-white sm:text-6xl lg:mt-8 lg:text-7xl xl:text-8xl">
-              {t('s1.title')}
-            </h1>
-            <div data-reveal className="mx-auto mt-8 h-px w-24 bg-white/10 lg:mx-0 lg:mt-12" aria-hidden="true" />
-            <p data-reveal className="mx-auto mt-6 max-w-md text-sm leading-[1.6] tracking-tight text-zinc-400 sm:text-base lg:mx-0 lg:mt-8 lg:text-lg">
-              {t('s1.body')}
-            </p>
+            <EffectButton
+              text={t('s1.ctaSecondary')}
+              href={t('s1.ctaSecondaryHref')}
+              variant="secondary"
+              trailing="→"
+            />
           </div>
         </div>
+
         {/* Cue de scroll subtil, doar pe Section 1. */}
         <div
           data-reveal
-          className="absolute bottom-8 left-1/2 flex -translate-x-1/2 flex-col items-center gap-3 lg:bottom-12"
+          className="absolute bottom-8 left-1/2 flex -translate-x-1/2 flex-col items-center gap-3 lg:bottom-10"
         >
-          <span className="text-[10px] font-medium uppercase tracking-[0.4em] text-zinc-500">
+          <span className="text-[10px] font-medium uppercase tracking-[0.4em] text-[var(--text-quiet)]">
             {t('scrollHint')}
           </span>
-          <span className="block h-10 w-px overflow-hidden bg-white/10">
-            <span className="block h-4 w-px animate-[scroll-cue_2.4s_ease-in-out_infinite] bg-white/60" />
+          <span className="block h-10 w-px overflow-hidden bg-[var(--border-soft)]">
+            <span className="block h-4 w-px animate-[scroll-cue_2.4s_ease-in-out_infinite] bg-[var(--text-soft)]/70" />
           </span>
         </div>
       </section>
