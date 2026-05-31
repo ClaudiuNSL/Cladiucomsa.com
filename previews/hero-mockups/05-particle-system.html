@@ -1,0 +1,2145 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Hero · Particle System WOW — 5 capitole + boot</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #06060a;
+    --fg: #f4f1ea;
+    --muted: #8a8680;
+    --line: rgba(244, 241, 234, 0.12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: "Instrument Serif", Georgia, serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  body { overflow-x: hidden; transition: background-color 1.6s ease; }
+
+  /* ═════════ BOOT SCREEN ═════════ */
+  .boot {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    background: #000;
+    color: #c0d8c0;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(20px, 5vw, 80px);
+  }
+  .boot-inner { max-width: 720px; width: 100%; }
+  .boot-line {
+    opacity: 0;
+    margin-bottom: 6px;
+    white-space: pre;
+    letter-spacing: 0.02em;
+  }
+  .boot-line .prompt { color: #6b8a6b; }
+  .boot-line .ok { color: #a8d8a8; }
+  .boot-line .accent { color: #f4f1ea; }
+  .boot-cursor {
+    display: inline-block;
+    width: 8px;
+    height: 16px;
+    background: #c0d8c0;
+    margin-left: 4px;
+    vertical-align: middle;
+    animation: caret 0.8s steps(1) infinite;
+  }
+  @keyframes caret { 50% { opacity: 0; } }
+
+  /* ═════════ NAVBAR ═════════ */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 50;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: clamp(20px, 3vw, 32px) clamp(24px, 4vw, 56px);
+    pointer-events: none;
+    opacity: 0; /* shown after boot */
+  }
+  nav > * { pointer-events: auto; }
+
+  .logo {
+    width: 68px; height: 68px;
+    color: var(--fg);
+    display: block;
+    cursor: pointer;
+    transition: filter 0.4s ease;
+  }
+  .logo:hover {
+    filter: drop-shadow(0 0 18px rgba(244, 241, 234, 0.55));
+  }
+  .logo svg {
+    width: 100%; height: 100%;
+    overflow: visible;
+    display: block;
+  }
+  .logo .ring,
+  .logo .outer-c,
+  .logo .inner-c,
+  .logo .accent-stroke {
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .logo .ring { stroke-width: 0.8; opacity: 0.25; }
+  /* GSAP gestioneaza transformurile, doar setam transform-box pentru SVG */
+  .logo .hover-grp,
+  .logo .breathe-grp,
+  .logo .orbit-grp,
+  .logo .ring-grp {
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  .menu-btn {
+    width: 44px; height: 44px;
+    border: 1px solid var(--line);
+    background: rgba(6, 6, 10, 0.4);
+    color: var(--fg);
+    display: grid; place-items: center;
+    cursor: pointer;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 16px;
+    backdrop-filter: blur(8px);
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+  .menu-btn:hover {
+    border-color: rgba(244, 241, 234, 0.4);
+    background: rgba(6, 6, 10, 0.7);
+  }
+
+  /* ═════════ PINNED HERO ═════════ */
+  .hero-section {
+    position: relative;
+    height: 100vh;
+    width: 100%;
+    overflow: hidden;
+    perspective: 1400px;
+    perspective-origin: 50% 45%;
+  }
+
+  /* Canvas Three.js (particle system + wireframe) */
+  #scene {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .vignette {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    /* Vignette central darker — ajuta lizibilitatea textului din centru */
+    background:
+      radial-gradient(ellipse 60% 45% at center,
+        rgba(6, 6, 10, 0.55) 0%,
+        rgba(6, 6, 10, 0.25) 35%,
+        transparent 70%),
+      radial-gradient(ellipse at center,
+        transparent 30%,
+        rgba(6, 6, 10, 0.5) 75%,
+        rgba(6, 6, 10, 0.95) 100%);
+    transition: background 1.6s ease;
+  }
+
+  /* Velocity blur overlay — apare cand scrollezi rapid */
+  .vel-blur {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+    backdrop-filter: blur(0px);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  /* ═════════ CHAPTER INDICATOR ═════════ */
+  .chapters {
+    position: absolute;
+    right: clamp(20px, 3vw, 40px);
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+    opacity: 0;
+  }
+  .chapters .ch {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    opacity: 0.35;
+    transition: opacity 0.5s ease, color 0.5s ease;
+  }
+  .chapters .ch.active { opacity: 1; color: var(--fg); }
+  .chapters .ch .dot {
+    width: 6px; height: 6px;
+    border: 1px solid currentColor;
+    border-radius: 50%;
+    transition: background 0.5s ease, transform 0.5s ease;
+  }
+  .chapters .ch.active .dot {
+    background: currentColor;
+    transform: scale(1.3);
+  }
+
+  /* ═════════ 3D STAGE ═════════ */
+  .stage-3d {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    transform-style: preserve-3d;
+    pointer-events: none;
+    display: grid;
+    place-items: center;
+    padding: 0 clamp(24px, 5vw, 80px);
+  }
+
+  .beat {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    transform-style: preserve-3d;
+    will-change: transform, opacity;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .beat.active { pointer-events: auto; }
+  .beat-inner { max-width: 1100px; padding: 0 clamp(24px, 5vw, 80px); }
+
+  /* Letter cascade — fiecare litera intra individual */
+  .cascade { display: inline-block; }
+  .cascade .char {
+    display: inline-block;
+    opacity: 0;
+    transform: translateY(40px);
+    will-change: transform, opacity;
+  }
+  .cascade .space { width: 0.3em; }
+
+  /* ═════════ BEAT 00 — INTRO ═════════ */
+  .intro-eyebrow {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+  .intro-quote {
+    font-family: "Instrument Serif", serif;
+    font-style: italic;
+    font-size: clamp(20px, 2.2vw, 28px);
+    color: var(--muted);
+    max-width: 540px;
+    line-height: 1.45;
+  }
+
+  /* ═════════ BEAT 01 — NUME ═════════ */
+  .name-display {
+    font-size: clamp(64px, 12vw, 200px);
+    font-weight: 400;
+    line-height: 0.9;
+    letter-spacing: -0.04em;
+  }
+  .name-display .it { font-style: italic; color: var(--muted); }
+  .name-display .line { display: block; }
+  .name-sub {
+    margin-top: clamp(16px, 2vw, 24px);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* ═════════ BEAT 02 — POVESTE ═════════ */
+  .story-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: clamp(24px, 3vw, 40px);
+    text-align: left;
+    max-width: 720px;
+  }
+  .story-eyebrow {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .story-eyebrow::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+  }
+  .story-title {
+    font-family: "Instrument Serif", serif;
+    font-style: italic;
+    font-size: clamp(28px, 3.6vw, 48px);
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+  }
+  .story-body {
+    font-family: "Instrument Serif", serif;
+    font-size: clamp(16px, 1.5vw, 19px);
+    line-height: 1.65;
+    color: rgba(244, 241, 234, 0.75);
+    max-width: 580px;
+  }
+  .story-body em { color: var(--fg); font-style: italic; }
+
+  /* ═════════ BEAT 03 — FILMULEȚ COD ═════════ */
+  .video-frame {
+    width: min(720px, 80vw);
+    aspect-ratio: 16 / 9;
+    border: 1px solid var(--line);
+    background: #050507;
+    position: relative;
+    overflow: hidden;
+    box-shadow:
+      0 30px 80px rgba(0, 0, 0, 0.5),
+      0 0 0 1px rgba(244, 241, 234, 0.04);
+  }
+  .video-frame .vfx-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .video-frame .vfx-header {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(5, 5, 7, 0.9);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    color: var(--muted);
+    z-index: 2;
+  }
+  .video-frame .vfx-header .dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: rgba(244, 241, 234, 0.2);
+  }
+  .video-frame .vfx-header .dot:nth-child(1) { background: rgba(255, 95, 86, 0.7); }
+  .video-frame .vfx-header .dot:nth-child(2) { background: rgba(255, 189, 46, 0.7); }
+  .video-frame .vfx-header .dot:nth-child(3) { background: rgba(40, 200, 64, 0.7); }
+  .video-frame .vfx-header .name { margin-left: 12px; letter-spacing: 0.1em; }
+  .vfx-caption {
+    margin-top: 20px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  /* ═════════ BEAT 04 — CTA ═════════ */
+  .cta-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(20px, 3vw, 32px);
+  }
+  .cta-eyebrow {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .cta-title {
+    font-size: clamp(40px, 6vw, 80px);
+    font-weight: 400;
+    line-height: 1;
+    letter-spacing: -0.025em;
+  }
+  .cta-title em { font-style: italic; color: var(--muted); }
+  .cta-btn {
+    pointer-events: auto;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--fg);
+    text-decoration: none;
+    padding: 18px 36px;
+    border: 1px solid var(--line);
+    background: rgba(6, 6, 10, 0.5);
+    backdrop-filter: blur(6px);
+    transition: border-color 0.3s ease, background 0.3s ease, transform 0.3s ease, letter-spacing 0.3s ease;
+  }
+  .cta-btn:hover {
+    border-color: var(--fg);
+    background: rgba(244, 241, 234, 0.06);
+    transform: translateY(-2px);
+    letter-spacing: 0.3em;
+  }
+
+  /* ═════════ PROGRESS BAR + HINT ═════════ */
+  .progress-rail {
+    position: absolute;
+    bottom: clamp(20px, 3vw, 32px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: clamp(160px, 18vw, 240px);
+    height: 1px;
+    background: rgba(244, 241, 234, 0.1);
+    z-index: 20;
+  }
+  .progress-rail .bar {
+    position: absolute;
+    inset: 0;
+    background: var(--fg);
+    transform-origin: left;
+    transform: scaleX(0);
+  }
+  .scroll-hint {
+    position: absolute;
+    bottom: clamp(48px, 6vw, 72px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--muted);
+    opacity: 0;
+  }
+
+  /* ═════════ SECTION DIVIDER — tranzitie inter-sectiuni ═════════ */
+  .section-divider {
+    position: relative;
+    height: 60vh;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    border-top: 1px solid var(--line);
+  }
+  .section-divider .divider-line {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 80vw;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--fg), transparent);
+    transform: translate(-50%, -50%) scaleX(0);
+    transform-origin: center;
+    opacity: 0.4;
+  }
+  .section-divider .divider-text {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: var(--muted);
+    position: relative;
+    background: var(--bg);
+    padding: 0 24px;
+    z-index: 2;
+    opacity: 0;
+  }
+
+  /* ═════════ SECTION 02 — INTRO (vertical) ═════════ */
+  .work-intro-section {
+    position: relative;
+    padding: clamp(100px, 12vw, 180px) clamp(24px, 5vw, 80px) clamp(60px, 8vw, 100px);
+    overflow: hidden;
+  }
+  .work-intro {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: clamp(20px, 2vw, 32px);
+    max-width: 1480px;
+    margin: 0 auto;
+  }
+  .work-eyebrow {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .work-eyebrow::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+    max-width: 320px;
+  }
+  .work-title {
+    font-family: "Instrument Serif", serif;
+    font-size: clamp(48px, 8vw, 120px);
+    font-weight: 400;
+    line-height: 0.95;
+    letter-spacing: -0.035em;
+  }
+  .work-title em { font-style: italic; color: var(--muted); }
+  .work-title .cascade .char {
+    display: inline-block;
+    opacity: 0;
+    transform: translateY(40px);
+    will-change: transform, opacity;
+  }
+  .work-title .cascade .space { width: 0.3em; }
+  .work-subtitle {
+    font-family: "Instrument Serif", serif;
+    font-style: italic;
+    font-size: clamp(16px, 1.5vw, 19px);
+    color: var(--muted);
+    max-width: 560px;
+    line-height: 1.55;
+    margin-top: clamp(8px, 1vw, 16px);
+  }
+
+  /* ═════════ HORIZONTAL PINNED SCROLL — Selected Work ═════════ */
+  .work-horizontal {
+    position: relative;
+    height: 100vh; /* pin pe inaltimea unui viewport */
+    width: 100%;
+    overflow: hidden;
+  }
+  .work-track {
+    position: absolute;
+    top: 0; left: 0;
+    height: 100%;
+    display: flex;
+    will-change: transform;
+  }
+  .h-slide {
+    flex: 0 0 100vw;
+    height: 100vh;
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+    gap: clamp(40px, 6vw, 100px);
+    align-items: center;
+    padding: 0 clamp(40px, 8vw, 120px);
+    position: relative;
+  }
+  .h-slide.reverse { grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); }
+  .h-slide.reverse .work-visual { order: 2; }
+  .h-slide.reverse .work-meta   { order: 1; }
+  @media (max-width: 860px) {
+    .work-horizontal { height: auto; }
+    .work-track { position: relative; flex-direction: column; }
+    .h-slide {
+      flex: none;
+      width: 100%; height: auto;
+      grid-template-columns: 1fr;
+      gap: 32px;
+      padding: 60px clamp(24px, 5vw, 60px);
+    }
+    .h-slide.reverse .work-visual { order: 1; }
+    .h-slide.reverse .work-meta   { order: 2; }
+  }
+
+  /* Progress indicator pentru horizontal scroll */
+  .h-progress {
+    position: absolute;
+    bottom: clamp(24px, 4vw, 48px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .h-progress .h-num { min-width: 56px; }
+  .h-progress .h-num strong { color: var(--fg); font-weight: 500; }
+  .h-rail {
+    width: clamp(160px, 16vw, 220px);
+    height: 1px;
+    background: rgba(244, 241, 234, 0.12);
+    position: relative;
+    overflow: hidden;
+  }
+  .h-rail .h-bar {
+    position: absolute;
+    inset: 0;
+    background: var(--fg);
+    transform-origin: left;
+    transform: scaleX(0);
+    will-change: transform;
+  }
+  @media (max-width: 860px) {
+    .h-progress { display: none; }
+  }
+
+  /* Hint pentru scroll-ul lateral pe prima vizita */
+  .h-hint {
+    position: absolute;
+    top: clamp(24px, 4vw, 48px);
+    right: clamp(24px, 4vw, 56px);
+    z-index: 10;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    color: var(--muted);
+    text-transform: uppercase;
+    opacity: 0;
+  }
+
+  /* ─── Visual cu parallax + hover scale ─── */
+  .work-visual {
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: 4 / 3;
+    background: #0a0a0e;
+    border: 1px solid var(--line);
+    cursor: pointer;
+    will-change: transform;
+    /* Pentru clip si parallax */
+  }
+  .work-visual img {
+    position: absolute;
+    inset: -8% -4%;
+    width: 108%;
+    height: 116%;
+    object-fit: cover;
+    transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1),
+                filter   0.6s ease;
+    filter: grayscale(0.15) brightness(0.85) contrast(1.05);
+    will-change: transform;
+  }
+  .work-visual:hover img {
+    transform: scale(1.05);
+    filter: grayscale(0) brightness(1) contrast(1.05);
+  }
+  .work-visual::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg,
+      rgba(6, 6, 10, 0) 50%,
+      rgba(6, 6, 10, 0.55) 100%);
+    pointer-events: none;
+    transition: opacity 0.5s ease;
+  }
+  .work-visual:hover::after { opacity: 0.5; }
+
+  .work-visual .badge {
+    position: absolute;
+    top: 16px; left: 16px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--fg);
+    background: rgba(6, 6, 10, 0.7);
+    padding: 6px 10px;
+    border: 1px solid var(--line);
+    backdrop-filter: blur(6px);
+    z-index: 2;
+  }
+
+  /* ─── Meta-info dreapta ─── */
+  .work-meta {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(16px, 2vw, 24px);
+  }
+  .work-meta .index {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .work-meta .index::before {
+    content: '';
+    width: 24px;
+    height: 1px;
+    background: var(--muted);
+  }
+  .work-meta .name {
+    font-family: "Instrument Serif", serif;
+    font-size: clamp(36px, 4.5vw, 64px);
+    font-weight: 400;
+    line-height: 1;
+    letter-spacing: -0.025em;
+  }
+  .work-meta .name em { font-style: italic; color: var(--muted); }
+  .work-meta .desc {
+    font-family: "Instrument Serif", serif;
+    font-size: clamp(16px, 1.4vw, 18px);
+    line-height: 1.6;
+    color: rgba(244, 241, 234, 0.78);
+    max-width: 480px;
+  }
+  .work-meta .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 4px;
+  }
+  .work-meta .tag {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 5px 10px;
+    border: 1px solid var(--line);
+  }
+  .work-meta .link {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--fg);
+    text-decoration: none;
+    padding-bottom: 2px;
+    border-bottom: 1px solid var(--line);
+    align-self: flex-start;
+    transition: border-color 0.3s ease, letter-spacing 0.3s ease;
+    margin-top: 8px;
+  }
+  .work-meta .link:hover {
+    border-color: var(--fg);
+    letter-spacing: 0.3em;
+  }
+
+  /* Reveal initial pentru elemente work */
+  .h-slide .reveal-y {
+    opacity: 0;
+    transform: translateY(40px);
+    will-change: transform, opacity;
+  }
+
+  /* ─── CTA "vezi toate proiectele" ─── */
+  .work-cta-section {
+    padding: clamp(120px, 14vw, 200px) clamp(24px, 5vw, 80px);
+    border-top: 1px solid var(--line);
+  }
+  .work-cta {
+    max-width: 1480px;
+    margin: 0 auto;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    align-items: center;
+  }
+  .work-cta-title {
+    font-family: "Instrument Serif", serif;
+    font-style: italic;
+    font-size: clamp(24px, 2.5vw, 36px);
+    color: var(--muted);
+    max-width: 540px;
+    line-height: 1.4;
+  }
+  .work-cta-btn {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--fg);
+    text-decoration: none;
+    padding: 16px 32px;
+    border: 1px solid var(--line);
+    transition: border-color 0.3s ease, background 0.3s ease,
+                transform 0.3s ease, letter-spacing 0.3s ease;
+  }
+  .work-cta-btn:hover {
+    border-color: var(--fg);
+    background: rgba(244, 241, 234, 0.06);
+    transform: translateY(-2px);
+    letter-spacing: 0.3em;
+  }
+
+  /* ═════════ SECTION 03 — FOOTER ═════════ */
+  .site-footer {
+    position: relative;
+    padding: clamp(80px, 10vw, 140px) clamp(24px, 5vw, 80px) clamp(32px, 4vw, 56px);
+    border-top: 1px solid var(--line);
+  }
+  .footer-grid {
+    max-width: 1480px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr;
+    gap: clamp(40px, 5vw, 80px);
+    margin-bottom: clamp(60px, 8vw, 100px);
+  }
+  @media (max-width: 860px) {
+    .footer-grid { grid-template-columns: 1fr; gap: 48px; }
+  }
+  .footer-statement {
+    font-family: "Instrument Serif", serif;
+    font-style: italic;
+    font-size: clamp(28px, 3.5vw, 48px);
+    line-height: 1.2;
+    color: var(--fg);
+    letter-spacing: -0.015em;
+    max-width: 540px;
+  }
+  .footer-statement em { color: var(--muted); font-style: italic; }
+  .footer-col h4 {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 20px;
+    font-weight: 500;
+  }
+  .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  .footer-col a {
+    font-family: "Instrument Serif", serif;
+    font-size: clamp(18px, 1.6vw, 22px);
+    color: var(--fg);
+    text-decoration: none;
+    transition: color 0.3s ease, transform 0.3s ease;
+    display: inline-block;
+  }
+  .footer-col a:hover { color: var(--muted); transform: translateX(4px); }
+  .footer-bottom {
+    max-width: 1480px;
+    margin: 0 auto;
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .footer-bottom .made {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .footer-bottom .pulse {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #a8d8a8;
+    animation: livePulse 1.6s ease-in-out infinite;
+  }
+  @keyframes livePulse {
+    0%, 100% { opacity: 0.4; transform: scale(1); }
+    50%      { opacity: 1;   transform: scale(1.3); }
+  }
+
+  .marker {
+    position: fixed;
+    top: clamp(20px, 3vw, 32px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+    background: rgba(6, 6, 10, 0.7);
+    padding: 6px 12px;
+    border: 1px solid var(--line);
+    backdrop-filter: blur(8px);
+    opacity: 0;
+  }
+</style>
+</head>
+<body>
+
+  <!-- ═════════ BOOT SCREEN ═════════ -->
+  <div class="boot" id="boot">
+    <div class="boot-inner" id="bootInner"></div>
+  </div>
+
+  <div class="marker" id="marker">MOCKUP 05 · PARTICLE SYSTEM + 5 CHAPTERS</div>
+
+  <!-- ═════════ NAVBAR ═════════ -->
+  <nav id="nav">
+    <a class="logo" id="logo" href="#" aria-label="Claudiu Comșa">
+      <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="logo-glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="0.8" result="blur"/>
+            <feMerge>
+              <feMergeNode in="blur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+
+        <!-- Grup exterior pentru hover (rotatie 360°) -->
+        <g class="hover-grp" id="hoverGrp" filter="url(#logo-glow)">
+          <!-- Grup pentru breathing (scale pulse) -->
+          <g class="breathe-grp" id="breatheGrp">
+
+            <!-- Inel exterior dashed, rotatie lenta -->
+            <g class="ring-grp" id="ringGrp">
+              <circle class="ring"
+                cx="60" cy="60" r="52"
+                stroke-dasharray="2 3.5" />
+            </g>
+
+            <!-- C exterior — calligraphic, gros, asimetric -->
+            <path class="outer-c" id="outerC"
+              d="M 92,36 C 78,22 56,18 38,28 C 22,38 16,56 22,72 C 28,88 46,98 64,94 C 78,90 88,80 92,66"
+              stroke-width="8" />
+
+            <!-- C interior — mai mic, mirrored, deplasat -->
+            <path class="inner-c" id="innerC"
+              d="M 50,46 C 62,40 76,46 80,56 C 78,68 66,72 52,68"
+              stroke-width="5.5" />
+
+            <!-- Accent stroke — micul flourish asimetric -->
+            <path class="accent-stroke" id="accentStroke"
+              d="M 86,82 Q 92,86 94,92"
+              stroke-width="3" />
+
+            <!-- Punct semnatura (perioada) -->
+            <circle class="period" id="periodDot"
+              cx="100" cy="98" r="3"
+              fill="currentColor" stroke="none" />
+
+            <!-- Satelit orbital — un dot care se invarte pe inel -->
+            <g class="orbit-grp" id="orbitGrp">
+              <circle cx="60" cy="8" r="2.2" fill="currentColor" stroke="none" />
+            </g>
+
+            <!-- Container pentru particule emise pe hover -->
+            <g class="logo-particles" id="logoParticles"></g>
+
+          </g>
+        </g>
+      </svg>
+    </a>
+    <button class="menu-btn" aria-label="meniu">☰</button>
+  </nav>
+
+  <!-- ═════════ PINNED HERO ═════════ -->
+  <section class="hero-section" id="heroSection">
+    <canvas id="scene"></canvas>
+    <div class="vignette" id="vignette"></div>
+    <div class="vel-blur" id="velBlur"></div>
+
+    <div class="chapters" id="chapters">
+      <div class="ch active" data-ch="0"><span>01 / 05</span><span class="dot"></span></div>
+      <div class="ch"        data-ch="1"><span>02 / 05</span><span class="dot"></span></div>
+      <div class="ch"        data-ch="2"><span>03 / 05</span><span class="dot"></span></div>
+      <div class="ch"        data-ch="3"><span>04 / 05</span><span class="dot"></span></div>
+      <div class="ch"        data-ch="4"><span>05 / 05</span><span class="dot"></span></div>
+    </div>
+
+    <div class="stage-3d">
+
+      <!-- ─── BEAT 00 — INTRO ─── -->
+      <div class="beat" id="beat-0">
+        <div class="beat-inner">
+          <div class="intro-eyebrow">01 — Începem</div>
+          <p class="intro-quote">
+            <em>Înainte de cod, există o întrebare.</em>
+          </p>
+        </div>
+      </div>
+
+      <!-- ─── BEAT 01 — NUME ─── -->
+      <div class="beat" id="beat-1">
+        <div class="beat-inner">
+          <h1 class="name-display">
+            <span class="line cascade" data-cascade="Claudiu"></span>
+            <span class="line cascade it-line" data-cascade="Comșa"></span>
+          </h1>
+          <div class="name-sub">developer &amp; designer · Constanța · 2026</div>
+        </div>
+      </div>
+
+      <!-- ─── BEAT 02 — POVESTE ─── -->
+      <div class="beat" id="beat-2">
+        <div class="beat-inner">
+          <div class="story-grid">
+            <div class="story-eyebrow">03 — Despre</div>
+            <p class="story-title">
+              <em>Construiesc lucruri pe care le-aș folosi eu însumi.</em>
+            </p>
+            <p class="story-body">
+              Lucrez la intersecția dintre <em>design</em> și <em>cod</em>. Îmi place când un produs digital simte uman —
+              când un click are sens, când o animație nu deranjează, când o pagină se încarcă atât de
+              rapid încât uiți că e o pagină.
+              <br/><br/>
+              Câțiva ani din viața mea, condensați în pixeli. Restul, în întrebări.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── BEAT 03 — FILMULEȚ COD ─── -->
+      <div class="beat" id="beat-3">
+        <div class="beat-inner">
+          <div class="video-frame">
+            <div class="vfx-header">
+              <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+              <span class="name">~ claudiu/portfolio · main</span>
+            </div>
+            <canvas class="vfx-canvas" id="codeCanvas"></canvas>
+          </div>
+          <div class="vfx-caption">04 — În timpul scrisului · live</div>
+        </div>
+      </div>
+
+      <!-- ─── BEAT 04 — CTA ─── -->
+      <div class="beat" id="beat-4">
+        <div class="beat-inner cta-display">
+          <div class="cta-eyebrow">05 — Capitolul următor</div>
+          <h2 class="cta-title">Proiecte <em>selectate</em></h2>
+          <a class="cta-btn" href="#proiecte">explorează &nbsp;→</a>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="scroll-hint" id="hint">scroll pentru a începe</div>
+    <div class="progress-rail">
+      <div class="bar" id="progBar"></div>
+    </div>
+  </section>
+
+  <!-- ═════════ SECTION DIVIDER — tranzitie cinematica ═════════ -->
+  <div class="section-divider" id="divider1">
+    <div class="divider-line" id="dividerLine1"></div>
+    <div class="divider-text" id="dividerText1">↓  ce urmează  ↓</div>
+  </div>
+
+  <!-- ═════════ SECTION 02 — INTRO ═════════ -->
+  <section class="work-intro-section" id="workIntroSection">
+    <div class="work-intro">
+      <div class="work-eyebrow">02 — Proiecte</div>
+      <h2 class="work-title">
+        <span class="cascade" data-cascade="Lucrări"></span>
+        <em class="cascade" data-cascade="selectate"></em>
+      </h2>
+      <p class="work-subtitle">
+        Trei proiecte recente unde codul, designul și o atenție obsesivă la detaliu
+        au produs ceva care merită arătat. <em>Scroll pentru a le explora →</em>
+      </p>
+    </div>
+  </section>
+
+  <!-- ═════════ HORIZONTAL PINNED SCROLL — proiecte ═════════ -->
+  <section class="work-horizontal" id="workHorizontal">
+    <div class="h-hint" id="hHint">scroll ↓ &nbsp;→&nbsp; alunecă lateral</div>
+
+    <div class="work-track" id="workTrack">
+
+      <!-- ─── 01 · Banciu Studio ─── -->
+      <article class="h-slide">
+        <div class="work-visual reveal-y">
+          <span class="badge">2026 · live</span>
+          <img src="../../public/projects/banciu-preview.jpg" alt="Banciu Studio" loading="lazy"/>
+        </div>
+        <div class="work-meta">
+          <div class="index reveal-y">01 / 03 · Fotografie</div>
+          <h3 class="name reveal-y">Banciu <em>Studio</em></h3>
+          <p class="desc reveal-y">
+            Portofoliu cinematic pentru un fotograf român — full-bleed imagery,
+            tranziții soft între galerii, performance Lighthouse 98+.
+          </p>
+          <div class="tags reveal-y">
+            <span class="tag">Next.js</span>
+            <span class="tag">SSR</span>
+            <span class="tag">CMS</span>
+            <span class="tag">Brand</span>
+          </div>
+          <a class="link reveal-y" href="#banciu">vezi case study  →</a>
+        </div>
+      </article>
+
+      <!-- ─── 02 · Aurasjobs ─── -->
+      <article class="h-slide reverse">
+        <div class="work-visual reveal-y">
+          <span class="badge">2025 · live</span>
+          <img src="../../public/projects/aurasjobs-preview.jpg" alt="Aurasjobs" loading="lazy"/>
+        </div>
+        <div class="work-meta">
+          <div class="index reveal-y">02 / 03 · Platformă recrutare</div>
+          <h3 class="name reveal-y">Auras<em>jobs</em></h3>
+          <p class="desc reveal-y">
+            Platformă de matching candidați-companii cu căutare avansată,
+            profil dinamic și dashboard angajator. Arhitectură full-stack.
+          </p>
+          <div class="tags reveal-y">
+            <span class="tag">Next.js</span>
+            <span class="tag">Prisma</span>
+            <span class="tag">Auth</span>
+            <span class="tag">Dashboard</span>
+          </div>
+          <a class="link reveal-y" href="#aurasjobs">vezi case study  →</a>
+        </div>
+      </article>
+
+      <!-- ─── 03 · Stereocad ─── -->
+      <article class="h-slide">
+        <div class="work-visual reveal-y">
+          <span class="badge">2025 · live</span>
+          <img src="../../public/projects/stereocad-preview.jpg" alt="Stereocad" loading="lazy"/>
+        </div>
+        <div class="work-meta">
+          <div class="index reveal-y">03 / 03 · Studio arhitectură</div>
+          <h3 class="name reveal-y">Stereo<em>cad</em></h3>
+          <p class="desc reveal-y">
+            Site de prezentare pentru un studio de arhitectură — typography-led,
+            galerie de proiecte cu lightbox, formular contact integrat.
+          </p>
+          <div class="tags reveal-y">
+            <span class="tag">Next.js</span>
+            <span class="tag">Tailwind</span>
+            <span class="tag">Forms</span>
+            <span class="tag">SEO</span>
+          </div>
+          <a class="link reveal-y" href="#stereocad">vezi case study  →</a>
+        </div>
+      </article>
+
+    </div>
+
+    <!-- Progress indicator orizontal -->
+    <div class="h-progress">
+      <span class="h-num"><strong id="hNum">01</strong> / 03</span>
+      <div class="h-rail"><div class="h-bar" id="hBar"></div></div>
+    </div>
+  </section>
+
+  <!-- ═════════ CTA ═════════ -->
+  <section class="work-cta-section">
+    <div class="work-cta">
+      <p class="work-cta-title"><em>Mai multe proiecte vin curând.</em></p>
+      <a class="work-cta-btn" href="#contact">scrie-mi  →</a>
+    </div>
+  </section>
+
+  <!-- ═════════ SECTION 03 — FOOTER ═════════ -->
+  <footer class="site-footer">
+    <div class="footer-grid">
+      <div class="footer-statement">
+        Disponibil pentru <em>proiecte selectate</em> începând cu vara 2026.
+      </div>
+      <div class="footer-col">
+        <h4>Contact</h4>
+        <ul>
+          <li><a href="mailto:claudiu@example.com">claudiu@<em>example.com</em></a></li>
+          <li><a href="tel:+40700000000">+40 700 000 000</a></li>
+          <li><a href="#">Constanța, RO</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Social</h4>
+        <ul>
+          <li><a href="#">GitHub  →</a></li>
+          <li><a href="#">LinkedIn  →</a></li>
+          <li><a href="#">Behance  →</a></li>
+          <li><a href="#">Read.cv  →</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 · Claudiu Comșa</span>
+      <span class="made"><span class="pulse"></span> Built in Constanța</span>
+      <span>v0.5 — mockup</span>
+    </div>
+  </footer>
+
+  <!-- ═════════ DEPENDENȚE ═════════ -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.module.js"
+    }
+  }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lenis@1.3.8/dist/lenis.min.js"></script>
+
+<script type="module">
+import * as THREE from 'three';
+
+/* ════════════════════════════════════════════════
+   0. PALETA — culori per capitol (body bg + terrain tint)
+   ════════════════════════════════════════════════ */
+const PALETTE_BG = ['#06060a', '#0a0806', '#100704', '#04080e', '#0a0806'];
+const TERRAIN_COLORS = [
+  new THREE.Color('#f4f1ea'),  // Ch0: cool neutral
+  new THREE.Color('#eed5a8'),  // Ch1: sepia
+  new THREE.Color('#e8a06b'),  // Ch2: copper
+  new THREE.Color('#a8c8ef'),  // Ch3: steel blue
+  new THREE.Color('#eed28a'),  // Ch4: gold
+];
+
+/* ════════════════════════════════════════════════
+   1. THREE.JS SCENE — Iridescent morphing orb + starfield
+   ════════════════════════════════════════════════ */
+const canvas = document.getElementById('scene');
+const renderer = new THREE.WebGLRenderer({
+  canvas, antialias: true, alpha: false,
+  powerPreference: 'high-performance'
+});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setClearColor(0x040408, 1);
+
+const scene = new THREE.Scene();
+
+const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 200);
+const camBase = { x: 0, y: 0, z: 8 };
+camera.position.set(camBase.x, camBase.y, camBase.z);
+camera.lookAt(0, 0, 0);
+
+/* ─── ORB — sferă morphing cu suprafață iridescentă (Fresnel oilslick) ─── */
+const orbGeom = new THREE.IcosahedronGeometry(2.2, 64);
+
+const orbMat = new THREE.ShaderMaterial({
+  uniforms: {
+    u_time:    { value: 0 },
+    u_burst:   { value: 0 },
+    u_chapter: { value: 0 },
+    u_baseTint:{ value: TERRAIN_COLORS[0].clone() },
+  },
+  vertexShader: `
+    uniform float u_time;
+    uniform float u_burst;
+    varying vec3  vNormal;
+    varying vec3  vViewPos;
+    varying float vDisp;
+
+    /* ── 3D simplex-ish noise (cheap) ── */
+    vec3 mod289(vec3 x){ return x - floor(x * (1.0/289.0)) * 289.0; }
+    vec4 mod289(vec4 x){ return x - floor(x * (1.0/289.0)) * 289.0; }
+    vec4 perm(vec4 x){ return mod289(((x*34.0)+1.0)*x); }
+    float noise3(vec3 p) {
+      vec3 a = floor(p);
+      vec3 d = p - a;
+      d = d * d * (3.0 - 2.0 * d);
+      vec4 b = a.xxyy + vec4(0.0, 1.0, 0.0, 1.0);
+      vec4 k1 = perm(b.xyxy);
+      vec4 k2 = perm(k1.xyxy + b.zzww);
+      vec4 c = k2 + a.zzzz;
+      vec4 k3 = perm(c);
+      vec4 k4 = perm(c + 1.0);
+      vec4 o1 = fract(k3 * (1.0/41.0));
+      vec4 o2 = fract(k4 * (1.0/41.0));
+      vec4 o3 = o2 * d.z + o1 * (1.0 - d.z);
+      vec2 o4 = o3.yw * d.x + o3.xz * (1.0 - d.x);
+      return o4.y * d.y + o4.x * (1.0 - d.y);
+    }
+    float fbm3(vec3 p) {
+      float s = 0.0, a = 0.5;
+      for (int i = 0; i < 4; i++) {
+        s += a * noise3(p);
+        p *= 2.0;
+        a *= 0.5;
+      }
+      return s;
+    }
+
+    void main() {
+      vec3 pos = position;
+      vec3 n   = normal;
+      float t  = u_time * 0.25;
+
+      // Distorsiune multi-layer (organic morphing)
+      float d1 = fbm3(pos * 1.0 + vec3(t, t * 0.7, t * 0.5));
+      float d2 = fbm3(pos * 2.4 - vec3(t * 1.3, 0.0, t));
+      float disp = d1 * 0.35 + d2 * 0.12;
+
+      // Burst — spike puternic de distorsiune in toate directiile
+      disp += u_burst * (sin(length(pos) * 4.0 - u_time * 5.0) * 0.18 + 0.12);
+
+      pos += n * disp;
+      vDisp = disp;
+
+      vec4 mv = modelViewMatrix * vec4(pos, 1.0);
+      vNormal  = normalize(normalMatrix * n);
+      vViewPos = mv.xyz;
+      gl_Position = projectionMatrix * mv;
+    }
+  `,
+  fragmentShader: `
+    uniform float u_time;
+    uniform float u_chapter;
+    uniform vec3  u_baseTint;
+    uniform float u_burst;
+    varying vec3  vNormal;
+    varying vec3  vViewPos;
+    varying float vDisp;
+
+    void main() {
+      vec3 N = normalize(vNormal);
+      vec3 V = normalize(-vViewPos);
+      float NdotV = clamp(dot(N, V), 0.0, 1.0);
+
+      /* ── Fresnel: edge bright, center dark ── */
+      float fres = pow(1.0 - NdotV, 2.6);
+
+      /* ── Iridescent hue — depinde de unghiul de vizualizare + capitol ── */
+      float hue = fres * 1.4 + u_chapter * 0.18 + dot(N.xy, vec2(0.4, 0.3)) + u_time * 0.04;
+      vec3 iridescent = vec3(
+        0.5 + 0.5 * cos(6.2831 * (hue + 0.00)),
+        0.5 + 0.5 * cos(6.2831 * (hue + 0.33)),
+        0.5 + 0.5 * cos(6.2831 * (hue + 0.67))
+      );
+
+      /* ── Centru aproape negru, edge irizat ── */
+      vec3 baseDark = u_baseTint * 0.04;
+      vec3 col = mix(baseDark, iridescent * 0.95, fres);
+
+      /* ── Inner glow subtil (highlights pe creste de displacement) ── */
+      col += vec3(smoothstep(0.15, 0.4, vDisp) * 0.18);
+
+      /* ── Burst spike — luminozitate suplimentara ── */
+      col += vec3(u_burst * 0.12);
+
+      gl_FragColor = vec4(col, 1.0);
+    }
+  `,
+  side: THREE.FrontSide,
+  transparent: false,
+});
+
+const orb = new THREE.Mesh(orbGeom, orbMat);
+scene.add(orb);
+
+/* ─── STARFIELD — câmp 3D de stele departe ─── */
+const STAR_COUNT = 900;
+const starPositions = new Float32Array(STAR_COUNT * 3);
+const starSizes     = new Float32Array(STAR_COUNT);
+const starPhases    = new Float32Array(STAR_COUNT);
+for (let i = 0; i < STAR_COUNT; i++) {
+  // Distribuție în sferă mare (raze 30-80) — depth real
+  const r = 30 + Math.random() * 50;
+  const theta = Math.random() * Math.PI * 2;
+  const phi   = Math.acos(2 * Math.random() - 1);
+  starPositions[i*3]     = r * Math.sin(phi) * Math.cos(theta);
+  starPositions[i*3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+  starPositions[i*3 + 2] = r * Math.cos(phi);
+  starSizes[i]  = Math.random() * 2 + 0.5;
+  starPhases[i] = Math.random() * Math.PI * 2;
+}
+const starGeom = new THREE.BufferGeometry();
+starGeom.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+starGeom.setAttribute('size',     new THREE.BufferAttribute(starSizes, 1));
+starGeom.setAttribute('phase',    new THREE.BufferAttribute(starPhases, 1));
+
+const starMat = new THREE.ShaderMaterial({
+  uniforms: {
+    u_time:  { value: 0 },
+    u_pixelR:{ value: renderer.getPixelRatio() },
+    u_tint:  { value: TERRAIN_COLORS[0].clone() },
+  },
+  vertexShader: `
+    attribute float size;
+    attribute float phase;
+    uniform float u_time;
+    uniform float u_pixelR;
+    varying float vAlpha;
+    varying float vTwinkle;
+    void main() {
+      vec4 mv = modelViewMatrix * vec4(position, 1.0);
+      gl_Position = projectionMatrix * mv;
+      // Distance-based size with twinkle
+      vTwinkle = 0.5 + 0.5 * sin(u_time * 1.5 + phase * 2.3);
+      gl_PointSize = size * (110.0 / -mv.z) * u_pixelR * (0.6 + 0.4 * vTwinkle);
+      vAlpha = clamp(1.0 - (-mv.z - 20.0) / 60.0, 0.0, 0.9);
+    }
+  `,
+  fragmentShader: `
+    varying float vAlpha;
+    varying float vTwinkle;
+    uniform vec3 u_tint;
+    void main() {
+      vec2 c = gl_PointCoord - 0.5;
+      float d = length(c);
+      float core = smoothstep(0.5, 0.0, d);
+      float halo = smoothstep(0.5, 0.1, d) * 0.4;
+      float a = (core * core + halo);
+      // Cross-glow pe stelele mai mari (twinkle)
+      float cross = smoothstep(0.45, 0.0, abs(c.x)) * smoothstep(0.45, 0.42, abs(c.y))
+                  + smoothstep(0.45, 0.0, abs(c.y)) * smoothstep(0.45, 0.42, abs(c.x));
+      a += cross * vTwinkle * 0.3;
+      gl_FragColor = vec4(u_tint, a * vAlpha * 0.6);
+    }
+  `,
+  blending: THREE.AdditiveBlending,
+  depthWrite: false,
+  transparent: true,
+});
+const stars = new THREE.Points(starGeom, starMat);
+scene.add(stars);
+
+/* ─── ATMOSFERĂ — glow halo subtil în jurul orb-ului (sferă mare semi-transparentă) ─── */
+const haloGeom = new THREE.SphereGeometry(3.4, 32, 32);
+const haloMat = new THREE.ShaderMaterial({
+  uniforms: {
+    u_tint: { value: TERRAIN_COLORS[0].clone() },
+  },
+  vertexShader: `
+    varying vec3 vNormal;
+    varying vec3 vView;
+    void main() {
+      vNormal = normalize(normalMatrix * normal);
+      vec4 mv = modelViewMatrix * vec4(position, 1.0);
+      vView = mv.xyz;
+      gl_Position = projectionMatrix * mv;
+    }
+  `,
+  fragmentShader: `
+    varying vec3 vNormal;
+    varying vec3 vView;
+    uniform vec3 u_tint;
+    void main() {
+      vec3 N = normalize(vNormal);
+      vec3 V = normalize(-vView);
+      float f = pow(1.0 - clamp(dot(N, V), 0.0, 1.0), 3.5);
+      gl_FragColor = vec4(u_tint, f * 0.22);
+    }
+  `,
+  blending: THREE.AdditiveBlending,
+  side: THREE.BackSide,
+  depthWrite: false,
+  transparent: true,
+});
+const halo = new THREE.Mesh(haloGeom, haloMat);
+scene.add(halo);
+
+// Burst directions per capitol (folosite pentru rotatia bursului)
+const BURST_DIRS = [
+  [ 0,  0],
+  [ 1,  0],
+  [-1,  0],
+  [ 0,  1],
+  [ 0,  0],
+];
+
+/* ── Resize Three.js renderer + camera ── */
+function resizeRenderer() {
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resizeRenderer);
+
+/* ════════════════════════════════════════════════
+   4. STATE GLOBAL
+   ════════════════════════════════════════════════ */
+const state = {
+  mouseTarget:    { x: 0.5, y: 0.5 },
+  mouse:          { x: 0.5, y: 0.5 },
+  mouseVel:       { x: 0, y: 0 },
+  scrollVel:      0,
+  progress:       0,
+  chapter:        0,
+  lastIntChapter: -1,
+  burst:          0,    // 0..1, decay
+  burstDir:       [0, 0],
+};
+
+window.addEventListener('pointermove', (e) => {
+  // Coord normalizat 0..1, y inversat pentru WebGL
+  state.mouseTarget.x = e.clientX / window.innerWidth;
+  state.mouseTarget.y = 1.0 - e.clientY / window.innerHeight;
+});
+
+/* ════════════════════════════════════════════════
+   5. CODE CANVAS — "filmuletul" procedural
+   Linii de cod care se "scriu" singure cu cursor
+   ════════════════════════════════════════════════ */
+const codeCanvas = document.getElementById('codeCanvas');
+const cctx = codeCanvas.getContext('2d');
+
+const codeLines = [
+  { p: '~ portfolio', t: 'npm run dev', c: '#a8d8a8' },
+  { p: '', t: '', c: '' },
+  { p: '> next', t: 'starting dev server...', c: '#8a8680' },
+  { p: '> ready', t: '· in 0.4s', c: '#a8d8a8' },
+  { p: '> local', t: 'http://localhost:3000', c: '#c0d8c0' },
+  { p: '', t: '', c: '' },
+  { p: '// hero.tsx', t: '', c: '#6b8a6b' },
+  { p: 'export', t: " function Hero() {", c: '#f4f1ea' },
+  { p: '  const', t: " particles = useParticles(3000)", c: '#c8c4b8' },
+  { p: '  const', t: " story = useScrollStory()", c: '#c8c4b8' },
+  { p: '', t: '', c: '' },
+  { p: '  return', t: " (", c: '#f4f1ea' },
+  { p: '    <Canvas', t: " camera={story.camera}>", c: '#a8c8d8' },
+  { p: '      <Particles', t: " field={particles} />", c: '#a8c8d8' },
+  { p: '      <Story', t: " beats={story.beats} />", c: '#a8c8d8' },
+  { p: '    </Canvas>', t: '', c: '#a8c8d8' },
+  { p: '  )', t: '', c: '#f4f1ea' },
+  { p: '}', t: '', c: '#f4f1ea' },
+];
+
+let codeProgress = 0; // 0..codeLines.length
+function resizeCodeCanvas() {
+  const r = codeCanvas.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio, 2);
+  codeCanvas.width  = r.width * dpr;
+  codeCanvas.height = r.height * dpr;
+  cctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+resizeCodeCanvas();
+window.addEventListener('resize', resizeCodeCanvas);
+
+function drawCode(now) {
+  const r = codeCanvas.getBoundingClientRect();
+  cctx.fillStyle = '#050507';
+  cctx.fillRect(0, 0, r.width, r.height);
+
+  // grid lines subtle
+  cctx.strokeStyle = 'rgba(244, 241, 234, 0.03)';
+  cctx.lineWidth = 1;
+  for (let y = 0; y < r.height; y += 24) {
+    cctx.beginPath(); cctx.moveTo(0, y); cctx.lineTo(r.width, y); cctx.stroke();
+  }
+
+  // codeProgress goes 0 → codeLines.length (loops)
+  const speed = 0.018;
+  codeProgress = (now / 1000 * speed * 6) % (codeLines.length + 4);
+
+  cctx.font = '13px "JetBrains Mono", monospace';
+  cctx.textBaseline = 'top';
+  const padX = 20, padY = 56, lineH = 22;
+
+  for (let i = 0; i < codeLines.length; i++) {
+    const reveal = Math.min(1, Math.max(0, codeProgress - i));
+    if (reveal <= 0) continue;
+    const line = codeLines[i];
+    const fullText = line.p + line.t;
+    const len = Math.floor(fullText.length * reveal);
+    const visible = fullText.slice(0, len);
+
+    // prompt = primii chars colorati altfel
+    const pLen = line.p.length;
+    const promptPart = visible.slice(0, Math.min(pLen, visible.length));
+    const restPart   = visible.slice(promptPart.length);
+
+    cctx.fillStyle = line.c || '#8a8680';
+    cctx.fillText(promptPart, padX, padY + i * lineH);
+    cctx.fillStyle = line.c === '#6b8a6b' ? '#6b8a6b' : '#f4f1ea';
+    cctx.fillText(restPart, padX + cctx.measureText(promptPart).width, padY + i * lineH);
+
+    // cursor pe linia curenta
+    if (reveal < 1 && reveal > 0.01) {
+      const blink = Math.floor(now / 400) % 2 === 0;
+      if (blink) {
+        const w = cctx.measureText(visible).width;
+        cctx.fillStyle = '#c0d8c0';
+        cctx.fillRect(padX + w + 2, padY + i * lineH + 2, 7, 14);
+      }
+    }
+  }
+}
+
+/* ════════════════════════════════════════════════
+   6. LETTER CASCADE — sparge titlurile in chars
+   ════════════════════════════════════════════════ */
+function setupCascade(el) {
+  const txt = el.dataset.cascade;
+  el.innerHTML = '';
+  for (const ch of txt) {
+    const span = document.createElement('span');
+    span.className = 'char';
+    span.textContent = ch === ' ' ? ' ' : ch;
+    if (ch === ' ') span.classList.add('space');
+    el.appendChild(span);
+  }
+  return Array.from(el.querySelectorAll('.char'));
+}
+
+const cascadeNodes = {
+  name1: setupCascade(document.querySelector('#beat-1 .cascade:nth-of-type(1)')),
+  name2: setupCascade(document.querySelector('#beat-1 .it-line')),
+};
+
+/* ════════════════════════════════════════════════
+   7. LENIS + GSAP
+   ════════════════════════════════════════════════ */
+const lenis = new Lenis({
+  duration: 1.3,
+  easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+  smoothWheel: true,
+});
+lenis.on('scroll', (e) => {
+  state.scrollVel = e.velocity || 0;
+  ScrollTrigger.update();
+});
+gsap.registerPlugin(ScrollTrigger);
+gsap.ticker.add((time) => { lenis.raf(time * 1000); });
+gsap.ticker.lagSmoothing(0);
+
+/* ════════════════════════════════════════════════
+   8. BOOT SEQUENCE — terminal typing + particle morph
+   ════════════════════════════════════════════════ */
+const bootScript = [
+  { txt: '<span class="prompt">$</span> ./init claudiu_portfolio', d: 0.4 },
+  { txt: '<span class="ok">[ok]</span> loading particles · 3000 units', d: 0.6 },
+  { txt: '<span class="ok">[ok]</span> compiling shaders · 4 programs', d: 0.5 },
+  { txt: '<span class="ok">[ok]</span> mounting story · 5 chapters', d: 0.5 },
+  { txt: '<span class="ok">[ok]</span> ready in 1.2s', d: 0.4 },
+  { txt: '', d: 0.3 },
+  { txt: '<span class="accent">> welcome.</span>', d: 0.5 },
+];
+
+const bootInner = document.getElementById('bootInner');
+async function runBoot() {
+  for (const item of bootScript) {
+    const line = document.createElement('div');
+    line.className = 'boot-line';
+    line.innerHTML = item.txt;
+    bootInner.appendChild(line);
+    gsap.to(line, { opacity: 1, duration: 0.05 });
+    await new Promise(r => setTimeout(r, item.d * 700));
+  }
+  // pauza scurta apoi disolutie
+  await new Promise(r => setTimeout(r, 400));
+  gsap.to('#boot', { opacity: 0, duration: 1.0, ease: 'power2.inOut',
+    onComplete: () => document.getElementById('boot').style.display = 'none' });
+  // arata UI-ul
+  gsap.to('#nav', { opacity: 1, duration: 1.0, delay: 0.3 });
+  gsap.to('#marker', { opacity: 1, duration: 0.8, delay: 0.4 });
+  gsap.to('#chapters', { opacity: 1, duration: 1.0, delay: 0.5 });
+  gsap.to('#hint', { opacity: 1, duration: 1.0, delay: 1.0 });
+  // beat 0 fade in
+  gsap.to('#beat-0', { opacity: 1, duration: 1.2, delay: 0.6, ease: 'power2.out' });
+}
+runBoot();
+
+/* ════════════════════════════════════════════════
+   9. LOGO — Living signature ligature
+      - Line-draw la load (outer C → inner C → accent → period)
+      - Breathing continuu (scale pulse)
+      - Inel exterior cu rotatie lenta
+      - Satelit orbital pe inel
+      - Hover: spin 360° + emisie de particule SVG
+   ════════════════════════════════════════════════ */
+(function setupLogo() {
+  const outer       = document.getElementById('outerC');
+  const inner       = document.getElementById('innerC');
+  const accent      = document.getElementById('accentStroke');
+  const period      = document.getElementById('periodDot');
+  const ring        = document.querySelector('.logo .ring');
+  const ringGrp     = document.getElementById('ringGrp');
+  const orbitGrp    = document.getElementById('orbitGrp');
+  const breatheGrp  = document.getElementById('breatheGrp');
+  const hoverGrp    = document.getElementById('hoverGrp');
+  const particlesG  = document.getElementById('logoParticles');
+  const logoEl      = document.getElementById('logo');
+
+  // ── Setup initial: paths invizibile (dash) + period scalat 0 + ring invizibil ──
+  [outer, inner, accent].forEach((p) => {
+    const len = p.getTotalLength();
+    p.style.strokeDasharray = len;
+    p.style.strokeDashoffset = len;
+  });
+  const ringLen = ring.getTotalLength();
+  ring.style.strokeDasharray = ringLen;
+  ring.style.strokeDashoffset = ringLen;
+  gsap.set(period, { scale: 0, transformOrigin: '100px 98px' });
+  gsap.set(orbitGrp, { opacity: 0 });
+
+  // ── Timeline LOAD (dupa boot, delay 5.5s) ──
+  const tlIn = gsap.timeline({ delay: 5.5 });
+  tlIn
+    // Inel apare prin "trasare" (dash → 0)
+    .to(ring,  { strokeDashoffset: 0, duration: 1.4, ease: 'power2.inOut' }, 0)
+    // C exterior se deseneaza
+    .to(outer, { strokeDashoffset: 0, duration: 1.4, ease: 'power2.inOut' }, 0.2)
+    // C interior, overlap
+    .to(inner, { strokeDashoffset: 0, duration: 1.0, ease: 'power2.inOut' }, '-=0.85')
+    // Accent flourish
+    .to(accent,{ strokeDashoffset: 0, duration: 0.5, ease: 'power1.out' }, '-=0.4')
+    // Punctul "." cu pop
+    .to(period,{ scale: 1, duration: 0.45, ease: 'back.out(2.4)' }, '-=0.2')
+    // Satelitul apare
+    .to(orbitGrp, { opacity: 1, duration: 0.6, ease: 'power1.out' }, '-=0.2');
+
+  // ── Animatii CONTINUE (incep dupa load) ──
+  // 1. Breathing — scale pulse foarte subtil
+  gsap.to(breatheGrp, {
+    scale: 1.025,
+    duration: 2.2,
+    ease: 'sine.inOut',
+    yoyo: true,
+    repeat: -1,
+    delay: 7.5,
+  });
+
+  // 2. Inel exterior — rotatie foarte lenta (anti-orbita)
+  gsap.to(ringGrp, {
+    rotation: -360,
+    duration: 35,
+    ease: 'none',
+    repeat: -1,
+    delay: 7.0,
+  });
+
+  // 3. Satelit orbital — se invarte pe inel
+  gsap.to(orbitGrp, {
+    rotation: 360,
+    duration: 9,
+    ease: 'none',
+    repeat: -1,
+    delay: 7.0,
+  });
+
+  // ── HOVER: spin 360 + emisie 8 particule ──
+  let spinning = false;
+  logoEl.addEventListener('mouseenter', () => {
+    if (spinning) return;
+    spinning = true;
+
+    // Spin hover-grp (acopera totul, inclusiv breathing)
+    gsap.to(hoverGrp, {
+      rotation: '+=360',
+      duration: 1.2,
+      ease: 'power2.inOut',
+      onComplete: () => { spinning = false; }
+    });
+
+    // Emisie particule — 8 dots care zboara afara si dispar
+    for (let i = 0; i < 8; i++) {
+      const angle = (Math.PI * 2 * i / 8) + (Math.random() - 0.5) * 0.4;
+      const dist  = 35 + Math.random() * 25;
+      const part = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      part.setAttribute('cx', '60');
+      part.setAttribute('cy', '60');
+      part.setAttribute('r', (1 + Math.random() * 1.2).toFixed(2));
+      part.setAttribute('fill', 'currentColor');
+      particlesG.appendChild(part);
+
+      gsap.to(part, {
+        attr: {
+          cx: 60 + Math.cos(angle) * dist,
+          cy: 60 + Math.sin(angle) * dist,
+        },
+        opacity: 0,
+        duration: 0.9 + Math.random() * 0.4,
+        ease: 'power2.out',
+        delay: i * 0.02,
+        onComplete: () => part.remove(),
+      });
+    }
+  });
+})();
+
+/* ════════════════════════════════════════════════
+   10. SETUP INITIAL pentru beats (3D Z-depth)
+   ════════════════════════════════════════════════ */
+const beats = [0,1,2,3,4].map(i => document.getElementById(`beat-${i}`));
+gsap.set(beats.slice(1), { opacity: 0, transform: 'translate3d(0, 0, -900px)' });
+gsap.set(beats[0], { transform: 'translate3d(0, 0, 0)' });
+
+/* ════════════════════════════════════════════════
+   11. MASTER TIMELINE — 5 chapters, pinned 500%
+   ════════════════════════════════════════════════ */
+const masterTl = gsap.timeline({
+  scrollTrigger: {
+    trigger: '#heroSection',
+    start: 'top top',
+    end: '+=500%',
+    pin: true,
+    pinSpacing: true,
+    scrub: 1.2,
+    anticipatePin: 1,
+    onUpdate: (self) => {
+      state.progress = self.progress;
+      state.chapter  = self.progress * 4;
+      gsap.set('#progBar', { scaleX: self.progress });
+      const chIdx = Math.min(4, Math.floor(self.progress * 5));
+      document.querySelectorAll('.chapters .ch').forEach((el, i) => {
+        el.classList.toggle('active', i === chIdx);
+      });
+
+      /* ── DETECTIE TRANZITIE DE CAPITOL → BURST shader ──
+         Cand chapter integer-ul se schimba, setam state.burst = 1
+         si state.burstDir la directia capitolului nou.
+         Burst-ul decade in RAF loop, creand efectul de "WHOOSH" pe fluid. */
+      if (chIdx !== state.lastIntChapter) {
+        state.lastIntChapter = chIdx;
+        if (chIdx > 0 && chIdx < BURST_DIRS.length) {
+          state.burst = 1.0;
+          state.burstDir = BURST_DIRS[chIdx];
+        }
+      }
+    }
+  }
+});
+
+// Hint fade out
+masterTl.to('#hint', { opacity: 0, ease: 'power1.in' }, 0);
+
+// ── Ch1→2: intro iese, name intra cu letter cascade ──
+masterTl.to(beats[0], {
+  opacity: 0, transform: 'translate3d(0, -40px, 500px)', ease: 'power2.inOut',
+}, 0);
+masterTl.to(beats[1], {
+  opacity: 1, transform: 'translate3d(0, 0, 0)', ease: 'power2.out',
+}, 0.15);
+// Letter cascade — fiecare litera intra cu intarziere
+masterTl.to(cascadeNodes.name1, {
+  opacity: 1, y: 0, ease: 'power3.out', stagger: 0.04,
+}, 0.25);
+masterTl.to(cascadeNodes.name2, {
+  opacity: 1, y: 0, ease: 'power3.out', stagger: 0.04,
+}, 0.45);
+// ── Ch2→3: name iese, story intra ──
+masterTl.to(beats[1], {
+  opacity: 0, transform: 'translate3d(0, -60px, 700px)', ease: 'power2.in',
+}, 1.0);
+masterTl.to(beats[2], {
+  opacity: 1, transform: 'translate3d(0, 0, 0)', ease: 'power2.out',
+}, 1.15);
+
+// ── Ch3→4: story iese, code canvas intra ──
+masterTl.to(beats[2], {
+  opacity: 0, transform: 'translate3d(0, -60px, 700px)', ease: 'power2.in',
+}, 2.0);
+masterTl.fromTo(beats[3],
+  { opacity: 0, transform: 'translate3d(0, 80px, -500px) rotateX(15deg)' },
+  { opacity: 1, transform: 'translate3d(0, 0, 0) rotateX(0deg)', ease: 'power3.out' },
+  2.15);
+// ── Ch4→5: code iese, CTA intra cu zoom ──
+masterTl.to(beats[3], {
+  opacity: 0, transform: 'translate3d(0, -40px, 400px)', ease: 'power2.in',
+}, 3.0);
+masterTl.fromTo(beats[4],
+  { opacity: 0, transform: 'translate3d(0, 100px, -600px) scale(1.2)' },
+  { opacity: 1, transform: 'translate3d(0, 0, 0) scale(1)', ease: 'power3.out' },
+  3.15);
+
+// ── Ch5 final: subtle drift CTA ──
+masterTl.to(beats[4], {
+  transform: 'translate3d(0, -10px, 100px) scale(1)', ease: 'power1.inOut',
+}, 4.0);
+
+/* ── PALETA — schimba background body la integer chapters ──
+   Tint-ul fluid-ului e gestionat in shader prin u_chapter; aici
+   doar schimbam background-ul body-ului pentru continuitate cromatica. */
+const paletteState = { v: 0 };
+masterTl.to(paletteState, {
+  v: 4,
+  ease: 'none',
+  onUpdate: () => {
+    document.body.style.backgroundColor = PALETTE_BG[Math.round(paletteState.v)];
+  }
+}, 0);
+
+/* ════════════════════════════════════════════════
+   11.5. SCROLL ANIMATIONS — Selected Work + Footer
+   - Letter cascade pe titlul "Lucrări selectate"
+   - Stagger reveal pentru fiecare work item (image + meta)
+   - Parallax pe imaginile proiectelor
+   ════════════════════════════════════════════════ */
+function setupCascadeNode(el) {
+  const txt = el.dataset.cascade;
+  el.innerHTML = '';
+  for (const ch of txt) {
+    const span = document.createElement('span');
+    span.className = 'char';
+    span.textContent = ch === ' ' ? ' ' : ch;
+    if (ch === ' ') span.classList.add('space');
+    el.appendChild(span);
+  }
+  return Array.from(el.querySelectorAll('.char'));
+}
+
+// Cascade pe titlul work-section
+document.querySelectorAll('.work-title .cascade').forEach((el, i) => {
+  const chars = setupCascadeNode(el);
+  gsap.to(chars, {
+    opacity: 1, y: 0,
+    duration: 0.9,
+    ease: 'power3.out',
+    stagger: 0.035,
+    delay: i * 0.15,
+    scrollTrigger: {
+      trigger: '.work-intro',
+      start: 'top 75%',
+      once: true,
+    }
+  });
+});
+
+// Reveal subtitle si eyebrow
+gsap.from(['.work-eyebrow', '.work-subtitle'], {
+  opacity: 0,
+  y: 20,
+  duration: 0.8,
+  ease: 'power2.out',
+  stagger: 0.1,
+  scrollTrigger: {
+    trigger: '.work-intro',
+    start: 'top 75%',
+    once: true,
+  }
+});
+
+/* ── SECTION DIVIDER — linia se deseneaza pe scroll, textul fade-in ── */
+{
+  const dividerTl = gsap.timeline({
+    scrollTrigger: {
+      trigger: '#divider1',
+      start: 'top 80%',
+      end: 'bottom 30%',
+      scrub: 1.0,
+    }
+  });
+  dividerTl.to('#dividerLine1', { scaleX: 1, ease: 'power2.out' }, 0)
+           .to('#dividerText1', { opacity: 1, ease: 'power2.out' }, 0.3);
+}
+
+/* ════════════════════════════════════════════════
+   HORIZONTAL PINNED SCROLL — proiecte aluneca lateral
+   Scroll vertical → translate horizontal pe track
+   Doar pe desktop (>860px)
+   ════════════════════════════════════════════════ */
+function setupHorizontalScroll() {
+  if (window.innerWidth <= 860) {
+    // Pe mobile: reveal-uri verticale normale
+    document.querySelectorAll('.h-slide').forEach((slide) => {
+      gsap.to(slide.querySelectorAll('.reveal-y'), {
+        opacity: 1, y: 0,
+        duration: 0.8, ease: 'power2.out', stagger: 0.08,
+        scrollTrigger: { trigger: slide, start: 'top 75%', once: true }
+      });
+    });
+    return;
+  }
+
+  const horizontal = document.getElementById('workHorizontal');
+  const track      = document.getElementById('workTrack');
+  const slides     = track.querySelectorAll('.h-slide');
+  const hNum       = document.getElementById('hNum');
+  const hBar       = document.getElementById('hBar');
+  const hHint      = document.getElementById('hHint');
+
+  // Primul slide deja revelat
+  gsap.set(slides[0].querySelectorAll('.reveal-y'), { opacity: 1, y: 0 });
+
+  // Hint scurt
+  gsap.to(hHint, {
+    opacity: 1, duration: 0.8, delay: 0.3,
+    scrollTrigger: { trigger: horizontal, start: 'top 80%', once: true }
+  });
+
+  // Distanta de translatie
+  const distance = track.scrollWidth - window.innerWidth;
+
+  // Pin + scrub orizontal
+  const horizontalTween = gsap.to(track, {
+    x: -distance,
+    ease: 'none',
+    scrollTrigger: {
+      trigger: horizontal,
+      start: 'top top',
+      end: () => `+=${distance + window.innerHeight * 0.3}`,
+      pin: true,
+      pinSpacing: true,
+      scrub: 1.0,
+      anticipatePin: 1,
+      invalidateOnRefresh: true,
+      onUpdate: (self) => {
+        if (self.progress > 0.02) gsap.to(hHint, { opacity: 0, duration: 0.4 });
+        gsap.set(hBar, { scaleX: self.progress });
+        const idx = Math.min(slides.length - 1, Math.floor(self.progress * slides.length + 0.05));
+        hNum.textContent = String(idx + 1).padStart(2, '0');
+      }
+    }
+  });
+
+  // Reveal pe fiecare slide cand devine "curent" — containerAnimation tip GSAP
+  slides.forEach((slide, i) => {
+    if (i === 0) return;
+    gsap.to(slide.querySelectorAll('.reveal-y'), {
+      opacity: 1, y: 0,
+      duration: 0.7, ease: 'power2.out', stagger: 0.08,
+      scrollTrigger: {
+        trigger: slide,
+        containerAnimation: horizontalTween,
+        start: 'left 60%',
+        end: 'left 30%',
+        once: true,
+      }
+    });
+  });
+
+  // Parallax scale pe imagini in timpul horizontal scroll
+  slides.forEach((slide) => {
+    const img = slide.querySelector('.work-visual img');
+    if (!img) return;
+    gsap.fromTo(img,
+      { scale: 1.12 },
+      {
+        scale: 1.0, ease: 'none',
+        scrollTrigger: {
+          trigger: slide,
+          containerAnimation: horizontalTween,
+          start: 'left right',
+          end: 'right left',
+          scrub: true,
+        }
+      });
+  });
+}
+setupHorizontalScroll();
+
+/* ── CTA SECTION — fade up ── */
+gsap.from('.work-cta > *', {
+  opacity: 0, y: 30,
+  duration: 0.8, ease: 'power2.out', stagger: 0.15,
+  scrollTrigger: { trigger: '.work-cta-section', start: 'top 75%', once: true }
+});
+
+/* ── FOOTER — DIRECTIONAL stagger (nu mai e fade simplu) ──
+   Statement vine din stanga, coloanele de info din dreapta */
+gsap.from('.footer-statement', {
+  opacity: 0, x: -50,
+  duration: 1.0, ease: 'power2.out',
+  scrollTrigger: { trigger: '.site-footer', start: 'top 80%', once: true }
+});
+gsap.from('.footer-col', {
+  opacity: 0, x: 50,
+  duration: 1.0, ease: 'power2.out', stagger: 0.12,
+  scrollTrigger: { trigger: '.site-footer', start: 'top 80%', once: true }
+});
+gsap.from('.footer-bottom > *', {
+  opacity: 0, y: 20,
+  duration: 0.6, ease: 'power2.out', stagger: 0.1,
+  scrollTrigger: { trigger: '.footer-bottom', start: 'top 90%', once: true }
+});
+
+/* ════════════════════════════════════════════════
+   12. RAF — update state + Three.js render
+   ════════════════════════════════════════════════ */
+let lastTime = performance.now();
+const tmpColor = new THREE.Color();
+
+function loop(now) {
+  const dt = Math.min(0.05, (now - lastTime) / 1000);
+  lastTime = now;
+  const t = (now / 1000);
+
+  /* ── Smoothing mouse + velocity ── */
+  const easeMouse = 1 - Math.pow(0.001, dt);
+  const prevX = state.mouse.x, prevY = state.mouse.y;
+  state.mouse.x += (state.mouseTarget.x - state.mouse.x) * easeMouse;
+  state.mouse.y += (state.mouseTarget.y - state.mouse.y) * easeMouse;
+  state.mouseVel.x = (state.mouse.x - prevX) * 60;
+  state.mouseVel.y = (state.mouse.y - prevY) * 60;
+
+  /* ── Decay scroll velocity + burst ── */
+  state.scrollVel *= 0.85;
+  state.burst *= 0.93;
+
+  /* ── Update terrain uniforms ── */
+  terrainMat.uniforms.u_time.value     = t;
+  terrainMat.uniforms.u_burst.value    = state.burst;
+  terrainMat.uniforms.u_burstDir.value.set(state.burstDir[0], state.burstDir[1]);
+
+  /* ── Lerp culoare terrain + dust intre capitole ── */
+  const chF = Math.max(0, Math.min(4, state.chapter));
+  const chLo = Math.floor(chF);
+  const chHi = Math.min(4, chLo + 1);
+  const chT  = chF - chLo;
+  tmpColor.copy(TERRAIN_COLORS[chLo]).lerp(TERRAIN_COLORS[chHi], chT);
+  terrainMat.uniforms.u_color.value.copy(tmpColor);
+  dustMat.uniforms.u_color.value.copy(tmpColor);
+  dustMat.uniforms.u_time.value = t;
+
+  /* ── Fog tint pe paleta capitolului curent ── */
+  const bgHex = PALETTE_BG[Math.round(chF)];
+  tmpColor.set(bgHex);
+  scene.fog.color.copy(tmpColor);
+  terrainMat.uniforms.u_fogColor.value.copy(tmpColor);
+  renderer.setClearColor(tmpColor, 1);
+
+  /* ── CAMERA — dolly inainte pe scroll + parallax mouse ── */
+  // Z: 14 → -6 (avansam prin spatiu pe masura ce scrollam capitolele)
+  const targetZ = camBase.z - state.progress * 20;
+  // Y: ridicat pe la mijlocul scroll-ului pentru effect "rise"
+  const arc = Math.sin(state.progress * Math.PI);
+  const targetY = camBase.y + arc * 1.4;
+
+  camera.position.z += (targetZ - camera.position.z) * 0.06;
+  camera.position.y += (targetY - camera.position.y) * 0.06;
+
+  // Parallax mouse pe rotatia camerei
+  const tRotY =  state.mouse.x * 0.10;
+  const tRotX = -state.mouse.y * 0.06;
+  camera.rotation.y += (tRotY - camera.rotation.y) * 0.05;
+  camera.rotation.x += (tRotX - camera.rotation.x) * 0.05;
+
+  /* ── Dust drift global (translateaza grupa de particule lent) ── */
+  dust.rotation.y = t * 0.015;
+
+  /* ── Render scena Three.js ── */
+  renderer.render(scene, camera);
+
+  /* ── Velocity blur overlay ── */
+  const vb = Math.min(1, Math.abs(state.scrollVel) / 3);
+  const velBlur = document.getElementById('velBlur');
+  velBlur.style.opacity = vb;
+  velBlur.style.backdropFilter = `blur(${vb * 3}px)`;
+
+  /* ── Code canvas — desenat doar in beatul 3 ── */
+  if (state.progress > 0.5 && state.progress < 0.85) {
+    drawCode(now);
+  }
+
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

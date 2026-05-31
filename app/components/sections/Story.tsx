@@ -1,142 +1,122 @@
-'use client';
-// Sectiunea Story — centrata cu letter cascade pe H2 (efect A) + divider scrub (efect C).
-// Mirror structural cu Hero Section 2/3 ca sa pastreze limbajul vizual.
-import { useEffect, useRef } from 'react';
-import { useTranslations } from 'next-intl';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
+"use client";
 
-if (typeof window !== 'undefined') {
-  gsap.registerPlugin(ScrollTrigger);
-}
+// Story — bio editorial cu portret.
+// Port din previews/chromatic-drift/index.html (markup linile 1198-1233,
+// timeline linile 1935-1948). 2-column layout (text + foto), titlu + 3
+// paragrafe RO + caption mono. Reveal stagger pe h + paragrafe; portretul
+// e izolat în StoryPhoto (mask reveal + parallax).
+//
+// Swap foto: pasează `src="/story/claudiu.jpg"` la <StoryPhoto />.
+
+import { useEffect, useRef } from "react";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import StoryPhoto from "@/app/components/StoryPhoto";
+import { fireFlash } from "@/app/lib/flash-bus";
+
+gsap.registerPlugin(ScrollTrigger);
 
 export default function Story() {
-  const t = useTranslations('story');
-  const rootRef = useRef<HTMLElement>(null);
+  const rootRef = useRef<HTMLElement | null>(null);
+  const headingRef = useRef<HTMLHeadingElement | null>(null);
+  const textRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (!rootRef.current) return;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (typeof window === "undefined") return;
+    const rootEl = rootRef.current;
+    const headingEl = headingRef.current;
+    const textEl = textRef.current;
+    if (!rootEl || !headingEl || !textEl) return;
 
-    const section = rootRef.current;
+    // Reduced motion: nu rulăm reveal-ul stagger. Heading + paragrafe rămân la
+    // defaults (vizibile). Flash-ul de tranziție e omis (mișcare = backdrop blur).
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return;
+    }
 
-    const ctx = gsap.context(() => {
-      const pre = section.querySelectorAll<HTMLElement>('[data-story-pre]');
-      const post = section.querySelectorAll<HTMLElement>('[data-story-post]');
-      const letters = section.querySelectorAll<HTMLElement>('[data-story-letter]');
-      const divider = section.querySelector<HTMLElement>('[data-story-divider]');
+    const paragraphs = textEl.querySelectorAll<HTMLParagraphElement>(".story-p");
 
-      // Stare initiala — hide imediat, fade-in la trigger.
-      if (pre.length > 0) gsap.set(pre, { opacity: 0, y: 24 });
-      if (post.length > 0) gsap.set(post, { opacity: 0, y: 24 });
-      if (letters.length > 0) gsap.set(letters, { opacity: 0, y: -70, rotateX: -90 });
-      if (divider) gsap.set(divider, { scaleX: 0 });
+    let hTrigger: ScrollTrigger | null = null;
+    let pTrigger: ScrollTrigger | null = null;
+    let flashTrigger: ScrollTrigger | null = null;
 
-      const tl = gsap.timeline({
+    const raf = requestAnimationFrame(() => {
+      const hTween = gsap.from(headingEl, {
+        opacity: 0,
+        y: 24,
+        duration: 0.9,
+        ease: "power2.out",
         scrollTrigger: {
-          trigger: section,
-          start: 'top 72%',
-          toggleActions: 'play none none reverse',
+          trigger: rootEl,
+          start: "top 70%",
         },
       });
-      if (pre.length > 0) {
-        tl.to(pre, { y: 0, opacity: 1, duration: 0.8, stagger: 0.1, ease: 'expo.out' });
-      }
-      if (letters.length > 0) {
-        tl.to(
-          letters,
-          { y: 0, opacity: 1, rotateX: 0, duration: 0.9, stagger: 0.04, ease: 'expo.out' },
-          '-=0.4'
-        );
-      }
-      if (post.length > 0) {
-        tl.to(
-          post,
-          { y: 0, opacity: 1, duration: 0.8, stagger: 0.12, ease: 'expo.out' },
-          '-=0.2'
-        );
-      }
+      hTrigger = hTween.scrollTrigger ?? null;
 
-      // Scroll-scrubbed divider (efect C).
-      if (divider) {
-        gsap.to(divider, {
-          scaleX: 1,
-          ease: 'none',
+      if (paragraphs.length > 0) {
+        const pTween = gsap.from(paragraphs, {
+          opacity: 0,
+          y: 24,
+          duration: 0.9,
+          ease: "power2.out",
+          stagger: 0.12,
           scrollTrigger: {
-            trigger: section,
-            start: 'top 85%',
-            end: 'top 35%',
-            scrub: 0.8,
+            trigger: rootEl,
+            start: "top 60%",
           },
         });
+        pTrigger = pTween.scrollTrigger ?? null;
       }
-    }, rootRef);
 
-    return () => ctx.revert();
+      // Flash de tranziție la intrarea în Story (consistent cu Manifesto).
+      flashTrigger = ScrollTrigger.create({
+        trigger: rootEl,
+        start: "top 70%",
+        onEnter: fireFlash,
+      });
+    });
+
+    return () => {
+      cancelAnimationFrame(raf);
+      if (hTrigger) hTrigger.kill();
+      if (pTrigger) pTrigger.kill();
+      if (flashTrigger) flashTrigger.kill();
+    };
   }, []);
 
   return (
-    <section
-      ref={rootRef}
-      id="story"
-      aria-label="Story — about Claudiu"
-      className="relative flex min-h-screen items-center px-8 pb-24 pt-24 lg:px-12"
-    >
-      {/* Counter top-left — pastrat ca semn vizual de sectiune */}
-      <div className="absolute left-8 top-24 flex items-center gap-3 border-l border-[var(--border-soft)] pl-4 text-[10px] font-medium uppercase tracking-[0.3em] text-[var(--text-quiet)] lg:left-12 lg:top-32">
-        <span className="h-1 w-1 rounded-full bg-white" aria-hidden="true" />
-        <span className="text-white">04</span>
-        <span className="h-px w-8 bg-[var(--border-soft)]" aria-hidden="true" />
-        <span>{t('counter')}</span>
-      </div>
-
-      <div className="mx-auto w-full max-w-3xl text-center">
-        <p data-story-pre className="text-[10px] font-medium uppercase tracking-[0.32em] text-[var(--text-quiet)]">
-          {t('eyebrow')}
-        </p>
-        {/* H2 cu letter cascade — fiecare cuvant incapsulat ca sa nu se sparga la wrap */}
-        <h2
-          aria-label={t('title')}
-          className="mt-8 text-4xl font-semibold leading-[1.05] tracking-[-0.04em] text-white sm:text-5xl lg:text-6xl xl:text-7xl"
-          style={{ perspective: '800px' }}
-        >
-          {t('title').split(' ').map((word, wi, words) => (
-            <span key={wi} className="inline-block whitespace-nowrap">
-              {Array.from(word).map((ch, ci) => (
-                <span
-                  key={ci}
-                  data-story-letter
-                  aria-hidden="true"
-                  className="inline-block"
-                  style={{ transformOrigin: '50% 100%' }}
-                >
-                  {ch}
-                </span>
-              ))}
-              {wi < words.length - 1 && (
-                <span data-story-letter aria-hidden="true" className="inline-block">
-                  {' '}
-                </span>
-              )}
-            </span>
-          ))}
-        </h2>
-        <div
-          data-story-divider
-          aria-hidden="true"
-          className="mx-auto mt-10 h-px w-32 origin-center bg-[var(--text-soft)]/40 lg:mt-12"
-        />
-        <div className="mt-8 space-y-6">
-          <p data-story-post className="mx-auto max-w-xl text-base leading-[1.6] text-[var(--text-mid)] lg:text-lg">
-            {t('paragraph1')}
+    <section ref={rootRef} className="story" id="story">
+      <span className="section-tag">03 — Despre</span>
+      <div className="story-layout">
+        <div className="story-text" ref={textRef}>
+          <h2 className="story-h" ref={headingRef}>
+            Lucrez singur, dar nu izolat.{" "}
+            <span className="soft">Constanța, mare, monitor, cafea rece.</span>
+          </h2>
+          <p className="story-p">
+            Sunt Claudiu Comșa. Construiesc site-uri de aproape un deceniu — am
+            început cu HTML static într-o cameră de cămin și am ajuns să livrez
+            aplicații pentru clienți care nu se uită la preț, ci la timpul în
+            care le rezolv problema.
           </p>
-          <p data-story-post className="mx-auto max-w-xl text-base leading-[1.6] text-[var(--text-mid)] lg:text-lg">
-            {t('paragraph2')}
+          <p className="story-p">
+            Nu vând „soluții digitale”, vând site-uri care funcționează.
+            Diferența e în detaliile pe care nu le scrie nimeni în brief —
+            animația care nu obosește, font-ul care se încarcă înainte să-l
+            observi, structura care suportă încă cinci pagini fără refactor.
           </p>
-          <p data-story-post className="mx-auto max-w-xl text-base leading-[1.6] text-[var(--text-mid)] lg:text-lg">
-            {t('paragraph3')}
+          <p className="story-p">
+            Dacă citești asta pe un telefon, e pentru că am scris site-ul de la
+            telefon spre desktop. Nu invers.
           </p>
         </div>
+        <figure className="story-photo">
+          <StoryPhoto src="/story/claudiu.png" />
+          <figcaption className="photo-caption">
+            <span>Claudiu Comșa</span>
+            <span>Constanța · 2026</span>
+          </figcaption>
+        </figure>
       </div>
     </section>
   );

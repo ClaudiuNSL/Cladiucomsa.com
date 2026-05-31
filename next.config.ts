@@ -1,7 +1,10 @@
-import createNextIntlPlugin from "next-intl/plugin";
 import type { NextConfig } from "next";
 
-const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
+const isDev = process.env.NODE_ENV !== "production";
+
+const scriptSrc = isDev
+  ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
+  : "script-src 'self' 'unsafe-inline'";
 
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
@@ -15,16 +18,11 @@ const securityHeaders = [
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
-      // 'unsafe-eval' + blob: pentru WebGL/Three.js. blob: pentru DRACOLoader Web Worker.
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:",
-      // worker-src explicit ca DRACOLoader sa poata crea Web Worker din blob.
-      "worker-src 'self' blob:",
-      // Fontshare pentru fontul Satoshi din footer.
-      "style-src 'self' 'unsafe-inline' https://api.fontshare.com",
-      "font-src 'self' data: https://api.fontshare.com https://cdn.fontshare.com",
+      scriptSrc,
+      "style-src 'self' 'unsafe-inline'",
+      "font-src 'self' data:",
       "img-src 'self' data: blob: https:",
-      "connect-src 'self' https://formspree.io https://vercel.live https://vitals.vercel-insights.com",
-      "form-action 'self' https://formspree.io",
+      "connect-src 'self' https://vercel.live https://vitals.vercel-insights.com",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "object-src 'none'",
@@ -44,4 +42,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withNextIntl(nextConfig);
+export default nextConfig;

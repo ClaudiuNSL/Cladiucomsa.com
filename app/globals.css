@@ -1,73 +1,855 @@
 @import "tailwindcss";
 
+/* ============================================================
+   ROOT TOKENS — Chromatic Drift palette
+   ============================================================ */
 :root {
-  /* Cinematic Blue Explorer palette */
-  --bg-deep: #07090f;
-  --bg-base: #0a0d14;
-  --bg-elev: #11151e;
-  --text-primary: #ffffff;
-  --text-soft: #cfe3ff;
-  --text-mid: #9eb2c8;
-  --text-quiet: #5a6678;
-  --accent: #7aa7d9;
-  --border-soft: rgba(207, 227, 255, 0.08);
-  --border-hair: rgba(207, 227, 255, 0.04);
-  /* Legacy aliases pastrate ca sa nu sparga fisiere ne-migrate mid-refactor */
-  --border: var(--border-soft);
-  --border-strong: rgba(207, 227, 255, 0.16);
-  --text-secondary: var(--text-mid);
-  --text-muted: var(--text-quiet);
+  --fg: #1c1a16;
+  --fg-soft: rgba(28, 26, 22, 0.55);
+  --fg-line: rgba(28, 26, 22, 0.14);
+  --bg-pale: #f3eee4;
+  --easing: cubic-bezier(0.7, 0, 0.2, 1);
+}
+
+body.fg-light {
+  --fg: #f0ead8;
+  --fg-soft: rgba(240, 234, 216, 0.6);
+  --fg-line: rgba(240, 234, 216, 0.16);
 }
 
 @theme inline {
-  --color-bg-deep: var(--bg-deep);
-  --color-bg-base: var(--bg-base);
-  --color-bg-elev: var(--bg-elev);
-  --color-text-primary: var(--text-primary);
-  --color-text-soft: var(--text-soft);
-  --color-text-mid: var(--text-mid);
-  --color-text-quiet: var(--text-quiet);
-  --color-accent: var(--accent);
-  --color-border-soft: var(--border-soft);
-  --color-border-hair: var(--border-hair);
-  /* Legacy aliases */
-  --color-text-secondary: var(--text-mid);
-  --color-text-muted: var(--text-quiet);
-  --color-border: var(--border-soft);
-  --color-border-strong: var(--border-strong);
+  --color-fg: var(--fg);
+  --color-fg-soft: var(--fg-soft);
+  --color-fg-line: var(--fg-line);
+  --color-bg-pale: var(--bg-pale);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-serif: var(--font-fraunces);
+}
+
+/* ============================================================
+   BASE
+   ============================================================ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 html {
-  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  background: var(--bg-deep);
-  color: var(--text-primary);
-  font-family: var(--font-sans), system-ui, sans-serif;
-}
-
-/* Skip to content — visible on focus */
-.sr-only:focus {
-  position: absolute;
-  width: auto;
-  height: auto;
-  padding: 0.5rem 1rem;
+  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+  font-weight: 400;
+  background: var(--bg-pale);
+  color: var(--fg);
+  overflow-x: hidden;
+  cursor: none;
+  transition: color 0.6s ease;
   margin: 0;
-  overflow: visible;
-  clip: auto;
-  white-space: nowrap;
 }
 
-/* Reduced motion — respect user preferences */
+a {
+  color: inherit;
+  text-decoration: none;
+  cursor: none;
+}
+
+button {
+  all: unset;
+  cursor: none;
+}
+
+/* All section content sits above .glass (z-index: 2 backdrop-filter overlay).
+   Without this, sections in normal flow render below the fixed .glass element
+   in CSS painting order and get blurred by its backdrop-filter. */
+main {
+  position: relative;
+  z-index: 4;
+}
+
+/* Keyboard focus ring — required because body/a/button all set cursor: none
+   and button uses `all: unset` which strips the default focus outline. */
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--fg);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+@media (hover: none) {
+  a:focus-visible,
+  button:focus-visible {
+    outline-color: var(--fg);
+  }
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+.mono {
+  font-family: var(--font-geist-mono), monospace;
+}
+
+/* ============================================================
+   CANVAS LAYERS
+   ============================================================ */
+.canvas-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.canvas-3d {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 55vw;
+  height: 100vh;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+
+.canvas-3d.show {
+  opacity: 0.7;
+}
+
+@media (max-width: 900px) {
+  .canvas-3d {
+    display: none;
+  }
+}
+
+.glass {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  transition: backdrop-filter 0.8s ease;
+}
+
+body.scrolled .glass {
+  backdrop-filter: blur(6px) saturate(1.05);
+  -webkit-backdrop-filter: blur(6px) saturate(1.05);
+}
+
+/* ============================================================
+   TRANSITION FLASH
+   ============================================================ */
+.transition-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0;
+  backdrop-filter: blur(0px) saturate(1);
+  -webkit-backdrop-filter: blur(0px) saturate(1);
+}
+
+.transition-flash.fire {
+  animation: flashPulse 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes flashPulse {
+  0% {
+    opacity: 1;
+    backdrop-filter: blur(28px) saturate(0.6) brightness(1.1);
+    -webkit-backdrop-filter: blur(28px) saturate(0.6) brightness(1.1);
+  }
+  100% {
+    opacity: 0;
+    backdrop-filter: blur(0px) saturate(1) brightness(1);
+    -webkit-backdrop-filter: blur(0px) saturate(1) brightness(1);
+  }
+}
+
+/* ============================================================
+   CUSTOM CURSOR
+   ============================================================ */
+.cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 8px;
+  height: 8px;
+  background: var(--fg);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 200;
+  mix-blend-mode: difference;
+  transition: width 0.3s, height 0.3s, background-color 0.6s ease;
+  transform: translate(-50%, -50%);
+}
+
+.cursor.hover {
+  width: 60px;
+  height: 60px;
+  background: transparent;
+  border: 1px solid var(--fg);
+}
+
+.cursor-trail {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 4px;
+  background: var(--fg);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 199;
+  mix-blend-mode: difference;
+  opacity: 0.55;
+  transform: translate(-50%, -50%);
+  filter: blur(2px);
+  transition: background-color 0.6s ease;
+}
+
+@media (hover: none) {
+  body {
+    cursor: auto;
+  }
+  .cursor,
+  .cursor-trail {
+    display: none;
+  }
+  a,
+  button {
+    cursor: pointer;
+  }
+}
+
+/* ============================================================
+   SCROLL PROGRESS
+   ============================================================ */
+.scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 1px;
+  width: 0%;
+  background: var(--fg);
+  z-index: 60;
+  mix-blend-mode: difference;
+  transition: background-color 0.6s ease;
+}
+
+/* ============================================================
+   HERO — FOUC defaults (covers name + siblings)
+   Set opacity: 0 by default so server-rendered headline + meta
+   don't flash before GSAP cascade kicks in.
+   ============================================================ */
+.hero-name,
+.hero .eyebrow,
+.hero .hero-sub,
+.hero .hero-bio,
+.hero .scroll-hint,
+.hero .btn-wow {
+  opacity: 0;
+}
+
+/* ============================================================
+   HERO
+   (port din previews/chromatic-drift/index.html, liniile 285-370)
+   ============================================================ */
+.hero {
+  /* iOS Safari fix — 100vh include URL bar; 100dvh urmărește dynamic viewport.
+     Fallback la 100vh pentru browserele care nu suportă dvh. */
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: clamp(80px, 14vh, 140px) clamp(20px, 4vw, 56px) 60px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+}
+.hero-top {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(24px, 6vh, 56px);
+}
+.eyebrow {
+  font-family: var(--font-geist-mono), "Geist Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--fg-soft);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.eyebrow::before {
+  content: "";
+  width: 32px;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.6;
+}
+
+/* Hero name — letter-by-letter for the CC condense effect */
+.hero-name-wrap {
+  position: relative;
+  transform-origin: top left;
+  will-change: transform;
+}
+.hero-name {
+  /* Micșorat: 14vw → 10vw, max 180px → 160px. La 1440px viewport rezultă
+     ~144px (vs 200px înainte). La mobile 375px: 38px (vs 53px). Intră tot
+     "CLAUDIU COMȘA" pe un rând fără overflow în viewport. */
+  font-size: clamp(44px, 10vw, 160px);
+  line-height: 0.88;
+  font-weight: 500;
+  letter-spacing: -0.055em;
+  white-space: nowrap;
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0;
+}
+.hero-name .ltr {
+  display: inline-block;
+  transform-origin: center bottom;
+  will-change: transform, opacity;
+}
+.hero-name .ltr-space {
+  width: 0.32em;
+  display: inline-block;
+}
+.hero-name .ltr-c {
+  font-weight: 600;
+}
+
+.hero-sub {
+  font-size: clamp(20px, 2.4vw, 36px);
+  line-height: 1.2;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  max-width: 24ch;
+  margin-top: clamp(8px, 2vh, 24px);
+  color: var(--fg);
+}
+.hero-sub .accent {
+  font-weight: 600;
+  background: linear-gradient(currentColor, currentColor) 0 100% / 100% 1px no-repeat;
+  padding-bottom: 2px;
+}
+
+.hero-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 32px;
+  margin-top: 24px;
+  flex-wrap: wrap;
+}
+.hero-bio {
+  max-width: 38ch;
+  font-size: clamp(15px, 1.1vw, 17px);
+  line-height: 1.55;
+  color: var(--fg);
+  opacity: 0.82;
+}
+.scroll-hint {
+  font-family: var(--font-geist-mono), "Geist Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  font-weight: 500;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: var(--fg-soft);
+}
+.scroll-hint .line-down {
+  width: 1px;
+  height: 40px;
+  background: currentColor;
+  animation: heroPulse 2.4s ease infinite;
+  transform-origin: top;
+}
+@keyframes heroPulse {
+  0%, 100% { transform: scaleY(1); opacity: 0.5; }
+  50% { transform: scaleY(1.5); opacity: 1; }
+}
+
+/* ============================================================
+   SECTION SHARED — section-tag pin (port liniile 265-280 din mockup)
+   ============================================================ */
+.section-tag {
+  position: absolute;
+  top: 40px;
+  left: clamp(20px, 4vw, 56px);
+  font-family: var(--font-geist-mono), "Geist Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--fg-soft);
+}
+.section-tag::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background: currentColor;
+  border-radius: 50%;
+  margin-right: 12px;
+  transform: translateY(-2px);
+}
+
+/* ============================================================
+   SOFT — utility color (port linia 439 din mockup)
+   ============================================================ */
+.soft {
+  color: var(--fg-soft);
+}
+
+/* ============================================================
+   MANIFESTO — FOUC default + section styles
+   (port din previews/chromatic-drift/index.html, liniile 423-444)
+   Wrapper-ul pleacă la opacity 0; GSAP îl flip-uie la 1 după ce SplitText
+   a injectat per-char spans. Literele individuale stau la y: 120% (sub
+   linia de bază, ascunse de overflow) până când scrub-ul le aduce sus.
+   ============================================================ */
+.manifesto .ms-text {
+  opacity: 0;
+}
+.manifesto {
+  min-height: 80vh;
+  padding: 18vh clamp(20px, 4vw, 56px);
+  display: flex;
+  align-items: center;
+}
+.manifesto .intro-text,
+.manifesto.intro .ms-text {
+  font-size: clamp(28px, 4.5vw, 72px);
+  line-height: 1.12;
+  font-weight: 300;
+  letter-spacing: -0.025em;
+  max-width: 22ch;
+  color: var(--fg);
+}
+.manifesto .ms-char {
+  display: inline-block;
+  transform: translateY(120%);
+  will-change: transform;
+}
+.manifesto .word {
+  display: inline-block;
+  overflow: hidden;
+}
+
+/* ============================================================
+   PROJECTS HEADER
+   (port din previews/chromatic-drift/index.html, liniile 449-467)
+   Antetul secțiunii "Lucrări selectate" — titlu mare + meta range/count
+   monospaced. Fade-in via ScrollTrigger, fără layout shift.
+   ============================================================ */
+.projects-header {
+  padding: 12vh clamp(20px, 4vw, 56px) 4vh;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+.projects-title {
+  font-size: clamp(40px, 7vw, 110px);
+  font-weight: 500;
+  line-height: 0.95;
+  letter-spacing: -0.045em;
+  margin: 0;
+}
+.projects-title .soft {
+  color: var(--fg-soft);
+  font-weight: 300;
+}
+.projects-meta {
+  font-family: var(--font-geist-mono), "Geist Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--fg-soft);
+  display: flex;
+  gap: 24px;
+}
+
+/* ============================================================
+   P1 BANCIU — HORIZONTAL SCROLL
+   (port din previews/chromatic-drift/index.html, liniile 472-529)
+   Pe desktop secțiunea e pin-uită la viewport height, track-ul translatează
+   pe X scrub-uit. Pe mobil overflow-x nativ — vezi P1Banciu.tsx matchMedia.
+   ============================================================ */
+.p1 {
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+}
+.p1-track {
+  display: flex;
+  height: 100%;
+  will-change: transform;
+}
+.p1-card {
+  flex: 0 0 90vw;
+  height: 100%;
+  padding: 4vw;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+}
+.p1-card:first-child {
+  flex: 0 0 60vw;
+  padding-left: clamp(20px, 4vw, 56px);
+}
+.p1-intro {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100%;
+}
+.p1-num {
+  font-family: var(--font-geist-mono), "Geist Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.25em;
+  color: var(--fg-soft);
+  font-weight: 500;
+}
+.p1-title {
+  font-size: clamp(48px, 8vw, 130px);
+  line-height: 0.95;
+  font-weight: 400;
+  letter-spacing: -0.045em;
+  margin-top: 16px;
+  margin-bottom: 0;
+}
+.p1-title .soft {
+  color: var(--fg-soft);
+  font-weight: 300;
+}
+.p1-sub {
+  font-size: 14px;
+  margin-top: 24px;
+  max-width: 32ch;
+  line-height: 1.55;
+  color: var(--fg);
+  opacity: 0.82;
+}
+/* .p1-img — parent pentru next/image cu fill. position: relative obligatoriu.
+   Filter-shift-ul (hue-rotate / brightness / saturate) e aplicat inline din
+   componentă pe acest wrapper și afectează vizual imaginea de inside prin
+   compositing. data-placeholder="filter-shift" marchează variația temporară. */
+.p1-img {
+  flex: 1;
+  border-radius: 3px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.18);
+  background: #2a2520;
+}
+.p1-img::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 30% 50%, rgba(255, 220, 180, 0.22), transparent 60%);
+  pointer-events: none;
+  z-index: 1;
+}
+.p1-caption {
+  margin-top: 16px;
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-geist-mono), "Geist Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--fg-soft);
+  font-weight: 500;
+}
+
+/* ============================================================
+   MAGNETIC BUTTON
+   (port din previews/chromatic-drift/index.html, liniile 375-421)
+   ============================================================ */
+.btn-wow {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 30px;
+  border: 1px solid var(--fg);
+  border-radius: 100px;
+  font-family: var(--font-geist-mono), "Geist Mono", monospace;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 500;
+  position: relative;
+  will-change: transform;
+  transition: color 0.5s var(--easing), border-color 0.5s ease;
+  color: var(--fg);
+  background: transparent;
+  overflow: hidden;
+  isolation: isolate;
+}
+.btn-wow::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--fg);
+  border-radius: 100px;
+  transform: translateY(100%);
+  transition: transform 0.55s var(--easing);
+  z-index: -1;
+}
+.btn-wow:hover {
+  color: var(--bg-pale);
+}
+body.fg-light .btn-wow:hover {
+  color: #1c1a16;
+}
+.btn-wow:hover::before {
+  transform: translateY(0);
+}
+.btn-text {
+  display: block;
+  position: relative;
+  overflow: hidden;
+  height: 1.1em;
+}
+.btn-text .l1,
+.btn-text .l2 {
+  display: block;
+  transition: transform 0.55s var(--easing);
+}
+.btn-text .l2 {
+  position: absolute;
+  inset: 0;
+  transform: translateY(110%);
+}
+.btn-wow:hover .btn-text .l1 {
+  transform: translateY(-110%);
+}
+.btn-wow:hover .btn-text .l2 {
+  transform: translateY(0);
+}
+.btn-arrow {
+  display: inline-flex;
+  transition: transform 0.4s var(--easing);
+  font-size: 14px;
+}
+.btn-wow:hover .btn-arrow {
+  transform: translateX(4px);
+}
+.btn-wow.mt {
+  margin-top: 32px;
+}
+
+/* ============================================================
+   NAV
+   ============================================================ */
+.nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px clamp(20px, 4vw, 56px);
+  mix-blend-mode: difference;
+  color: #f0ead8;
+}
+.nav-cc {
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: -0.04em;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  display: inline-block;
+}
+.nav-cc.show {
+  opacity: 1;
+}
+.nav-cc::after {
+  content: ".";
+  opacity: 0.7;
+}
+.nav-right {
+  display: flex;
+  gap: clamp(16px, 3vw, 36px);
+  align-items: center;
+}
+.nav-meta {
+  font-family: var(--font-geist-mono), "Geist Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  font-weight: 500;
+  opacity: 0.7;
+}
+@media (max-width: 720px) {
+  .nav-meta.hide-mobile {
+    display: none;
+  }
+}
+.menu-btn {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px;
+  cursor: none;
+}
+.menu-btn span {
+  display: block;
+  width: 24px;
+  height: 1px;
+  background: currentColor;
+  transition: transform 0.4s var(--easing);
+}
+.menu-btn.open span:nth-child(1) {
+  transform: translateY(3px) rotate(45deg);
+}
+.menu-btn.open span:nth-child(2) {
+  transform: translateY(-3px) rotate(-45deg);
+}
+
+/* ============================================================
+   MENU OVERLAY
+   ============================================================ */
+.menu-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 49;
+  background: #1c1a16;
+  color: #f0ead8;
+  transform: translateY(-100%);
+  /* visibility + opacity sunt defensive: dacă transform-ul e interferat de
+     Lenis scroll sau de un mix-blend-mode al copiilor, itemii rămân vizibili
+     ghost peste pagină după închidere. Hide-uim explicit. */
+  visibility: hidden;
+  opacity: 0;
+  overflow: hidden;
+  transition: transform 0.9s var(--easing),
+              opacity 0.5s var(--easing),
+              visibility 0s linear 0.9s;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.menu-overlay.open {
+  transform: translateY(0);
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+  transition: transform 0.9s var(--easing),
+              opacity 0.4s var(--easing),
+              visibility 0s linear 0s;
+}
+.menu-items {
+  list-style: none;
+  text-align: center;
+  margin: 0;
+  padding: 0;
+}
+.menu-items li {
+  overflow: hidden;
+}
+.menu-items a {
+  display: block;
+  font-size: clamp(48px, 11vw, 144px);
+  line-height: 1.05;
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  padding: 8px 0;
+  transition: opacity 0.4s ease, letter-spacing 0.5s ease;
+}
+.menu-items a:hover {
+  opacity: 0.4;
+  letter-spacing: -0.02em;
+}
+
+/* ============================================================
+   SOUND TOGGLE
+   ============================================================ */
+.sound-toggle {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 40;
+  min-height: 44px;
+  padding: 11px 18px;
+  border: 1px solid rgba(28, 26, 22, 0.18);
+  border-radius: 100px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: rgba(243, 238, 228, 0.45);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--fg);
+  font-weight: 500;
+  transition: background-color 0.6s ease, border-color 0.6s ease, color 0.6s ease;
+}
+body.fg-light .sound-toggle {
+  background: rgba(28, 26, 22, 0.5);
+  border-color: rgba(240, 234, 216, 0.2);
+  color: #f0ead8;
+}
+.sound-bars {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+  height: 12px;
+}
+.sound-bars span {
+  width: 2px;
+  background: currentColor;
+  animation: bars 0.9s ease-in-out infinite;
+  animation-play-state: paused;
+  height: 30%;
+  opacity: 0.4;
+}
+.sound-bars span:nth-child(1) { animation-delay: 0s; }
+.sound-bars span:nth-child(2) { animation-delay: 0.15s; }
+.sound-bars span:nth-child(3) { animation-delay: 0.3s; }
+.sound-bars span:nth-child(4) { animation-delay: 0.45s; }
+.sound-toggle.on .sound-bars span {
+  animation-play-state: running;
+  opacity: 1;
+}
+.sound-toggle.on .sound-bars span:nth-child(1) { height: 30%; }
+.sound-toggle.on .sound-bars span:nth-child(2) { height: 60%; }
+.sound-toggle.on .sound-bars span:nth-child(3) { height: 90%; }
+.sound-toggle.on .sound-bars span:nth-child(4) { height: 50%; }
+@keyframes bars {
+  0%, 100% { transform: scaleY(0.4); }
+  50% { transform: scaleY(1); }
+}
+
+/* ============================================================
+   REDUCED MOTION
+   ============================================================ */
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
   }
-
   *,
   *::before,
   *::after {
@@ -76,165 +858,704 @@ body {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
-}
-
-/* Custom Animations */
-@keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
+  .hero-name,
+  .hero .eyebrow,
+  .hero .hero-sub,
+  .hero .hero-bio,
+  .hero .scroll-hint,
+  .hero .btn-wow,
+  .manifesto .ms-text {
     opacity: 1;
   }
-}
-
-@keyframes slide-up {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
+  .manifesto .ms-char {
+    transform: none;
   }
-  to {
+  .p2-main,
+  .p2-shard,
+  .p2-title {
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
+  }
+  .p2 {
+    height: auto;
+  }
+  body,
+  a,
+  button {
+    cursor: auto;
+  }
+  a,
+  button {
+    cursor: pointer;
   }
 }
 
-/* Scroll cue line: indica subtil mai sus->mai jos in Section 1. */
-@keyframes scroll-cue {
-  0%   { transform: translateY(-100%); }
-  50%  { transform: translateY(60%); }
-  100% { transform: translateY(140%); }
+/* ============================================================
+   P2 AURASJOBS — pinned zoom + glass shards
+   Portat din previews/chromatic-drift/index.html (.p2, .p2-pin,
+   .p2-stage, .p2-main, .shard, .p2-title). Namespace scopat pe
+   .p2-* ca să nu intre în conflict cu alte secțiuni.
+   ============================================================ */
+.p2 {
+  height: 250vh;
+  position: relative;
 }
-
-.animate-fade-in {
-  animation: fade-in 0.6s ease-out both;
-}
-
-.animate-slide-up {
-  animation: slide-up 0.6s ease-out both;
-}
-
-.animation-delay-200 {
-  animation-delay: 0.2s;
-}
-
-.animation-delay-400 {
-  animation-delay: 0.4s;
-}
-
-.animation-delay-600 {
-  animation-delay: 0.6s;
-}
-
-/* === Letter ticker effect pentru EffectButton ===
-   Pe hover, fiecare litera urca cu 100% (afara din container overflow:hidden)
-   si copia ei identica iese de jos in pozitia originala. Stagger via
-   inline style --ticker-delay setat in JSX. Doar pe devices cu pointer:
-   mobile nu are hover real, ar flash-ui la tap. */
-@media (hover: hover) {
-  .effect-btn:hover .ticker-letter {
-    transform: translateY(-100%);
-  }
-}
-.ticker-col {
-  display: inline-block;
+.p2-pin {
+  height: 100vh;
+  position: relative;
   overflow: hidden;
-  height: 1.1em;
-  line-height: 1.1;
-  vertical-align: middle;
+  display: grid;
+  place-items: center;
 }
-.ticker-letter {
-  display: block;
-  transition: transform 0.5s cubic-bezier(0.7, 0, 0.2, 1);
-  transition-delay: var(--ticker-delay, 0ms);
+.p2-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+}
+.p2-main {
+  width: clamp(280px, 50vw, 720px);
+  aspect-ratio: 16 / 10;
+  border-radius: 4px;
+  position: relative;
+  z-index: 3;
+  box-shadow: 0 60px 120px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  will-change: transform;
+  background: linear-gradient(135deg, #f8f1e3 0%, #e3d6bc 100%);
+}
+.p2-main img {
+  object-fit: cover;
+}
+.p2-shard {
+  position: absolute;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 252, 244, 0.55),
+    rgba(255, 252, 244, 0.15)
+  );
+  border: 1px solid rgba(28, 26, 22, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 3px;
+  will-change: transform;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+  z-index: 2;
+}
+.p2-title {
+  position: absolute;
+  bottom: 8vh;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  z-index: 4;
+}
+.p2-title .p2-num {
+  font-family: var(--font-geist-mono), "Geist Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  color: var(--fg-soft);
+}
+.p2-title .p2-name {
+  font-size: clamp(36px, 6vw, 88px);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  margin-top: 8px;
+}
+.p2-title .p2-name .soft {
+  color: var(--fg-soft);
+  font-weight: 300;
+}
+
+/* ============================================================
+   P3 STEREOCAD — split scroll + 3D cube
+   Portat din previews/chromatic-drift/index.html (.p3, .p3-left,
+   .p3-right, .p3-pin, .p3-cube, .face). DOM nesting iOS-safe:
+   .p3-pin (sticky) este ANCESTOR al .p3-cube (preserve-3d).
+   ============================================================ */
+.p3 {
+  position: relative;
+  min-height: 200vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  padding: 0 clamp(20px, 4vw, 56px);
+}
+.p3-left {
+  padding: 20vh 6vw 20vh 0;
+}
+.p3-left .num {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.25em;
+  color: var(--fg-soft);
+  font-weight: 500;
+}
+.p3-left h3 {
+  font-size: clamp(40px, 5.5vw, 86px);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  margin: 20px 0 32px;
+}
+.p3-left h3 .soft {
+  color: var(--fg-soft);
+  font-weight: 300;
+}
+.p3-left .blurbs p {
+  font-size: clamp(16px, 1.3vw, 19px);
+  line-height: 1.55;
+  margin-bottom: 28px;
+  max-width: 36ch;
+  color: var(--fg);
+  opacity: 0.85;
+}
+.p3-right {
+  position: relative;
+}
+.p3-pin {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: grid;
+  place-items: center;
+}
+.p3-cube {
+  width: clamp(220px, 30vw, 380px);
+  aspect-ratio: 1;
+  position: relative;
+  transform-style: preserve-3d;
   will-change: transform;
 }
+.p3 .face {
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--fg-line);
+  background: rgba(255, 252, 244, 0.5);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--fg);
+  opacity: 0.85;
+  overflow: hidden;
+}
+.p3 .face.face-image {
+  background: transparent;
+}
+.p3 .face.face-image .face-label {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  z-index: 2;
+  color: #f0ead8;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+}
+.p3 .face.f1 { transform: translateZ(150px); }
+.p3 .face.f2 { transform: rotateY(90deg) translateZ(150px); }
+.p3 .face.f3 { transform: rotateY(180deg) translateZ(150px); }
+.p3 .face.f4 { transform: rotateY(-90deg) translateZ(150px); }
+.p3 .face.f5 { transform: rotateX(90deg) translateZ(150px); }
+.p3 .face.f6 { transform: rotateX(-90deg) translateZ(150px); }
 
-/* Accessibility Widget Modes */
-
-/* High Contrast */
-.a11y-high-contrast body {
-  background: #000 !important;
-}
-
-.a11y-high-contrast * {
-  border-color: rgba(255, 255, 255, 0.3) !important;
-}
-
-.a11y-high-contrast p,
-.a11y-high-contrast span,
-.a11y-high-contrast li,
-.a11y-high-contrast div {
-  color: #f0f0f0 !important;
-}
-
-.a11y-high-contrast h1,
-.a11y-high-contrast h2,
-.a11y-high-contrast h3,
-.a11y-high-contrast h4 {
-  color: #fff !important;
-}
-
-.a11y-high-contrast a {
-  color: #5ce8ff !important;
-}
-
-.a11y-high-contrast .bg-white\/5,
-.a11y-high-contrast .bg-white\/10 {
-  background-color: rgba(255, 255, 255, 0.12) !important;
-}
-
-/* Stop Animations */
-.a11y-stop-animations,
-.a11y-stop-animations * {
-  animation-duration: 0.01ms !important;
-  animation-iteration-count: 1 !important;
-  transition-duration: 0.01ms !important;
-  scroll-behavior: auto !important;
-}
-
-/* Big Cursor */
-.a11y-big-cursor,
-.a11y-big-cursor * {
-  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M4 4l20 8-8 4-4 8z' fill='white' stroke='black' stroke-width='2'/%3E%3C/svg%3E") 4 4, auto !important;
-}
-
-.a11y-big-cursor a,
-.a11y-big-cursor button,
-.a11y-big-cursor [role="button"] {
-  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M10 4v20l4-4h8z' fill='white' stroke='black' stroke-width='2'/%3E%3C/svg%3E") 10 4, pointer !important;
-}
-
-/* Underline Links */
-.a11y-underline-links a {
-  text-decoration: underline !important;
-  text-underline-offset: 3px !important;
-}
-
-/* Navbar wordmark dot — pulse subtil ca semn de "live" */
-@keyframes wordmark-pulse {
-  0%, 100% { opacity: 0.6; }
-  50%      { opacity: 1; }
-}
-.wordmark-dot {
-  animation: wordmark-pulse 3s ease-in-out infinite;
-}
-
-/* Footer tech marquee — rotire infinita dreapta -> stanga.
-   Continutul e dublat in JSX (2x TECH); -50% = exact o tura completa. */
-@keyframes marquee-rtl {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
-}
-.animate-marquee {
-  animation: marquee-rtl 40s linear infinite;
-  width: max-content;
-}
-.animate-marquee:hover {
-  animation-play-state: paused;
-}
-@media (prefers-reduced-motion: reduce) {
-  .animate-marquee {
-    animation: none;
+@media (max-width: 767px) {
+  .p3 {
+    grid-template-columns: 1fr;
+    padding: 0 clamp(20px, 4vw, 56px);
+  }
+  .p3-left {
+    padding: 12vh 0 4vh;
+  }
+  .p3-pin {
+    height: 70vh;
+  }
+  .p3-cube {
+    width: 240px;
+  }
+  .p3 .face.f1 { transform: translateZ(120px); }
+  .p3 .face.f2 { transform: rotateY(90deg) translateZ(120px); }
+  .p3 .face.f3 { transform: rotateY(180deg) translateZ(120px); }
+  .p3 .face.f4 { transform: rotateY(-90deg) translateZ(120px); }
+  .p3 .face.f5 { transform: rotateX(90deg) translateZ(120px); }
+  .p3 .face.f6 { transform: rotateX(-90deg) translateZ(120px); }
+  .p1-card {
+    min-height: 80vh;
+  }
+  .p1-img {
+    min-height: 0;
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .p3-cube {
+    transform: none !important;
+  }
+}
+
+/* ============================================================
+   P4 CONFIDENTIAL — letter explode title
+   Portat din previews/chromatic-drift/index.html (.p4, .p4-num,
+   .p4-title, .p4-after). .p4-title pleacă la opacity 0 (FOUC guard)
+   — wrapper-ul e flip-uit la 1 din JS după ce SplitText injectează
+   per-char spans (Task 13 Option A pattern).
+   ============================================================ */
+.p4 {
+  min-height: 110vh;
+  padding: 12vh clamp(20px, 4vw, 56px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.p4-num {
+  font-family: var(--font-geist-mono), "Geist Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.25em;
+  color: var(--fg-soft);
+  margin-bottom: 24px;
+  font-weight: 500;
+}
+.p4-title {
+  font-size: clamp(58px, 14vw, 220px);
+  line-height: 0.88;
+  font-weight: 400;
+  letter-spacing: -0.055em;
+  margin: 0;
+  /* FOUC guard — ascunde textul SSR până SplitText hidratează per-char.
+     JS flipuiește la 1 în useEffect ÎNAINTE de tween-ul de explode. */
+  opacity: 0;
+}
+.p4-title .soft {
+  color: var(--fg-soft);
+  font-weight: 300;
+}
+.p4-title .char {
+  display: inline-block;
+  transform-origin: center;
+  will-change: transform, opacity;
+}
+.p4-after {
+  margin-top: 64px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 56px;
+  max-width: 880px;
+}
+.p4-after p {
+  font-size: clamp(14px, 1.1vw, 17px);
+  line-height: 1.55;
+  color: var(--fg);
+  opacity: 0.8;
+}
+@media (max-width: 720px) {
+  .p4-after {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .p4-title {
+    opacity: 1;
+  }
+  .p4-title .char {
+    transform: none !important;
+    opacity: 1 !important;
+  }
+}
+
+/* ============================================================
+   P5 ATELIER — CRT glitch (RGB channel split + scanline)
+   Portat din previews/chromatic-drift/index.html (.p5, .p5-num,
+   .p5-title, .p5-stage, .layer.r/.g/.b, .scanline, .stage-tag).
+   Stage-ul folosește 4 layere suprapuse cu mix-blend-mode: screen;
+   markup-ul e identic client/server (fără SplitText, fără FOUC guard).
+   ============================================================ */
+.p5 {
+  min-height: 110vh;
+  padding: 12vh clamp(20px, 4vw, 56px);
+  position: relative;
+}
+.p5-num {
+  font-family: var(--font-geist-mono), "Geist Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.25em;
+  color: var(--fg-soft);
+  font-weight: 500;
+}
+.p5-title {
+  font-size: clamp(48px, 9vw, 160px);
+  line-height: 0.95;
+  font-weight: 400;
+  letter-spacing: -0.05em;
+  margin: 20px 0 48px;
+}
+.p5-title .soft {
+  color: var(--fg-soft);
+  font-weight: 300;
+}
+.p5-stage {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  max-width: 1100px;
+  margin: 0 auto;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #1a1611;
+  box-shadow: 0 40px 100px rgba(0, 0, 0, 0.22);
+}
+.p5-stage .layer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #2a2017 0%, #5a4530 40%, #9a7548 100%);
+  mix-blend-mode: screen;
+}
+.p5-stage .layer.r {
+  background: linear-gradient(135deg, transparent, #d27050);
+  mix-blend-mode: screen;
+  opacity: 0.7;
+}
+.p5-stage .layer.g {
+  background: linear-gradient(135deg, transparent, #6ab098);
+  mix-blend-mode: screen;
+  opacity: 0.45;
+}
+.p5-stage .layer.b {
+  background: linear-gradient(135deg, transparent, #7090d8);
+  mix-blend-mode: screen;
+  opacity: 0.55;
+}
+.p5-stage .scanline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(245, 240, 225, 0.5);
+  top: 30%;
+  box-shadow: 0 0 12px rgba(245, 240, 225, 0.5);
+}
+.p5-stage .stage-tag {
+  position: absolute;
+  bottom: 24px;
+  left: 24px;
+  font-family: var(--font-geist-mono), "Geist Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(245, 240, 225, 0.75);
+  font-weight: 500;
+}
+@media (prefers-reduced-motion: reduce) {
+  .p5-stage .layer {
+    transform: none !important;
+  }
+  .p5-stage .scanline {
+    transition: none !important;
+  }
+}
+
+/* ============================================================
+   STUDIO
+   (port din previews/chromatic-drift/index.html, liniile 762-795)
+   Layout 2-coloane (titlu + listă), 5 servicii cu border-top/bottom
+   și index mono pe dreapta. Hover-ul împinge li-ul cu 16px la stânga.
+   Reveal stagger se face din JS — vezi sections/Studio.tsx.
+   ============================================================ */
+.studio {
+  padding: 18vh clamp(20px, 4vw, 56px);
+  position: relative;
+}
+.studio-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  margin-top: 48px;
+}
+@media (max-width: 800px) {
+  .studio-grid {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+}
+.studio-title {
+  font-size: clamp(40px, 6vw, 96px);
+  line-height: 0.95;
+  font-weight: 600;
+  letter-spacing: -0.045em;
+  margin: 0;
+  color: var(--fg);
+}
+.studio-title .soft {
+  color: var(--fg-soft);
+  font-weight: 400;
+}
+.studio-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.studio-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 28px 0;
+  border-bottom: 1px solid var(--fg-line);
+  font-size: clamp(18px, 1.6vw, 26px);
+  font-weight: 400;
+  transition: padding-left 0.4s var(--easing);
+}
+.studio-list li:first-child {
+  border-top: 1px solid var(--fg-line);
+}
+.studio-list li:hover {
+  padding-left: 16px;
+}
+.studio-list .idx {
+  font-family: var(--font-geist-mono), "Geist Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  color: var(--fg-soft);
+  font-weight: 500;
+}
+
+/* ============================================================
+   STORY
+   (port din previews/chromatic-drift/index.html, liniile 800-875)
+   Bio editorial cu 2-column layout: text (1.2fr) + portret (0.8fr).
+   Reveal stagger pe h + paragrafe din JS — vezi sections/Story.tsx.
+   ============================================================ */
+.story {
+  padding: 22vh clamp(20px, 4vw, 56px);
+  position: relative;
+}
+.story-layout {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: clamp(40px, 6vw, 96px);
+  align-items: start;
+  max-width: 1400px;
+}
+@media (max-width: 900px) {
+  .story-layout {
+    grid-template-columns: 1fr;
+    gap: 56px;
+  }
+}
+.story-text {
+  padding-top: 48px;
+}
+.story-h {
+  font-size: clamp(36px, 5vw, 76px);
+  line-height: 1.06;
+  font-weight: 400;
+  letter-spacing: -0.04em;
+  margin: 0;
+}
+.story-h .soft {
+  color: var(--fg-soft);
+  font-weight: 300;
+}
+.story-p {
+  margin-top: 32px;
+  font-size: clamp(16px, 1.2vw, 19px);
+  line-height: 1.6;
+  max-width: 56ch;
+  color: var(--fg);
+  opacity: 0.88;
+}
+.story-p:first-of-type {
+  margin-top: 56px;
+}
+.story-photo {
+  position: relative;
+  margin: 0;
+  padding-top: 48px;
+}
+.photo-caption {
+  margin-top: 18px;
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-geist-mono), "Geist Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--fg-soft);
+  font-weight: 500;
+}
+
+/* ============================================================
+   STORY PHOTO
+   (port din previews/chromatic-drift/index.html, liniile 835-868)
+   Wrapper-ul .photo-mask pleacă la clip-path: inset(100% 0 0 0); GSAP
+   îl tween-uiește la inset(0) la enter (vezi StoryPhoto.tsx). Atât
+   imaginea (.photo-inner img via next/image fill), cât și
+   .photo-placeholder primesc același tratament b+w/sepia + parallax.
+   Parent-ul e position: relative ca next/image fill să aibă bounds.
+   ============================================================ */
+.photo-mask {
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  border-radius: 3px;
+  position: relative;
+  clip-path: inset(100% 0 0 0);
+  will-change: clip-path;
+  background: #c4b294;
+}
+.photo-mask .photo-inner,
+.photo-mask .photo-placeholder {
+  width: 100%;
+  height: 110%;
+  position: relative;
+  will-change: transform;
+  /* b+c treatment: subtle desaturation + warmth + blend */
+  filter: grayscale(0.35) contrast(1.05) brightness(0.95) sepia(0.06);
+  mix-blend-mode: multiply;
+}
+.photo-mask .photo-inner img {
+  object-fit: cover;
+  object-position: center;
+}
+.photo-placeholder {
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 35% 30%, rgba(255, 220, 180, 0.3), transparent 50%),
+    radial-gradient(circle at 70% 70%, rgba(120, 90, 60, 0.4), transparent 60%),
+    linear-gradient(135deg, #a89274 0%, #6e5a40 50%, #463726 100%);
+}
+.photo-placeholder span {
+  font-family: var(--font-geist-mono), "Geist Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: rgba(255, 250, 235, 0.65);
+  text-align: center;
+  padding: 0 24px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .photo-mask {
+    clip-path: inset(0 0 0 0) !important;
+  }
+  .photo-mask .photo-inner,
+  .photo-mask .photo-placeholder {
+    transform: none !important;
+  }
+}
+
+/* ============================================================
+   FOOTER
+   (port din previews/chromatic-drift/index.html, liniile 877-931)
+   Trăiește în palette stop 4 (dark + gold) — body.fg-light flip-uiește
+   automat --fg/--fg-soft/--fg-line, deci nu hardcoda culori aici.
+   ============================================================ */
+.footer {
+  /* Override body.fg-light pentru footer: utilizatorul vrea scris negru aici,
+     indiferent de palette stop. Redefinim variabilele scope-local astfel încât
+     toate textele copil (--fg / --fg-soft / --fg-line) primesc valorile dark. */
+  --fg: #1c1a16;
+  --fg-soft: rgba(28, 26, 22, 0.6);
+  --fg-line: rgba(28, 26, 22, 0.18);
+  padding: 14vh clamp(20px, 4vw, 56px) 4vh;
+  border-top: 1px solid var(--fg-line);
+  margin-top: 12vh;
+  position: relative;
+  /* Fundal cream propriu — fără el shader-ul taupe din spate ar face
+     scrisul negru greu de citit. Stop 4 ar fi trebuit să fie charcoal + gold;
+     îl forțăm la cream + negru ca să respecte cererea utilizatorului. */
+  background: var(--bg-pale);
+  color: #1c1a16;
+}
+.footer-h {
+  font-size: clamp(54px, 12vw, 180px);
+  line-height: 0.9;
+  font-weight: 400;
+  letter-spacing: -0.05em;
+  color: var(--fg);
+  margin: 0;
+}
+.footer-h .soft {
+  color: var(--fg-soft);
+  font-weight: 300;
+}
+.footer-h a {
+  background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px no-repeat;
+  transition: background-size 0.6s var(--easing);
+  padding-bottom: 6px;
+  color: var(--fg);
+}
+.footer-h a:hover {
+  background-size: 100% 1px;
+}
+.footer-cta-row {
+  margin-top: 56px;
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.footer-grid {
+  margin-top: 12vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 40px;
+  border-top: 1px solid var(--fg-line);
+  padding-top: 32px;
+}
+@media (max-width: 720px) {
+  .footer-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.footer-col h4 {
+  font-family: var(--font-geist-mono), "Geist Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--fg-soft);
+  margin: 0 0 16px;
+  font-weight: 500;
+}
+.footer-col a,
+.footer-col span {
+  display: block;
+  font-size: 15px;
+  line-height: 1.8;
+  font-weight: 400;
+  color: var(--fg);
+}
+.footer-col a {
+  transition: color 0.25s var(--easing);
+}
+.footer-col a:hover {
+  color: var(--fg-soft);
+}
+.footer-col a.mono,
+.footer-col .mono {
+  font-family: var(--font-geist-mono), "Geist Mono", monospace;
+  letter-spacing: 0.04em;
+}
+.footer-bottom {
+  margin-top: 8vh;
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-geist-mono), "Geist Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--fg-soft);
+  font-weight: 500;
+}
+@media (max-width: 720px) {
+  .footer-bottom {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+

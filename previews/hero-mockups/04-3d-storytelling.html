@@ -1,0 +1,788 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Hero · 3D Storytelling — parallax volumetric</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #08080a;
+    --fg: #f4f1ea;
+    --muted: #8a8680;
+    --accent: rgba(244, 241, 234, 0.35);
+    --line: rgba(244, 241, 234, 0.12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: "Instrument Serif", Georgia, serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  body { overflow-x: hidden; }
+
+  /* ─── Pinned hero — 4 capitole de scroll = 400vh ─── */
+  .hero-section {
+    position: relative;
+    height: 100vh;
+    width: 100%;
+    overflow: hidden;
+    /* perspective pentru text 3D */
+    perspective: 1200px;
+    perspective-origin: 50% 45%;
+  }
+
+  /* ─── Canvas WebGL — fog 3D layered ─── */
+  #stage {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* ─── Vignette deasupra canvas-ului pentru focus cinematic ─── */
+  .vignette {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: radial-gradient(ellipse at center,
+      transparent 0%, transparent 35%,
+      rgba(8, 8, 10, 0.55) 80%,
+      rgba(8, 8, 10, 0.95) 100%);
+  }
+
+  /* ─── Navbar fix global ─── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 50;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: clamp(20px, 3vw, 32px) clamp(24px, 4vw, 56px);
+    pointer-events: none;
+  }
+  nav > * { pointer-events: auto; }
+
+  .logo {
+    width: 56px; height: 56px;
+    color: var(--fg);
+    display: block;
+    cursor: pointer;
+    transition: filter 0.4s ease;
+  }
+  .logo:hover { filter: drop-shadow(0 0 12px rgba(244, 241, 234, 0.4)); }
+  .logo svg { width: 100%; height: 100%; overflow: visible; }
+  .logo path, .logo line {
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .menu-btn {
+    width: 44px; height: 44px;
+    border: 1px solid var(--line);
+    background: rgba(8, 8, 10, 0.4);
+    color: var(--fg);
+    display: grid; place-items: center;
+    cursor: pointer;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 16px;
+    backdrop-filter: blur(8px);
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+  .menu-btn:hover {
+    border-color: rgba(244, 241, 234, 0.4);
+    background: rgba(8, 8, 10, 0.7);
+  }
+
+  /* ─── Chapter indicator (dreapta) ─── */
+  .chapters {
+    position: absolute;
+    right: clamp(20px, 3vw, 40px);
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+  }
+  .chapters .ch {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    opacity: 0.35;
+    transition: opacity 0.5s ease, color 0.5s ease;
+  }
+  .chapters .ch.active {
+    opacity: 1;
+    color: var(--fg);
+  }
+  .chapters .ch .dot {
+    width: 6px;
+    height: 6px;
+    border: 1px solid currentColor;
+    border-radius: 50%;
+    transition: background 0.5s ease, transform 0.5s ease;
+  }
+  .chapters .ch.active .dot {
+    background: currentColor;
+    transform: scale(1.3);
+  }
+
+  /* ─── Container 3D pentru text beats ─── */
+  .stage-3d {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    transform-style: preserve-3d;
+    pointer-events: none;
+    display: grid;
+    place-items: center;
+    padding: 0 clamp(24px, 5vw, 80px);
+  }
+
+  /* ─── Beat 01 — intro: doar eyebrow ─── */
+  .beat {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    transform-style: preserve-3d;
+    will-change: transform, opacity;
+    opacity: 0;
+  }
+  .beat-inner {
+    max-width: 1100px;
+    padding: 0 clamp(24px, 5vw, 80px);
+  }
+
+  .eyebrow {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* ─── Beat 02 — nume ─── */
+  .name-display {
+    font-size: clamp(64px, 12vw, 200px);
+    font-weight: 400;
+    line-height: 0.9;
+    letter-spacing: -0.04em;
+  }
+  .name-display .it {
+    font-style: italic;
+    color: var(--muted);
+  }
+  .name-display .line { display: block; }
+  .name-sub {
+    margin-top: clamp(16px, 2vw, 24px);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* ─── Beat 03 — tagline poetic ─── */
+  .tagline-display {
+    font-family: "Instrument Serif", serif;
+    font-style: italic;
+    font-size: clamp(28px, 4vw, 56px);
+    line-height: 1.25;
+    color: var(--fg);
+    max-width: 880px;
+    letter-spacing: -0.01em;
+  }
+  .tagline-display .em {
+    color: var(--accent);
+    font-style: normal;
+  }
+
+  /* ─── Beat 04 — CTA ─── */
+  .cta-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(20px, 3vw, 32px);
+  }
+  .cta-eyebrow {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .cta-title {
+    font-size: clamp(40px, 6vw, 80px);
+    font-weight: 400;
+    line-height: 1;
+    letter-spacing: -0.025em;
+  }
+  .cta-btn {
+    pointer-events: auto;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--fg);
+    text-decoration: none;
+    padding: 16px 32px;
+    border: 1px solid var(--line);
+    background: rgba(8, 8, 10, 0.5);
+    backdrop-filter: blur(6px);
+    transition: border-color 0.3s ease, background 0.3s ease, transform 0.3s ease;
+  }
+  .cta-btn:hover {
+    border-color: var(--fg);
+    background: rgba(244, 241, 234, 0.06);
+    transform: translateY(-2px);
+  }
+
+  /* ─── Scroll progress (jos centrat) ─── */
+  .progress-rail {
+    position: absolute;
+    bottom: clamp(20px, 3vw, 32px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: clamp(160px, 18vw, 240px);
+    height: 1px;
+    background: rgba(244, 241, 234, 0.1);
+    z-index: 20;
+  }
+  .progress-rail .bar {
+    position: absolute;
+    inset: 0;
+    background: var(--fg);
+    transform-origin: left;
+    transform: scaleX(0);
+  }
+
+  .scroll-hint {
+    position: absolute;
+    bottom: clamp(48px, 6vw, 72px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--muted);
+    opacity: 0;
+  }
+
+  /* ─── Below-fold ─── */
+  .below-fold {
+    min-height: 100vh;
+    padding: clamp(80px, 12vw, 160px) clamp(24px, 5vw, 80px);
+    display: grid;
+    place-items: center;
+    border-top: 1px solid var(--line);
+  }
+  .below-fold p {
+    font-family: "Instrument Serif", serif;
+    font-style: italic;
+    font-size: clamp(20px, 2.5vw, 36px);
+    color: var(--muted);
+    max-width: 720px;
+    text-align: center;
+    line-height: 1.4;
+  }
+
+  /* ─── Marker preview ─── */
+  .marker {
+    position: fixed;
+    top: clamp(20px, 3vw, 32px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+    background: rgba(8, 8, 10, 0.7);
+    padding: 6px 12px;
+    border: 1px solid var(--line);
+    backdrop-filter: blur(8px);
+  }
+</style>
+</head>
+<body>
+  <div class="marker">MOCKUP 04 · 3D STORYTELLING + PARALLAX</div>
+
+  <!-- ─── Navbar ─── -->
+  <nav>
+    <a class="logo" id="logo" href="#" aria-label="Claudiu Comșa">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <path id="logo-outer"
+          d="M 78 26 C 56 14, 28 22, 22 50 C 28 78, 56 86, 78 74"
+          stroke-width="3.5" />
+        <path id="logo-inner"
+          d="M 42 42 C 56 36, 68 44, 70 50 C 68 56, 56 64, 42 58"
+          stroke-width="2.8" />
+        <line id="logo-serif-top"    x1="76" y1="24" x2="82" y2="22" stroke-width="2" />
+        <line id="logo-serif-bottom" x1="76" y1="76" x2="82" y2="78" stroke-width="2" />
+        <circle id="logo-dot" cx="88" cy="82" r="2.2" fill="currentColor" stroke="none" />
+      </svg>
+    </a>
+    <button class="menu-btn" aria-label="meniu">☰</button>
+  </nav>
+
+  <!-- ─── Pinned hero ─── -->
+  <section class="hero-section" id="heroSection">
+    <canvas id="stage"></canvas>
+    <div class="vignette"></div>
+
+    <!-- ─── Chapter indicator ─── -->
+    <div class="chapters" id="chapters">
+      <div class="ch active" data-ch="0"><span>01 / 04</span><span class="dot"></span></div>
+      <div class="ch"        data-ch="1"><span>02 / 04</span><span class="dot"></span></div>
+      <div class="ch"        data-ch="2"><span>03 / 04</span><span class="dot"></span></div>
+      <div class="ch"        data-ch="3"><span>04 / 04</span><span class="dot"></span></div>
+    </div>
+
+    <!-- ─── 4 beats overlapping în același spațiu 3D ─── -->
+    <div class="stage-3d">
+
+      <!-- Beat 01 — INTRO -->
+      <div class="beat" id="beat-0">
+        <div class="beat-inner">
+          <div class="eyebrow">01 — Intro</div>
+        </div>
+      </div>
+
+      <!-- Beat 02 — NUME -->
+      <div class="beat" id="beat-1">
+        <div class="beat-inner">
+          <h1 class="name-display">
+            <span class="line">Claudiu</span>
+            <span class="line"><em class="it">Comșa</em></span>
+          </h1>
+          <div class="name-sub">developer &amp; designer · București</div>
+        </div>
+      </div>
+
+      <!-- Beat 03 — TAGLINE -->
+      <div class="beat" id="beat-2">
+        <div class="beat-inner">
+          <p class="tagline-display">
+            Construiesc <span class="em">produse digitale</span> cu atenție la detaliu,
+            performanță și o estetică pe care ți-o amintești.
+          </p>
+        </div>
+      </div>
+
+      <!-- Beat 04 — CTA -->
+      <div class="beat" id="beat-3">
+        <div class="beat-inner cta-display">
+          <div class="cta-eyebrow">Capitolul următor</div>
+          <h2 class="cta-title">Proiecte selectate</h2>
+          <a class="cta-btn" href="#proiecte">explorează &nbsp;→</a>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="scroll-hint" id="hint">scroll pentru a începe</div>
+
+    <div class="progress-rail">
+      <div class="bar" id="progBar"></div>
+    </div>
+  </section>
+
+  <!-- ─── Below-fold ─── -->
+  <section class="below-fold">
+    <p><em>Aici începe restul site-ului — proiectele, despre, contact.</em></p>
+  </section>
+
+  <!-- Dependențe -->
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lenis@1.3.8/dist/lenis.min.js"></script>
+
+<script>
+  /* ════════════════════════════════════════════════
+     WebGL — fog 3D layered (5 z-depth layers)
+     Cu disperse pe mouse + camera Z driven by scroll
+     ════════════════════════════════════════════════ */
+  const canvas = document.getElementById('stage');
+  const gl = canvas.getContext('webgl', { antialias: false, alpha: false });
+
+  const vert = `
+    attribute vec2 a_pos;
+    void main() { gl_Position = vec4(a_pos, 0.0, 1.0); }
+  `;
+  const frag = `
+    precision highp float;
+    uniform vec2  u_res;
+    uniform float u_time;
+    uniform vec2  u_mouse;
+    uniform vec2  u_mouseVel;
+    uniform float u_camZ;       // pozitie camera in fog 0..3
+    uniform float u_chapter;    // 0..3 floating, indica tranzitia
+    uniform float u_scrollVel;
+
+    float hash(vec2 p) {
+      return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+    }
+    float noise(vec2 p) {
+      vec2 i = floor(p), f = fract(p);
+      f = f * f * (3.0 - 2.0 * f);
+      return mix(mix(hash(i), hash(i + vec2(1,0)), f.x),
+                 mix(hash(i + vec2(0,1)), hash(i + vec2(1,1)), f.x), f.y);
+    }
+    float fbm(vec2 p) {
+      float s = 0.0, a = 0.5;
+      for (int i = 0; i < 5; i++) {
+        s += a * noise(p);
+        p *= 2.0;
+        a *= 0.5;
+      }
+      return s;
+    }
+
+    void main() {
+      vec2 res = u_res;
+      vec2 uv  = (gl_FragCoord.xy - 0.5 * res) / res.y;
+
+      // ── Disperse pe mouse (din v2) ──
+      vec2 mouseUv = (u_mouse - 0.5) * vec2(res.x / res.y, 1.0) * 2.0;
+      vec2 toMouse = uv - mouseUv;
+      float d = length(toMouse);
+      float falloff = smoothstep(0.6, 0.0, d);
+      vec2 dir = normalize(toMouse + vec2(0.0001));
+      vec2 perp = vec2(-dir.y, dir.x);
+      vec2 disp = (dir * 0.40 + perp * 0.18) * falloff
+                - u_mouseVel * falloff * 2.0;
+
+      // Scroll push
+      disp += vec2(0.0, -u_scrollVel * 0.12);
+
+      // ── 5 layere de fog la diferite z-depth ──
+      // Camera se misca pe z, layer-ele "trec" prin camera dand iluzia 3D
+      float density = 0.0;
+      float t = u_time * 0.04;
+
+      for (int i = 0; i < 5; i++) {
+        float fi = float(i);
+        // Pozitia z relativa a layer-ului fata de camera
+        float layerZ = fi * 0.7 - u_camZ;
+
+        // Layer-ul devine "in fata" cand layerZ < 0, "in spate" cand > 0
+        // Layer-ele apropiate scaleaza mai mare (perspectiva)
+        float perspectScale = 1.0 / max(0.4, 1.0 + layerZ * 0.5);
+
+        // Offset si scale per layer
+        vec2 lUv = (uv + disp) * perspectScale * (1.0 + fi * 0.15)
+                 + vec2(fi * 13.7, fi * 7.3)
+                 + vec2(t * (1.0 + fi * 0.4), t * 0.7);
+
+        float n = fbm(lUv);
+
+        // Fade-in/out cand layer-ul trece prin camera
+        float depthFade = smoothstep(2.2, 0.0, abs(layerZ));
+
+        // Layer-ele apropiate sunt mai contrastante
+        float contrast = 1.0 - smoothstep(0.0, 2.0, abs(layerZ)) * 0.4;
+        n = pow(n, 1.0 + contrast);
+
+        density += n * depthFade * 0.22;
+      }
+
+      // ── Chapter tinting: tonul devine mai cald pe capitole 2-3 ──
+      vec3 tintCool = vec3(0.96, 0.97, 1.0);
+      vec3 tintWarm = vec3(1.0, 0.96, 0.88);
+      float tintMix = smoothstep(0.5, 2.5, u_chapter);
+      vec3 tint = mix(tintCool, tintWarm, tintMix);
+
+      // Vignette subtila
+      float vig = 1.0 - smoothstep(0.4, 1.1, length(uv));
+      density *= vig * 0.85 + 0.15;
+
+      // Boost de luminozitate pe capitolele finale
+      density *= 0.55 + u_chapter * 0.18;
+
+      vec3 col = vec3(density) * tint;
+      gl_FragColor = vec4(col, 1.0);
+    }
+  `;
+
+  function compile(type, src) {
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src);
+    gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+      console.error('Shader compile error:', gl.getShaderInfoLog(s));
+    }
+    return s;
+  }
+  const prog = gl.createProgram();
+  gl.attachShader(prog, compile(gl.VERTEX_SHADER, vert));
+  gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, frag));
+  gl.linkProgram(prog);
+  gl.useProgram(prog);
+
+  const buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+  const loc = gl.getAttribLocation(prog, 'a_pos');
+  gl.enableVertexAttribArray(loc);
+  gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+
+  const u = {
+    res:       gl.getUniformLocation(prog, 'u_res'),
+    time:      gl.getUniformLocation(prog, 'u_time'),
+    mouse:     gl.getUniformLocation(prog, 'u_mouse'),
+    mouseVel:  gl.getUniformLocation(prog, 'u_mouseVel'),
+    camZ:      gl.getUniformLocation(prog, 'u_camZ'),
+    chapter:   gl.getUniformLocation(prog, 'u_chapter'),
+    scrollVel: gl.getUniformLocation(prog, 'u_scrollVel'),
+  };
+
+  const state = {
+    mouseTarget: [0.5, 0.5],
+    mouse:       [0.5, 0.5],
+    mouseVel:    [0, 0],
+    camZ:        0,
+    chapter:     0,
+    scrollVel:   0,
+  };
+
+  window.addEventListener('pointermove', (e) => {
+    state.mouseTarget[0] = e.clientX / window.innerWidth;
+    state.mouseTarget[1] = 1.0 - e.clientY / window.innerHeight;
+  });
+
+  // Render la rezoluție redusă (0.75x) pentru performanță — fog n-are nevoie de pixel-perfect
+  function resize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    canvas.width  = Math.floor(window.innerWidth  * dpr * 0.75);
+    canvas.height = Math.floor(window.innerHeight * dpr * 0.75);
+    canvas.style.width  = window.innerWidth  + 'px';
+    canvas.style.height = window.innerHeight + 'px';
+    gl.viewport(0, 0, canvas.width, canvas.height);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  /* ════════════════════════════════════════════════
+     LENIS + GSAP
+     ════════════════════════════════════════════════ */
+  const lenis = new Lenis({
+    duration: 1.3,
+    easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+    smoothWheel: true,
+  });
+  lenis.on('scroll', (e) => {
+    state.scrollVel = e.velocity || 0;
+    ScrollTrigger.update();
+  });
+  gsap.registerPlugin(ScrollTrigger);
+  gsap.ticker.add((time) => { lenis.raf(time * 1000); });
+  gsap.ticker.lagSmoothing(0);
+
+  /* ════════════════════════════════════════════════
+     LOGO line-draw
+     ════════════════════════════════════════════════ */
+  (function setupLogo() {
+    const paths = [
+      document.getElementById('logo-outer'),
+      document.getElementById('logo-inner'),
+    ];
+    const serifs = [
+      document.getElementById('logo-serif-top'),
+      document.getElementById('logo-serif-bottom'),
+    ];
+    const dot = document.getElementById('logo-dot');
+
+    paths.forEach((p) => {
+      const len = p.getTotalLength();
+      p.style.strokeDasharray = len;
+      p.style.strokeDashoffset = len;
+    });
+    serifs.forEach((s) => {
+      s.style.strokeDasharray = 10;
+      s.style.strokeDashoffset = 10;
+    });
+    gsap.set(dot, { scale: 0, transformOrigin: '88px 82px' });
+
+    const tl = gsap.timeline({ delay: 0.3 });
+    tl.to(paths[0], { strokeDashoffset: 0, duration: 1.4, ease: 'power2.inOut' })
+      .to(paths[1], { strokeDashoffset: 0, duration: 1.0, ease: 'power2.inOut' }, '-=0.85')
+      .to(serifs,   { strokeDashoffset: 0, duration: 0.35, ease: 'power1.out', stagger: 0.08 }, '-=0.4')
+      .to(dot,      { scale: 1, duration: 0.5, ease: 'back.out(2.2)' }, '-=0.25');
+
+    document.getElementById('logo').addEventListener('mouseenter', () => {
+      paths.forEach((p) => {
+        const len = p.getTotalLength();
+        gsap.fromTo(p,
+          { strokeDashoffset: len },
+          { strokeDashoffset: 0, duration: 0.6, ease: 'power2.out' });
+      });
+    });
+  })();
+
+  /* ════════════════════════════════════════════════
+     SETUP 3D BEATS — pozitie initiala in spatiu Z
+     Fiecare beat e overlapping in acelasi container,
+     animat in/out cu translateZ + opacity
+     ════════════════════════════════════════════════ */
+  const beats = [
+    document.getElementById('beat-0'),
+    document.getElementById('beat-1'),
+    document.getElementById('beat-2'),
+    document.getElementById('beat-3'),
+  ];
+
+  // Initial state — toate beat-urile in depth, doar beat 0 ar trebui sa apara
+  gsap.set(beats, { opacity: 0, transform: 'translate3d(0, 0, -800px)' });
+  gsap.set(beats[0], { opacity: 1, transform: 'translate3d(0, 0, 0)' });
+
+  // Hint apare scurt la inceput
+  gsap.fromTo('#hint',
+    { opacity: 0 },
+    { opacity: 1, duration: 1, delay: 1.5, ease: 'power1.out' });
+
+  /* ════════════════════════════════════════════════
+     MASTER TIMELINE — 4 chapters, pinned + scrub
+     Total scroll: 400% (4 viewport heights)
+     ════════════════════════════════════════════════ */
+  const masterTl = gsap.timeline({
+    scrollTrigger: {
+      trigger: '#heroSection',
+      start: 'top top',
+      end: '+=400%',
+      pin: true,
+      pinSpacing: true,
+      scrub: 1.2,
+      anticipatePin: 1,
+      onUpdate: (self) => {
+        // chapter index: 0..3 floating
+        state.chapter = self.progress * 3;
+        // camera Z: 0 → 3 (camera traverseaza fog)
+        state.camZ = self.progress * 3;
+        // progress bar
+        gsap.set('#progBar', { scaleX: self.progress });
+        // active chapter dot
+        const chIdx = Math.min(3, Math.floor(self.progress * 4));
+        document.querySelectorAll('.chapters .ch').forEach((el, i) => {
+          el.classList.toggle('active', i === chIdx);
+        });
+      }
+    }
+  });
+
+  // ─── Hint fade out la primul scroll ───
+  masterTl.to('#hint', { opacity: 0, ease: 'power1.in' }, 0);
+
+  // ────────────────────────────────────
+  // CAPITOLUL 01 → 02 (0% → 25%)
+  // Beat 0 (intro) iese in spate, Beat 1 (nume) vine din spate in fata
+  // ────────────────────────────────────
+  masterTl
+    .to(beats[0], {
+      opacity: 0,
+      transform: 'translate3d(0, -40px, 400px)',
+      ease: 'power2.inOut',
+    }, 0)
+    .to(beats[1], {
+      opacity: 1,
+      transform: 'translate3d(0, 0, 0)',
+      ease: 'power2.out',
+    }, 0.1);
+
+  // ────────────────────────────────────
+  // CAPITOLUL 02 → 03 (25% → 50%)
+  // Beat 1 (nume) iese, Beat 2 (tagline) intra
+  // ────────────────────────────────────
+  masterTl
+    .to(beats[1], {
+      opacity: 0,
+      transform: 'translate3d(0, -60px, 600px)',
+      ease: 'power2.in',
+    }, 1.0)
+    .to(beats[2], {
+      opacity: 1,
+      transform: 'translate3d(0, 0, 0)',
+      ease: 'power2.out',
+    }, 1.1);
+
+  // ────────────────────────────────────
+  // CAPITOLUL 03 → 04 (50% → 75%)
+  // Beat 2 (tagline) iese, Beat 3 (CTA) intra cu zoom-in subtle
+  // ────────────────────────────────────
+  masterTl
+    .to(beats[2], {
+      opacity: 0,
+      transform: 'translate3d(0, -60px, 600px)',
+      ease: 'power2.in',
+    }, 2.0)
+    .fromTo(beats[3],
+      {
+        opacity: 0,
+        transform: 'translate3d(0, 60px, -400px)',
+      },
+      {
+        opacity: 1,
+        transform: 'translate3d(0, 0, 0)',
+        ease: 'power2.out',
+      }, 2.1);
+
+  // ────────────────────────────────────
+  // CAPITOLUL 04 (75% → 100%)
+  // Beat 3 ramane pana la sfarsit, dar zoom-out subtle
+  // ────────────────────────────────────
+  masterTl.to(beats[3], {
+    transform: 'translate3d(0, -20px, 200px)',
+    opacity: 0.9,
+    ease: 'power1.inOut',
+  }, 3.0);
+
+  /* ════════════════════════════════════════════════
+     RAF — render WebGL + smoothing
+     ════════════════════════════════════════════════ */
+  const t0 = performance.now();
+  let lastTime = t0;
+  function frame(now) {
+    const dt = Math.min(0.05, (now - lastTime) / 1000);
+    lastTime = now;
+    const t = (now - t0) / 1000;
+
+    const prev = [state.mouse[0], state.mouse[1]];
+    const ease = 1 - Math.pow(0.001, dt);
+    state.mouse[0] += (state.mouseTarget[0] - state.mouse[0]) * ease;
+    state.mouse[1] += (state.mouseTarget[1] - state.mouse[1]) * ease;
+    state.mouseVel[0] = (state.mouse[0] - prev[0]) * 8;
+    state.mouseVel[1] = (state.mouse[1] - prev[1]) * 8;
+    state.scrollVel *= 0.85;
+
+    gl.uniform2f(u.res, canvas.width, canvas.height);
+    gl.uniform1f(u.time, t);
+    gl.uniform2f(u.mouse, state.mouse[0], state.mouse[1]);
+    gl.uniform2f(u.mouseVel, state.mouseVel[0], state.mouseVel[1]);
+    gl.uniform1f(u.camZ, state.camZ);
+    gl.uniform1f(u.chapter, state.chapter);
+    gl.uniform1f(u.scrollVel, state.scrollVel / 1000);
+
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+</script>
+</body>
+</html>

@@ -1,42 +1,74 @@
-'use client';
-// Provider Lenis pentru scroll smooth + integrare GSAP ticker.
-// Lenis preia controlul scroll-ului si trimite progresul catre GSAP
-// astfel incat ScrollTrigger sa primeasca pozitia reala (interpolata).
-import { useEffect, type ReactNode } from 'react';
-import Lenis from 'lenis';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
+"use client";
 
-if (typeof window !== 'undefined') {
+// Provider Lenis pentru scroll smooth + integrare GSAP ticker + final
+// ScrollTrigger.refresh after fonts settle (prevents pin misalignment).
+
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
+import Lenis from "lenis";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
 }
 
+type LenisContextValue = {
+  lenis: Lenis | null;
+};
+
+const LenisContext = createContext<LenisContextValue>({ lenis: null });
+
+export function useLenis(): Lenis | null {
+  return useContext(LenisContext).lenis;
+}
+
 export default function LenisProvider({ children }: { children: ReactNode }) {
+  const [lenis, setLenis] = useState<Lenis | null>(null);
+
   useEffect(() => {
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reducedMotion) return;
 
-    const lenis = new Lenis({
-      duration: 1.2,
+    const instance = new Lenis({
+      duration: 1.15,
       easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       smoothWheel: true,
       wheelMultiplier: 1,
       touchMultiplier: 2,
     });
 
-    lenis.on('scroll', ScrollTrigger.update);
+    queueMicrotask(() => setLenis(instance));
+
+    instance.on("scroll", ScrollTrigger.update);
 
     const onTick = (time: number) => {
-      lenis.raf(time * 1000);
+      instance.raf(time * 1000);
     };
     gsap.ticker.add(onTick);
     gsap.ticker.lagSmoothing(0);
 
+    let cancelled = false;
+    document.fonts.ready.then(() => {
+      requestAnimationFrame(() => {
+        if (!cancelled) ScrollTrigger.refresh(true);
+      });
+    });
+
     return () => {
+      cancelled = true;
       gsap.ticker.remove(onTick);
-      lenis.destroy();
+      instance.destroy();
+      setLenis(null);
     };
   }, []);
 
-  return <>{children}</>;
+  return (
+    <LenisContext.Provider value={{ lenis }}>{children}</LenisContext.Provider>
+  );
 }
