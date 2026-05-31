@@ -7,7 +7,7 @@ const personSchema = {
   name: "Claudiu Comșa",
   url: "https://claudiucomsa.com",
   jobTitle: "Web Developer",
-  email: "cristian.ceamatu@assist.ro",
+  email: "claudiucomsa29@gmail.com",
   telephone: "+40761880406",
   address: {
     "@type": "PostalAddress",

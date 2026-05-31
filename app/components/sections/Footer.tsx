@@ -102,14 +102,14 @@ export default function Footer() {
         <br />
         construim
         <br />
-        <a href="mailto:cristian.ceamatu@assist.ro">ceva.</a>
+        <a href="mailto:claudiucomsa29@gmail.com">ceva.</a>
       </h2>
 
       <div className="footer-cta-row" ref={ctaRowRef}>
         <MagneticButton
-          href="mailto:cristian.ceamatu@assist.ro"
+          href="mailto:claudiucomsa29@gmail.com"
           label="Trimite un email"
-          labelHover="cristian.ceamatu@assist.ro"
+          labelHover="claudiucomsa29@gmail.com"
         />
         <MagneticButton
           href="tel:+40761880406"
@@ -121,8 +121,8 @@ export default function Footer() {
       <div className="footer-grid" ref={gridRef}>
         <div className="footer-col">
           <h4>Contact</h4>
-          <a href="mailto:cristian.ceamatu@assist.ro">
-            cristian.ceamatu@assist.ro
+          <a href="mailto:claudiucomsa29@gmail.com">
+            claudiucomsa29@gmail.com
           </a>
           <a href="tel:+40761880406" className="mono">
             0761 880 406
@@ -137,7 +137,7 @@ export default function Footer() {
           <h4>Disponibilitate</h4>
           <span>Proiecte noi · Q3 2026</span>
           <span>Răspund în 24h</span>
-          <span>Doar Română</span>
+          <span>RO</span>
         </div>
       </div>
 
