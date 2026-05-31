@@ -1,0 +1,10 @@
+/* TEAM */
+Claudiu Comșa - Web developer - ro
+From: Constanța, Romania
+Contact: cristian.ceamatu@assist.ro
+
+/* SITE */
+Last update: 2026-05-31
+Language: Romanian
+Standards: HTML5, CSS3, ES2024
+Components: Next.js 16, React 19, Three.js, GSAP, Lenis

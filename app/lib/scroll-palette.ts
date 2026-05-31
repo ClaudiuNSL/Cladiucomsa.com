@@ -16,7 +16,9 @@ export const PALETTE_STOPS: readonly PaletteStop[] = [
 
 // Body.fg-light class flips when scroll progress crosses this threshold
 // (entering the dark final stop where text must invert to cream).
-export const DARK_THRESHOLD = 0.82;
+// Trebuie să rămână aproape de 1.0 — Story (stop 2, bej+orange) cere text închis;
+// doar Footer (stop 3, charcoal+gold) are background efectiv întunecat.
+export const DARK_THRESHOLD = 0.93;
 
 function smoothstep(t: number): number {
   return t * t * (3 - 2 * t);

@@ -1,0 +1,3 @@
+Contact: mailto:cristian.ceamatu@assist.ro
+Expires: 2027-05-31T23:59:59.000Z
+Preferred-Languages: ro, en

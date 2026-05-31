@@ -8,8 +8,9 @@ import IcosahedronScene from "./components/IcosahedronScene";
 import TransitionFlash from "./components/TransitionFlash";
 import ScrollProgress from "./components/ScrollProgress";
 import Cursor from "./components/Cursor";
-import SoundToggle from "./components/SoundToggle";
+// SoundToggle removed — Phase 2 când există fișier audio la public/audio/ambient.mp3
 import Nav from "./components/Nav";
+import { PersonJsonLd } from "./lib/structured-data";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -24,10 +25,25 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://www.claudiucomsa.com"),
-  title: "Claudiu Comșa — Web Developer din Constanța",
+  metadataBase: new URL("https://claudiucomsa.com"),
+  title: {
+    default: "Claudiu Comșa — Web Developer din Constanța",
+    template: "%s · Claudiu Comșa",
+  },
   description:
     "Construiesc site-uri și experiențe digitale cinematice. Web developer freelance din Constanța. Disponibil pentru proiecte noi.",
+  openGraph: {
+    type: "website",
+    locale: "ro_RO",
+    siteName: "Claudiu Comșa",
+    url: "https://claudiucomsa.com",
+    title: "Claudiu Comșa — Web Developer din Constanța",
+    description:
+      "Construiesc site-uri și experiențe digitale cinematice. Web developer freelance din Constanța. Disponibil pentru proiecte noi.",
+  },
+  twitter: { card: "summary_large_image" },
+  alternates: { canonical: "/" },
+  robots: { index: true, follow: true },
 };
 
 export const viewport: Viewport = {
@@ -45,16 +61,18 @@ export default function RootLayout({
   return (
     <html lang="ro" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body className="antialiased">
-        <ShaderBackground />
-        <IcosahedronScene />
-        <div className="glass" />
-        <TransitionFlash />
-        <ScrollProgress />
-        <Cursor />
-        <SoundToggle />
-        <Nav />
+        <PersonJsonLd />
         <LenisProvider>
-          <ScrollPaletteProvider>{children}</ScrollPaletteProvider>
+          <ScrollPaletteProvider>
+            <ShaderBackground />
+            <IcosahedronScene />
+            <div className="glass" />
+            <TransitionFlash />
+            <ScrollProgress />
+            <Cursor />
+            <Nav />
+            {children}
+          </ScrollPaletteProvider>
         </LenisProvider>
       </body>
     </html>

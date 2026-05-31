@@ -7,7 +7,6 @@ import {
   createContext,
   useContext,
   useEffect,
-  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -30,14 +29,13 @@ export function useLenis(): Lenis | null {
 }
 
 export default function LenisProvider({ children }: { children: ReactNode }) {
-  const lenisRef = useRef<Lenis | null>(null);
-  const [, force] = useState(0);
+  const [lenis, setLenis] = useState<Lenis | null>(null);
 
   useEffect(() => {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reducedMotion) return;
 
-    const lenis = new Lenis({
+    const instance = new Lenis({
       duration: 1.15,
       easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       smoothWheel: true,
@@ -45,20 +43,16 @@ export default function LenisProvider({ children }: { children: ReactNode }) {
       touchMultiplier: 2,
     });
 
-    lenisRef.current = lenis;
-    force((n) => n + 1);
+    queueMicrotask(() => setLenis(instance));
 
-    lenis.on("scroll", ScrollTrigger.update);
+    instance.on("scroll", ScrollTrigger.update);
 
     const onTick = (time: number) => {
-      lenis.raf(time * 1000);
+      instance.raf(time * 1000);
     };
     gsap.ticker.add(onTick);
     gsap.ticker.lagSmoothing(0);
 
-    // Final ScrollTrigger refresh after fonts settle + one rAF tick — prevents
-    // pin misalignment caused by font-load layout shift after triggers register.
-    // Reference: prior site commit 813adeb shipped same fix retroactively.
     let cancelled = false;
     document.fonts.ready.then(() => {
       requestAnimationFrame(() => {
@@ -69,12 +63,12 @@ export default function LenisProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
       gsap.ticker.remove(onTick);
-      lenis.destroy();
-      lenisRef.current = null;
+      instance.destroy();
+      setLenis(null);
     };
   }, []);
 
   return (
-    <LenisContext.Provider value={{ lenis: lenisRef.current }}>{children}</LenisContext.Provider>
+    <LenisContext.Provider value={{ lenis }}>{children}</LenisContext.Provider>
   );
 }
