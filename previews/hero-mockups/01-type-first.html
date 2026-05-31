@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Hero · Type-first cu atmosferă</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --fg: #f4f1ea;
+    --muted: #8a8680;
+    --line: rgba(244, 241, 234, 0.12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: "Instrument Serif", Georgia, serif;
+    height: 100%;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    position: relative;
+  }
+
+  /* ─── Canvas WebGL în fundal — atmosfera subtilă */
+  #atmosphere {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* ─── Navbar minimal (preview) */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 10;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: clamp(20px, 3vw, 32px) clamp(24px, 4vw, 56px);
+    font-family: "Instrument Serif", serif;
+  }
+  .logo {
+    font-style: italic;
+    font-size: 28px;
+    letter-spacing: -0.02em;
+  }
+  .menu-btn {
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--fg);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 14px;
+    transition: border-color 0.2s ease;
+  }
+  .menu-btn:hover { border-color: rgba(244, 241, 234, 0.4); }
+
+  /* ─── Hero conținut */
+  main {
+    position: relative;
+    z-index: 5;
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 0 clamp(24px, 5vw, 80px);
+  }
+  .hero {
+    text-align: center;
+    max-width: 1200px;
+  }
+  .eyebrow {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: clamp(32px, 5vw, 56px);
+    opacity: 0;
+    animation: fadeUp 1.1s 0.2s ease forwards;
+  }
+  h1 {
+    font-size: clamp(64px, 13vw, 200px);
+    font-weight: 400;
+    line-height: 0.92;
+    letter-spacing: -0.035em;
+    margin-bottom: clamp(24px, 4vw, 40px);
+  }
+  h1 .it {
+    font-style: italic;
+    color: var(--muted);
+  }
+  h1 .line {
+    display: block;
+    opacity: 0;
+    transform: translateY(40px);
+    animation: cascadeUp 1.4s ease forwards;
+  }
+  h1 .line:nth-child(1) { animation-delay: 0.4s; }
+  h1 .line:nth-child(2) { animation-delay: 0.6s; }
+  .tagline {
+    font-family: "Instrument Serif", serif;
+    font-style: italic;
+    font-size: clamp(18px, 1.8vw, 24px);
+    color: var(--muted);
+    max-width: 560px;
+    margin: 0 auto clamp(40px, 5vw, 64px);
+    line-height: 1.4;
+    opacity: 0;
+    animation: fadeUp 1.2s 1.0s ease forwards;
+  }
+  .cta {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--fg);
+    text-decoration: none;
+    padding: 14px 28px;
+    border: 1px solid var(--line);
+    display: inline-block;
+    transition: border-color 0.3s ease, background 0.3s ease;
+    opacity: 0;
+    animation: fadeUp 1.2s 1.2s ease forwards;
+  }
+  .cta:hover {
+    border-color: var(--fg);
+    background: rgba(244, 241, 234, 0.05);
+  }
+
+  /* ─── Indicator de scroll jos */
+  .scroll-hint {
+    position: fixed;
+    bottom: clamp(24px, 3vw, 40px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 5;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--muted);
+    opacity: 0;
+    animation: fadeUp 1.2s 1.6s ease forwards, pulse 2.4s 2.6s ease infinite;
+  }
+
+  /* ─── Animații */
+  @keyframes fadeUp {
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes cascadeUp {
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+  }
+
+  /* ─── Marker preview-only */
+  .marker {
+    position: fixed;
+    top: clamp(20px, 3vw, 32px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+    background: rgba(10, 10, 10, 0.7);
+    padding: 6px 12px;
+    border: 1px solid var(--line);
+    backdrop-filter: blur(8px);
+  }
+</style>
+</head>
+<body>
+  <div class="marker">MOCKUP 01 · TYPE-FIRST</div>
+
+  <canvas id="atmosphere"></canvas>
+
+  <nav>
+    <div class="logo"><em>Cc</em></div>
+    <button class="menu-btn" aria-label="meniu">☰</button>
+  </nav>
+
+  <main>
+    <div class="hero">
+      <div class="eyebrow">Portofoliu · București · 2026</div>
+      <h1>
+        <span class="line">Claudiu Comșa</span>
+        <span class="line"><em class="it">developer &amp; designer</em></span>
+      </h1>
+      <p class="tagline">
+        Construiesc produse digitale cu atenție la detaliu,
+        performanță și o estetică pe care ți-o amintești.
+      </p>
+      <a class="cta" href="#proiecte">vezi proiectele →</a>
+    </div>
+  </main>
+
+  <div class="scroll-hint">scroll ↓</div>
+
+<script>
+  /* ────────────────────────────────────────────
+     WebGL atmospheric — noise mesh subtil
+     Conduce tipografia, nu invers.
+     ──────────────────────────────────────────── */
+  const canvas = document.getElementById('atmosphere');
+  const gl = canvas.getContext('webgl', { antialias: false, alpha: false });
+
+  if (!gl) {
+    canvas.style.background = '#0a0a0a';
+  } else {
+    const vert = `
+      attribute vec2 a_pos;
+      void main() { gl_Position = vec4(a_pos, 0.0, 1.0); }
+    `;
+    const frag = `
+      precision highp float;
+      uniform vec2 u_res;
+      uniform float u_time;
+      uniform vec2 u_mouse;
+
+      float hash(vec2 p) {
+        return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+      }
+      float noise(vec2 p) {
+        vec2 i = floor(p), f = fract(p);
+        f = f * f * (3.0 - 2.0 * f);
+        return mix(mix(hash(i), hash(i + vec2(1,0)), f.x),
+                   mix(hash(i + vec2(0,1)), hash(i + vec2(1,1)), f.x), f.y);
+      }
+      float fbm(vec2 p) {
+        float s = 0.0, a = 0.5;
+        for (int i = 0; i < 5; i++) {
+          s += a * noise(p);
+          p *= 2.0;
+          a *= 0.5;
+        }
+        return s;
+      }
+      void main() {
+        vec2 uv = (gl_FragCoord.xy - 0.5 * u_res) / u_res.y;
+        // parallax foarte subtil cu mouse
+        uv += (u_mouse - 0.5) * 0.06;
+        float n = fbm(uv * 1.6 + vec2(u_time * 0.018, u_time * 0.013));
+        // contrast scăzut — atmosferă, nu focal
+        n = pow(n, 1.9) * 0.16;
+        // un al doilea strat foarte slab pentru profunzime
+        float n2 = fbm(uv * 3.2 - vec2(u_time * 0.01, 0.0)) * 0.05;
+        vec3 col = vec3(n + n2);
+        // tint cald-rece foarte subtil
+        col *= vec3(1.0, 0.99, 0.95);
+        gl_FragColor = vec4(col, 1.0);
+      }
+    `;
+
+    function compile(type, src) {
+      const s = gl.createShader(type);
+      gl.shaderSource(s, src);
+      gl.compileShader(s);
+      return s;
+    }
+    const prog = gl.createProgram();
+    gl.attachShader(prog, compile(gl.VERTEX_SHADER, vert));
+    gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, frag));
+    gl.linkProgram(prog);
+    gl.useProgram(prog);
+
+    const buf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+    const loc = gl.getAttribLocation(prog, 'a_pos');
+    gl.enableVertexAttribArray(loc);
+    gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+
+    const uRes = gl.getUniformLocation(prog, 'u_res');
+    const uTime = gl.getUniformLocation(prog, 'u_time');
+    const uMouse = gl.getUniformLocation(prog, 'u_mouse');
+
+    let mouse = [0.5, 0.5];
+    window.addEventListener('pointermove', (e) => {
+      mouse[0] = e.clientX / window.innerWidth;
+      mouse[1] = 1.0 - e.clientY / window.innerHeight;
+    });
+
+    function resize() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = window.innerWidth * dpr;
+      canvas.height = window.innerHeight * dpr;
+      canvas.style.width = window.innerWidth + 'px';
+      canvas.style.height = window.innerHeight + 'px';
+      gl.viewport(0, 0, canvas.width, canvas.height);
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    const t0 = performance.now();
+    function frame() {
+      const t = (performance.now() - t0) / 1000;
+      gl.uniform2f(uRes, canvas.width, canvas.height);
+      gl.uniform1f(uTime, t);
+      gl.uniform2f(uMouse, mouse[0], mouse[1]);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      requestAnimationFrame(frame);
+    }
+    frame();
+  }
+</script>
+</body>
+</html>

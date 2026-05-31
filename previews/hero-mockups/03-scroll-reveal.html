@@ -1,0 +1,637 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Hero · Scroll Reveal v2 — GSAP + disperse smoke</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --fg: #f4f1ea;
+    --muted: #8a8680;
+    --line: rgba(244, 241, 234, 0.12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: "Instrument Serif", Georgia, serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    /* Lenis are nevoie de overflow normal, pinned section gestionează scroll-ul */
+    overflow-x: hidden;
+  }
+
+  /* ─── Container pentru ScrollTrigger pin */
+  .hero-section {
+    position: relative;
+    height: 100vh;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  /* ─── Canvas WebGL — apare prin spate pe scroll */
+  #reveal {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0;
+  }
+
+  /* ─── Mască "draperie" peste WebGL */
+  .curtain {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    background: var(--bg);
+    pointer-events: none;
+    transform-origin: bottom center;
+    will-change: transform;
+  }
+
+  /* ─── Navbar (în afara pinned section, fix global) */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 50;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: clamp(20px, 3vw, 32px) clamp(24px, 4vw, 56px);
+    pointer-events: none;
+  }
+  nav > * { pointer-events: auto; }
+
+  /* ─── Logo SVG — ligatura CC custom */
+  .logo {
+    width: 56px;
+    height: 56px;
+    color: var(--fg);
+    display: block;
+    cursor: pointer;
+    transition: filter 0.4s ease;
+  }
+  .logo:hover {
+    filter: drop-shadow(0 0 12px rgba(244, 241, 234, 0.35));
+  }
+  .logo svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+  .logo path, .logo line {
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .menu-btn {
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--line);
+    background: rgba(10, 10, 10, 0.4);
+    color: var(--fg);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 16px;
+    transition: border-color 0.2s ease, background 0.2s ease;
+    backdrop-filter: blur(8px);
+  }
+  .menu-btn:hover {
+    border-color: rgba(244, 241, 234, 0.4);
+    background: rgba(10, 10, 10, 0.7);
+  }
+
+  /* ─── Hero — fix în pinned section, scrubbat de scroll */
+  .hero-wrap {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: grid;
+    place-items: center;
+    padding: 0 clamp(24px, 5vw, 80px);
+    pointer-events: none;
+  }
+  .hero {
+    text-align: center;
+    max-width: 1100px;
+    will-change: transform, opacity;
+  }
+  .eyebrow {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: clamp(32px, 5vw, 56px);
+    opacity: 0;
+    will-change: transform, opacity;
+  }
+  h1 {
+    font-size: clamp(56px, 11vw, 180px);
+    font-weight: 400;
+    line-height: 0.92;
+    letter-spacing: -0.035em;
+    margin-bottom: clamp(20px, 3vw, 32px);
+  }
+  h1 .it {
+    font-style: italic;
+    color: var(--muted);
+  }
+  h1 .line {
+    display: block;
+    opacity: 0;
+    will-change: transform, opacity;
+  }
+  .tagline {
+    font-family: "Instrument Serif", serif;
+    font-style: italic;
+    font-size: clamp(18px, 1.8vw, 24px);
+    color: var(--muted);
+    max-width: 560px;
+    margin: 0 auto;
+    line-height: 1.4;
+    opacity: 0;
+    will-change: transform, opacity;
+  }
+
+  /* ─── Indicator scroll cu progres */
+  .scroll-hint {
+    position: absolute;
+    bottom: clamp(24px, 3vw, 40px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 5;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--muted);
+    opacity: 0;
+    text-align: center;
+    will-change: opacity;
+  }
+  .scroll-hint .bar {
+    display: block;
+    width: 1px;
+    height: 32px;
+    background: var(--muted);
+    margin: 12px auto 0;
+    transform-origin: top;
+  }
+
+  /* ─── Secțiune below-fold doar ca să demonstrăm că pinned-ul funcționează */
+  .below-fold {
+    min-height: 100vh;
+    padding: clamp(80px, 12vw, 160px) clamp(24px, 5vw, 80px);
+    display: grid;
+    place-items: center;
+    border-top: 1px solid var(--line);
+  }
+  .below-fold p {
+    font-family: "Instrument Serif", serif;
+    font-style: italic;
+    font-size: clamp(20px, 2.5vw, 36px);
+    color: var(--muted);
+    max-width: 720px;
+    text-align: center;
+    line-height: 1.4;
+  }
+
+  /* ─── Marker preview-only */
+  .marker {
+    position: fixed;
+    top: clamp(20px, 3vw, 32px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+    background: rgba(10, 10, 10, 0.7);
+    padding: 6px 12px;
+    border: 1px solid var(--line);
+    backdrop-filter: blur(8px);
+  }
+</style>
+</head>
+<body>
+  <div class="marker">MOCKUP 03 v2 · SCROLL REVEAL + GSAP + DISPERSE</div>
+
+  <!-- ─── Navbar fix global ─── -->
+  <nav>
+    <a class="logo" id="logo" href="#" aria-label="Claudiu Comșa">
+      <!-- Ligatura CC: două arc-uri interlocked + serif terminals -->
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <!-- Outer C — arc mare care se deschide la dreapta -->
+        <path id="logo-outer"
+          d="M 78 26 C 56 14, 28 22, 22 50 C 28 78, 56 86, 78 74"
+          stroke-width="3.5" />
+        <!-- Inner C — arc mic mirrored, se deschide la stânga -->
+        <path id="logo-inner"
+          d="M 42 42 C 56 36, 68 44, 70 50 C 68 56, 56 64, 42 58"
+          stroke-width="2.8" />
+        <!-- Serif terminals subtile la outer C -->
+        <line id="logo-serif-top"    x1="76" y1="24" x2="82" y2="22" stroke-width="2" />
+        <line id="logo-serif-bottom" x1="76" y1="76" x2="82" y2="78" stroke-width="2" />
+        <!-- Punct discret (semnătura, ca punctul după CC.) -->
+        <circle id="logo-dot" cx="88" cy="82" r="2.2" fill="currentColor" stroke="none" />
+      </svg>
+    </a>
+
+    <button class="menu-btn" aria-label="meniu">☰</button>
+  </nav>
+
+  <!-- ─── Pinned hero section ─── -->
+  <section class="hero-section" id="heroSection">
+    <canvas id="reveal"></canvas>
+    <div class="curtain" id="curtain"></div>
+
+    <div class="hero-wrap">
+      <div class="hero" id="hero">
+        <div class="eyebrow" id="eyebrow">Portofoliu · București · 2026</div>
+        <h1>
+          <span class="line" id="line1">Claudiu Comșa</span>
+          <span class="line" id="line2"><em class="it">developer &amp; designer</em></span>
+        </h1>
+        <p class="tagline" id="tagline">
+          Construiesc produse digitale cu atenție la detaliu,
+          performanță și o estetică pe care ți-o amintești.
+        </p>
+      </div>
+    </div>
+
+    <div class="scroll-hint" id="hint">
+      scroll pentru reveal
+      <span class="bar" id="hintBar"></span>
+    </div>
+  </section>
+
+  <!-- ─── Below-fold ca să arate că pinned-ul se eliberează ─── -->
+  <section class="below-fold">
+    <p><em>Aici începe restul site-ului — secțiunea de proiecte, despre, etc.</em></p>
+  </section>
+
+  <!-- ─── Dependențe: GSAP + ScrollTrigger + Lenis ─── -->
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lenis@1.3.8/dist/lenis.min.js"></script>
+
+<script>
+  /* ════════════════════════════════════════════════
+     WebGL — fum cu disperse pe mouse + vortex
+     ════════════════════════════════════════════════ */
+  const canvas = document.getElementById('reveal');
+  const gl = canvas.getContext('webgl', { antialias: false, alpha: false });
+
+  const vert = `
+    attribute vec2 a_pos;
+    void main() { gl_Position = vec4(a_pos, 0.0, 1.0); }
+  `;
+  const frag = `
+    precision highp float;
+    uniform vec2  u_res;
+    uniform float u_time;
+    uniform vec2  u_mouse;      // 0..1 viewport
+    uniform vec2  u_mouseVel;   // vector viteza mouse
+    uniform float u_progress;   // 0..1 progres scroll
+    uniform float u_scrollVel;  // viteza scroll (semnata)
+
+    float hash(vec2 p) {
+      return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+    }
+    float noise(vec2 p) {
+      vec2 i = floor(p), f = fract(p);
+      f = f * f * (3.0 - 2.0 * f);
+      return mix(mix(hash(i),         hash(i + vec2(1,0)), f.x),
+                 mix(hash(i + vec2(0,1)), hash(i + vec2(1,1)), f.x), f.y);
+    }
+    float fbm(vec2 p) {
+      float s = 0.0, a = 0.5;
+      for (int i = 0; i < 6; i++) {
+        s += a * noise(p);
+        p *= 2.0;
+        a *= 0.5;
+      }
+      return s;
+    }
+
+    void main() {
+      vec2 res = u_res;
+      vec2 uv = (gl_FragCoord.xy - 0.5 * res) / res.y;
+
+      // Pozitia mouse-ului in acelasi spatiu uv
+      vec2 mouseUv = (u_mouse - 0.5) * vec2(res.x / res.y, 1.0) * 2.0;
+
+      // Vector de la mouse la pixelul curent
+      vec2 toMouse = uv - mouseUv;
+      float d = length(toMouse);
+
+      // ── DISPERSE: cu cat e mai aproape, cu atat e impins mai tare AFARA ──
+      float falloff = smoothstep(0.55, 0.0, d);
+      vec2  dir     = normalize(toMouse + vec2(0.0001));
+      vec2  perp    = vec2(-dir.y, dir.x);
+
+      // displacement: radial out + tangential (vortex) + viteza mouse
+      vec2 displacement = dir * 0.42 + perp * 0.18;
+      displacement *= falloff;
+      // mouse-ul "trage" fumul in directia in care s-a deplasat
+      displacement -= u_mouseVel * falloff * 2.0;
+
+      // ── Scroll velocity boost: cand scrollezi rapid, fumul e impins ──
+      vec2 scrollPush = vec2(0.0, -u_scrollVel * 0.15);
+
+      vec2 sampleUv = uv + displacement + scrollPush;
+
+      // ── Domain warping pentru textura fum ──
+      float t = u_time * 0.06;
+      vec2 q = vec2(
+        fbm(sampleUv * 1.6 + vec2(t, t * 0.7)),
+        fbm(sampleUv * 1.6 + vec2(5.2 + t, 1.3 - t * 0.5))
+      );
+      float v = fbm(sampleUv * 1.8 + q * 1.4);
+
+      // Contrast + cresterea intensitatii cu scroll progress
+      v = pow(v, 1.45) * (0.35 + u_progress * 0.55);
+
+      // Vignette subtila ca sa nu fie uniform
+      float vig = 1.0 - smoothstep(0.5, 1.2, length(uv));
+      v *= vig * 0.9 + 0.1;
+
+      // Tint cald foarte subtil
+      vec3 col = vec3(v) * vec3(1.0, 0.985, 0.94);
+
+      gl_FragColor = vec4(col, 1.0);
+    }
+  `;
+
+  function compile(type, src) {
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src);
+    gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+      console.error('Shader compile error:', gl.getShaderInfoLog(s));
+    }
+    return s;
+  }
+  const prog = gl.createProgram();
+  gl.attachShader(prog, compile(gl.VERTEX_SHADER, vert));
+  gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, frag));
+  gl.linkProgram(prog);
+  gl.useProgram(prog);
+
+  const buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+  const loc = gl.getAttribLocation(prog, 'a_pos');
+  gl.enableVertexAttribArray(loc);
+  gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+
+  const u = {
+    res:        gl.getUniformLocation(prog, 'u_res'),
+    time:       gl.getUniformLocation(prog, 'u_time'),
+    mouse:      gl.getUniformLocation(prog, 'u_mouse'),
+    mouseVel:   gl.getUniformLocation(prog, 'u_mouseVel'),
+    progress:   gl.getUniformLocation(prog, 'u_progress'),
+    scrollVel:  gl.getUniformLocation(prog, 'u_scrollVel'),
+  };
+
+  /* ── State pentru mouse/scroll cu smoothing ── */
+  const state = {
+    mouseTarget: [0.5, 0.5],
+    mouse:       [0.5, 0.5],
+    mouseVel:    [0.0, 0.0],
+    progress:    0.0,
+    scrollVel:   0.0,
+    lastScroll:  0.0,
+  };
+
+  window.addEventListener('pointermove', (e) => {
+    state.mouseTarget[0] = e.clientX / window.innerWidth;
+    state.mouseTarget[1] = 1.0 - e.clientY / window.innerHeight;
+  });
+
+  function resize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width  = window.innerWidth  * dpr;
+    canvas.height = window.innerHeight * dpr;
+    canvas.style.width  = window.innerWidth  + 'px';
+    canvas.style.height = window.innerHeight + 'px';
+    gl.viewport(0, 0, canvas.width, canvas.height);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  /* ════════════════════════════════════════════════
+     LENIS smooth scroll + GSAP ticker integration
+     ════════════════════════════════════════════════ */
+  const lenis = new Lenis({
+    duration: 1.15,
+    easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+    smoothWheel: true,
+  });
+  lenis.on('scroll', (e) => {
+    state.scrollVel = e.velocity || 0;
+    ScrollTrigger.update();
+  });
+  gsap.registerPlugin(ScrollTrigger);
+  gsap.ticker.add((time) => { lenis.raf(time * 1000); });
+  gsap.ticker.lagSmoothing(0);
+
+  /* ════════════════════════════════════════════════
+     LOGO — line draw cu GSAP la load
+     ════════════════════════════════════════════════ */
+  function setupLogo() {
+    const paths = [
+      document.getElementById('logo-outer'),
+      document.getElementById('logo-inner'),
+    ];
+    const serifs = [
+      document.getElementById('logo-serif-top'),
+      document.getElementById('logo-serif-bottom'),
+    ];
+    const dot = document.getElementById('logo-dot');
+
+    // Setam dasharray = lungimea path-ului
+    paths.forEach((p) => {
+      const len = p.getTotalLength();
+      p.style.strokeDasharray = len;
+      p.style.strokeDashoffset = len;
+    });
+    serifs.forEach((s) => {
+      s.style.strokeDasharray = 10;
+      s.style.strokeDashoffset = 10;
+    });
+    gsap.set(dot, { scale: 0, transformOrigin: '88px 82px' });
+
+    const tl = gsap.timeline({ delay: 0.2 });
+    tl.to(paths[0], { strokeDashoffset: 0, duration: 1.4, ease: 'power2.inOut' })
+      .to(paths[1], { strokeDashoffset: 0, duration: 1.0, ease: 'power2.inOut' }, '-=0.85')
+      .to(serifs,   { strokeDashoffset: 0, duration: 0.35, ease: 'power1.out', stagger: 0.08 }, '-=0.4')
+      .to(dot,      { scale: 1, duration: 0.5, ease: 'back.out(2.2)' }, '-=0.25');
+
+    // Hover: redraw rapid
+    const logoEl = document.getElementById('logo');
+    logoEl.addEventListener('mouseenter', () => {
+      paths.forEach((p) => {
+        const len = p.getTotalLength();
+        gsap.fromTo(p,
+          { strokeDashoffset: len },
+          { strokeDashoffset: 0, duration: 0.6, ease: 'power2.out' });
+      });
+    });
+  }
+  setupLogo();
+
+  /* ════════════════════════════════════════════════
+     HERO — entrance timeline cu GSAP
+     ════════════════════════════════════════════════ */
+  const entranceTl = gsap.timeline({ delay: 0.4 });
+  entranceTl
+    .from('#eyebrow', { y: 20, opacity: 0, duration: 1.0, ease: 'power2.out' })
+    .to('#eyebrow',   { opacity: 1, duration: 0.01 }, 0)
+    .from('#line1', { y: 60, opacity: 0, duration: 1.3, ease: 'power3.out' }, 0.2)
+    .to('#line1',   { opacity: 1, duration: 0.01 }, 0.2)
+    .from('#line2', { y: 60, opacity: 0, duration: 1.3, ease: 'power3.out' }, 0.4)
+    .to('#line2',   { opacity: 1, duration: 0.01 }, 0.4)
+    .from('#tagline', { y: 20, opacity: 0, duration: 1.0, ease: 'power2.out' }, 0.8)
+    .to('#tagline',   { opacity: 1, duration: 0.01 }, 0.8)
+    .from('#hint', { opacity: 0, duration: 0.8, ease: 'power1.out' }, 1.2)
+    .to('#hint',   { opacity: 1, duration: 0.01 }, 1.2)
+    .to('#hintBar', {
+      scaleY: 0.3,
+      transformOrigin: 'top',
+      repeat: -1,
+      yoyo: true,
+      duration: 1.3,
+      ease: 'sine.inOut'
+    }, 1.5);
+
+  /* ════════════════════════════════════════════════
+     SCROLLTRIGGER — pin + scrubbed reveal multi-layer
+     ════════════════════════════════════════════════ */
+  const heroSection = document.getElementById('heroSection');
+
+  // Master timeline: pinned scroll cu scrub
+  const masterTl = gsap.timeline({
+    scrollTrigger: {
+      trigger: heroSection,
+      start: 'top top',
+      end: '+=150%', // pin pentru 1.5 viewport-uri de scroll
+      pin: true,
+      pinSpacing: true,
+      scrub: 1.2,
+      anticipatePin: 1,
+    }
+  });
+
+  // Layer 0 — fundal (WebGL) — cel mai lent, cu opacity-in
+  masterTl.to('#reveal', { opacity: 1, ease: 'power1.inOut' }, 0);
+
+  // Curtain — coboara (scaleY 1 → 0) cu easing organic
+  masterTl.to('#curtain', {
+    scaleY: 0,
+    ease: 'power2.inOut',
+  }, 0);
+
+  // Layer 1 — eyebrow — cel mai rapid, dispare primul
+  masterTl.to('#eyebrow', {
+    y: -80,
+    opacity: 0,
+    ease: 'power2.in',
+  }, 0);
+
+  // Layer 2 — h1 — viteza medie, scale subtle pentru depth
+  masterTl.to('#line1', {
+    y: -60,
+    opacity: 0.1,
+    ease: 'power2.in',
+  }, 0.05);
+  masterTl.to('#line2', {
+    y: -50,
+    opacity: 0.1,
+    ease: 'power2.in',
+  }, 0.1);
+
+  // Layer 3 — tagline — viteza medie-lenta
+  masterTl.to('#tagline', {
+    y: -30,
+    opacity: 0,
+    ease: 'power1.in',
+  }, 0.15);
+
+  // Hero container — scale + blur foarte subtil pentru sense of depth
+  masterTl.to('#hero', {
+    scale: 0.96,
+    filter: 'blur(0.5px)',
+    ease: 'power1.in',
+  }, 0);
+
+  // Hint — dispare repede
+  masterTl.to('#hint', { opacity: 0, ease: 'power1.out' }, 0);
+
+  // ── Onupdate: actualizam progress-ul shader-ului ──
+  masterTl.eventCallback('onUpdate', function () {
+    state.progress = this.progress();
+  });
+
+  // ── Layer aditional: parallax pe below-fold pentru depth ──
+  gsap.to('.below-fold p', {
+    yPercent: -20,
+    ease: 'none',
+    scrollTrigger: {
+      trigger: '.below-fold',
+      start: 'top bottom',
+      end: 'bottom top',
+      scrub: true,
+    }
+  });
+
+  /* ════════════════════════════════════════════════
+     RAF loop — smoothing mouse + render WebGL
+     ════════════════════════════════════════════════ */
+  const t0 = performance.now();
+  let lastTime = t0;
+  function frame(now) {
+    const dt = Math.min(0.05, (now - lastTime) / 1000);
+    lastTime = now;
+    const t = (now - t0) / 1000;
+
+    // ── Smoothing mouse cu lerp + calcul velocity ──
+    const prev = [state.mouse[0], state.mouse[1]];
+    const ease = 1 - Math.pow(0.001, dt); // frame-rate independent
+    state.mouse[0] += (state.mouseTarget[0] - state.mouse[0]) * ease;
+    state.mouse[1] += (state.mouseTarget[1] - state.mouse[1]) * ease;
+
+    // velocity = delta normalizat per frame, atenuat
+    state.mouseVel[0] = (state.mouse[0] - prev[0]) * 8;
+    state.mouseVel[1] = (state.mouse[1] - prev[1]) * 8;
+
+    // scroll velocity decay
+    state.scrollVel *= 0.85;
+
+    gl.uniform2f(u.res, canvas.width, canvas.height);
+    gl.uniform1f(u.time, t);
+    gl.uniform2f(u.mouse, state.mouse[0], state.mouse[1]);
+    gl.uniform2f(u.mouseVel, state.mouseVel[0], state.mouseVel[1]);
+    gl.uniform1f(u.progress, state.progress);
+    gl.uniform1f(u.scrollVel, state.scrollVel / 1000);
+
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+</script>
+</body>
+</html>

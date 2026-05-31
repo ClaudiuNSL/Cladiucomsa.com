@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Hero mockups — compară</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --fg: #f4f1ea;
+    --muted: #8a8680;
+    --line: rgba(244, 241, 234, 0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: "Instrument Serif", Georgia, serif;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    padding: clamp(32px, 6vw, 80px);
+    display: flex;
+    flex-direction: column;
+    gap: clamp(40px, 6vw, 80px);
+  }
+  header {
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 32px;
+  }
+  h1 {
+    font-size: clamp(40px, 6vw, 72px);
+    font-style: italic;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+  .sub {
+    margin-top: 16px;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 32px;
+  }
+  a.card {
+    display: block;
+    text-decoration: none;
+    color: var(--fg);
+    border: 1px solid var(--line);
+    padding: 32px;
+    transition: border-color 0.3s ease, transform 0.3s ease;
+  }
+  a.card:hover {
+    border-color: rgba(244, 241, 234, 0.3);
+    transform: translateY(-2px);
+  }
+  .card .num {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+    margin-bottom: 24px;
+  }
+  .card h2 {
+    font-size: clamp(28px, 3vw, 40px);
+    font-weight: 400;
+    line-height: 1.1;
+    margin-bottom: 12px;
+    letter-spacing: -0.01em;
+  }
+  .card p {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+  }
+  footer {
+    margin-top: auto;
+    padding-top: 32px;
+    border-top: 1px solid var(--line);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+  }
+</style>
+</head>
+<body>
+  <header>
+    <h1><em>Hero mockups</em></h1>
+    <p class="sub">Compară cele 3 tratamente · click pe oricare pentru full-screen</p>
+  </header>
+
+  <div class="grid">
+    <a class="card" href="./01-type-first.html">
+      <div class="num">01 — recomandat</div>
+      <h2>Type-first cu atmosferă</h2>
+      <p>Tipografia conduce, WebGL e fundal subtil (noise mesh). mdx.so vibe direct. Funcționează safe pe mobil.</p>
+    </a>
+
+    <a class="card" href="./02-webgl-central.html">
+      <div class="num">02 — îndrăzneț</div>
+      <h2>WebGL ca personaj central</h2>
+      <p>Fluid sim pseudo-Navier-Stokes domină 60% din viewport. Active Theory / Awwwards vibe. Risc: pe mobil.</p>
+    </a>
+
+    <a class="card" href="./03-scroll-reveal.html">
+      <div class="num">03 v2 — narativ</div>
+      <h2>Scroll reveal · GSAP + disperse</h2>
+      <p>Logo SVG line-draw, fumul fuge de cursor cu vortex, parallax multi-layer cu pin scrubat.</p>
+    </a>
+
+    <a class="card" href="./04-3d-storytelling.html">
+      <div class="num">04 — 3D storytelling</div>
+      <h2>4 capitole în fog volumetric</h2>
+      <p>Pin 400% scroll, 4 beats cinematic (intro → nume → tagline → CTA) cu translateZ + camera Z în 5 layere fog.</p>
+    </a>
+
+    <a class="card" href="./05-particle-system.html">
+      <div class="num">05 — WOW · all-in</div>
+      <h2>Particle system + boot + 5 capitole</h2>
+      <p>3000 particule Three.js, boot terminal, paletă cromatică per capitol, letter cascade, wireframe totem, code canvas procedural, velocity blur.</p>
+    </a>
+  </div>
+
+  <footer>
+    BRAINSTORM · 2026-05-30 · OPȚIUNI HERO
+  </footer>
+</body>
+</html>
