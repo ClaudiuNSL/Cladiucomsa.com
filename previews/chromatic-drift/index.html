@@ -1,0 +1,2044 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Claudiu Comșa — Chromatic Drift v2</title>
+<meta name="description" content="Web developer din Constanța. Experiențe digitale cinematice." />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Geist+Mono:wght@100..900&display=swap" rel="stylesheet">
+
+<style>
+  /* ============================================================
+     ROOT TOKENS
+     ============================================================ */
+  :root {
+    --fg: #1c1a16;
+    --fg-soft: rgba(28, 26, 22, 0.55);
+    --fg-line: rgba(28, 26, 22, 0.14);
+    --bg-pale: #f3eee4;
+    --easing: cubic-bezier(0.7, 0, 0.2, 1);
+  }
+  body.fg-light {
+    --fg: #f0ead8;
+    --fg-soft: rgba(240, 234, 216, 0.6);
+    --fg-line: rgba(240, 234, 216, 0.16);
+  }
+
+  /* ============================================================
+     RESET
+     ============================================================ */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; scroll-behavior: auto; }
+  body {
+    font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+    font-weight: 400;
+    background: var(--bg-pale);
+    color: var(--fg);
+    overflow-x: hidden;
+    cursor: none;
+    transition: color 0.6s ease;
+  }
+  a { color: inherit; text-decoration: none; cursor: none; }
+  button { all: unset; cursor: none; }
+  img { display: block; max-width: 100%; }
+  .mono { font-family: 'Geist Mono', monospace; }
+
+  /* ============================================================
+     CANVAS LAYERS
+     ============================================================ */
+  .canvas-bg {
+    position: fixed; inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .canvas-3d {
+    position: fixed;
+    top: 0; right: 0;
+    width: 55vw; height: 100vh;
+    z-index: 1;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 1s ease;
+  }
+  .canvas-3d.show { opacity: 0.7; }
+  @media (max-width: 900px) {
+    .canvas-3d { width: 100vw; opacity: 0; }
+    .canvas-3d.show { opacity: 0.35; }
+  }
+  .glass {
+    position: fixed; inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    transition: backdrop-filter 0.8s ease;
+  }
+  body.scrolled .glass {
+    backdrop-filter: blur(6px) saturate(1.05);
+    -webkit-backdrop-filter: blur(6px) saturate(1.05);
+  }
+
+  /* ============================================================
+     TRANSITION FLASH (between sections)
+     ============================================================ */
+  .transition-flash {
+    position: fixed; inset: 0;
+    z-index: 3;
+    pointer-events: none;
+    opacity: 0;
+    backdrop-filter: blur(0px) saturate(1);
+    -webkit-backdrop-filter: blur(0px) saturate(1);
+  }
+  .transition-flash.fire {
+    animation: flashPulse 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @keyframes flashPulse {
+    0% {
+      opacity: 1;
+      backdrop-filter: blur(28px) saturate(0.6) brightness(1.1);
+      -webkit-backdrop-filter: blur(28px) saturate(0.6) brightness(1.1);
+    }
+    100% {
+      opacity: 0;
+      backdrop-filter: blur(0px) saturate(1) brightness(1);
+      -webkit-backdrop-filter: blur(0px) saturate(1) brightness(1);
+    }
+  }
+
+  /* ============================================================
+     LOADER
+     ============================================================ */
+  .loader {
+    position: fixed; inset: 0;
+    background: #1c1a16;
+    color: #f0ead8;
+    z-index: 100;
+    display: grid; place-items: center;
+    transition: opacity 0.9s ease, visibility 0.9s ease;
+  }
+  .loader.done { opacity: 0; visibility: hidden; }
+  .loader-bar {
+    width: min(280px, 50vw); height: 1px;
+    background: rgba(240, 234, 216, 0.18);
+    position: relative; overflow: hidden;
+  }
+  .loader-bar::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: #f0ead8;
+    transform: translateX(-100%);
+    animation: load 1.6s cubic-bezier(0.7, 0, 0.2, 1) forwards;
+  }
+  @keyframes load { to { transform: translateX(0); } }
+  .loader-text {
+    position: absolute; bottom: 6vh; left: 50%; transform: translateX(-50%);
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px; letter-spacing: 0.25em; text-transform: uppercase;
+    opacity: 0.5;
+    font-weight: 500;
+  }
+
+  /* ============================================================
+     CUSTOM CURSOR
+     ============================================================ */
+  .cursor {
+    position: fixed; top: 0; left: 0;
+    width: 8px; height: 8px;
+    background: var(--fg);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 200;
+    mix-blend-mode: difference;
+    transition: width 0.3s, height 0.3s, background-color 0.6s ease;
+    transform: translate(-50%, -50%);
+  }
+  .cursor.hover {
+    width: 60px; height: 60px;
+    background: transparent;
+    border: 1px solid var(--fg);
+  }
+  .cursor-trail {
+    position: fixed; top: 0; left: 0;
+    width: 4px; height: 4px;
+    background: var(--fg);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 199;
+    mix-blend-mode: difference;
+    opacity: 0.55;
+    transform: translate(-50%, -50%);
+    filter: blur(2px);
+    transition: background-color 0.6s ease;
+  }
+  @media (hover: none) {
+    body { cursor: auto; }
+    .cursor, .cursor-trail { display: none; }
+    a, button { cursor: pointer; }
+  }
+
+  /* ============================================================
+     SCROLL PROGRESS
+     ============================================================ */
+  .progress {
+    position: fixed; top: 0; left: 0;
+    height: 1px; width: 0%;
+    background: var(--fg);
+    z-index: 60;
+    mix-blend-mode: difference;
+    transition: background-color 0.6s ease;
+  }
+
+  /* ============================================================
+     NAV
+     ============================================================ */
+  .nav {
+    position: fixed; top: 0; left: 0; right: 0;
+    z-index: 50;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 24px clamp(20px, 4vw, 56px);
+    mix-blend-mode: difference;
+    color: #f0ead8;
+  }
+  .nav-cc {
+    font-weight: 700;
+    font-size: 22px;
+    letter-spacing: -0.04em;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+    display: inline-block;
+  }
+  .nav-cc.show { opacity: 1; }
+  .nav-cc::after { content: '.'; opacity: 0.7; }
+  .nav-right {
+    display: flex; gap: clamp(16px, 3vw, 36px); align-items: center;
+  }
+  .nav-meta {
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase;
+    font-weight: 500;
+    opacity: 0.7;
+  }
+  @media (max-width: 720px) { .nav-meta.hide-mobile { display: none; } }
+  .menu-btn {
+    display: flex; flex-direction: column; gap: 5px;
+    padding: 8px;
+    cursor: none;
+  }
+  .menu-btn span {
+    display: block; width: 24px; height: 1px;
+    background: currentColor;
+    transition: transform 0.4s var(--easing);
+  }
+  .menu-btn.open span:nth-child(1) { transform: translateY(3px) rotate(45deg); }
+  .menu-btn.open span:nth-child(2) { transform: translateY(-3px) rotate(-45deg); }
+
+  /* ============================================================
+     MENU OVERLAY
+     ============================================================ */
+  .menu-overlay {
+    position: fixed; inset: 0;
+    z-index: 49;
+    background: #1c1a16;
+    color: #f0ead8;
+    transform: translateY(-100%);
+    transition: transform 0.9s var(--easing);
+    display: grid; place-items: center;
+  }
+  .menu-overlay.open { transform: translateY(0); }
+  .menu-items { list-style: none; text-align: center; }
+  .menu-items li { overflow: hidden; }
+  .menu-items a {
+    display: block;
+    font-size: clamp(48px, 11vw, 144px);
+    line-height: 1.05;
+    font-weight: 500;
+    letter-spacing: -0.04em;
+    padding: 8px 0;
+    transition: opacity 0.4s ease, letter-spacing 0.5s ease;
+  }
+  .menu-items a:hover { opacity: 0.4; letter-spacing: -0.02em; }
+
+  /* ============================================================
+     SECTION SHARED
+     ============================================================ */
+  section { position: relative; z-index: 4; }
+  .shell { position: relative; z-index: 4; }
+  .section-tag {
+    position: absolute; top: 40px; left: clamp(20px, 4vw, 56px);
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px; letter-spacing: 0.25em; text-transform: uppercase;
+    font-weight: 500;
+    color: var(--fg-soft);
+  }
+  .section-tag::before {
+    content: ''; display: inline-block; width: 6px; height: 6px;
+    background: currentColor; border-radius: 50%;
+    margin-right: 12px; transform: translateY(-2px);
+  }
+
+  /* ============================================================
+     HERO
+     ============================================================ */
+  .hero {
+    min-height: 100vh;
+    padding: clamp(80px, 14vh, 140px) clamp(20px, 4vw, 56px) 60px;
+    display: flex; flex-direction: column; justify-content: space-between;
+    position: relative;
+  }
+  .hero-top {
+    display: flex; flex-direction: column; gap: clamp(24px, 6vh, 56px);
+  }
+  .eyebrow {
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase;
+    font-weight: 500;
+    color: var(--fg-soft);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .eyebrow::before {
+    content: ''; width: 32px; height: 1px; background: currentColor; opacity: 0.6;
+  }
+
+  /* Hero name — letter-by-letter for the CC condense effect */
+  .hero-name-wrap {
+    position: relative;
+    transform-origin: top left;
+    will-change: transform;
+  }
+  .hero-name {
+    font-size: clamp(60px, 14vw, 220px);
+    line-height: 0.88;
+    font-weight: 500;
+    letter-spacing: -0.055em;
+    white-space: nowrap;
+    display: flex;
+    flex-wrap: wrap;
+  }
+  .hero-name .ltr {
+    display: inline-block;
+    transform-origin: center bottom;
+    will-change: transform, opacity;
+  }
+  .hero-name .ltr-space { width: 0.32em; display: inline-block; }
+  .hero-name .ltr-c { font-weight: 600; }
+
+  .hero-sub {
+    font-size: clamp(20px, 2.4vw, 36px);
+    line-height: 1.2;
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    max-width: 24ch;
+    margin-top: clamp(8px, 2vh, 24px);
+    color: var(--fg);
+  }
+  .hero-sub .accent {
+    font-weight: 600;
+    background: linear-gradient(currentColor, currentColor) 0 100% / 100% 1px no-repeat;
+    padding-bottom: 2px;
+  }
+
+  .hero-bottom {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    gap: 32px; margin-top: 24px;
+    flex-wrap: wrap;
+  }
+  .hero-bio {
+    max-width: 38ch;
+    font-size: clamp(15px, 1.1vw, 17px);
+    line-height: 1.55;
+    color: var(--fg);
+    opacity: 0.82;
+  }
+  .scroll-hint {
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase;
+    font-weight: 500;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    color: var(--fg-soft);
+  }
+  .scroll-hint .line-down {
+    width: 1px; height: 40px; background: currentColor;
+    animation: pulse 2.4s ease infinite;
+    transform-origin: top;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scaleY(1); opacity: 0.5; }
+    50% { transform: scaleY(1.5); opacity: 1; }
+  }
+
+  /* ============================================================
+     MAGNETIC BUTTON
+     ============================================================ */
+  .btn-wow {
+    display: inline-flex; align-items: center; gap: 14px;
+    padding: 18px 30px;
+    border: 1px solid var(--fg);
+    border-radius: 100px;
+    font-family: 'Geist Mono', monospace;
+    font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase;
+    font-weight: 500;
+    position: relative;
+    will-change: transform;
+    transition: color 0.5s var(--easing), border-color 0.5s ease;
+    color: var(--fg);
+    background: transparent;
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .btn-wow::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: var(--fg);
+    border-radius: 100px;
+    transform: translateY(100%);
+    transition: transform 0.55s var(--easing);
+    z-index: -1;
+  }
+  .btn-wow:hover { color: var(--bg-pale); }
+  body.fg-light .btn-wow:hover { color: #1c1a16; }
+  .btn-wow:hover::before { transform: translateY(0); }
+  .btn-text {
+    display: block; position: relative;
+    overflow: hidden;
+    height: 1.1em;
+  }
+  .btn-text .l1, .btn-text .l2 {
+    display: block;
+    transition: transform 0.55s var(--easing);
+  }
+  .btn-text .l2 { position: absolute; inset: 0; transform: translateY(110%); }
+  .btn-wow:hover .btn-text .l1 { transform: translateY(-110%); }
+  .btn-wow:hover .btn-text .l2 { transform: translateY(0); }
+  .btn-arrow {
+    display: inline-flex;
+    transition: transform 0.4s var(--easing);
+    font-size: 14px;
+  }
+  .btn-wow:hover .btn-arrow { transform: translateX(4px); }
+  .btn-wow.mt { margin-top: 32px; }
+
+  /* ============================================================
+     MANIFESTO
+     ============================================================ */
+  .intro {
+    min-height: 80vh;
+    padding: 18vh clamp(20px, 4vw, 56px);
+    display: flex; align-items: center;
+  }
+  .intro-text {
+    font-size: clamp(28px, 4.5vw, 72px);
+    line-height: 1.12;
+    font-weight: 300;
+    letter-spacing: -0.025em;
+    max-width: 22ch;
+    color: var(--fg);
+  }
+  .intro-text .soft { color: var(--fg-soft); }
+  .intro-text .char {
+    display: inline-block; transform: translateY(120%);
+    will-change: transform;
+  }
+  .intro-text .word { display: inline-block; overflow: hidden; }
+
+  /* ============================================================
+     PROJECTS HEADER
+     ============================================================ */
+  .projects-header {
+    padding: 12vh clamp(20px, 4vw, 56px) 4vh;
+    display: flex; justify-content: space-between; align-items: flex-end;
+    gap: 32px; flex-wrap: wrap;
+  }
+  .projects-title {
+    font-size: clamp(40px, 7vw, 110px);
+    font-weight: 500;
+    line-height: 0.95;
+    letter-spacing: -0.045em;
+  }
+  .projects-title .soft { color: var(--fg-soft); font-weight: 300; }
+  .projects-meta {
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px; letter-spacing: 0.25em; text-transform: uppercase;
+    font-weight: 500;
+    color: var(--fg-soft);
+    display: flex; gap: 24px;
+  }
+
+  /* ============================================================
+     PROJECT 1 — HORIZONTAL SCROLL
+     ============================================================ */
+  .p1 { height: 100vh; overflow: hidden; position: relative; }
+  .p1-track {
+    display: flex;
+    height: 100%;
+    will-change: transform;
+  }
+  .p1-card {
+    flex: 0 0 90vw;
+    height: 100%;
+    padding: 4vw;
+    display: flex; flex-direction: column; justify-content: space-between;
+    position: relative;
+  }
+  .p1-card:first-child { flex: 0 0 60vw; padding-left: clamp(20px, 4vw, 56px); }
+  .p1-intro {
+    display: flex; flex-direction: column; justify-content: center; height: 100%;
+  }
+  .p1-num {
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px; letter-spacing: 0.25em;
+    color: var(--fg-soft);
+    font-weight: 500;
+  }
+  .p1-title {
+    font-size: clamp(48px, 8vw, 130px);
+    line-height: 0.95;
+    font-weight: 400;
+    letter-spacing: -0.045em;
+    margin-top: 16px;
+  }
+  .p1-title .soft { color: var(--fg-soft); font-weight: 300; }
+  .p1-sub {
+    font-size: 14px; margin-top: 24px; max-width: 32ch;
+    line-height: 1.55;
+    color: var(--fg);
+    opacity: 0.82;
+  }
+  .p1-img {
+    flex: 1;
+    border-radius: 3px;
+    background: linear-gradient(135deg, #c9b89a 0%, #8d7858 50%, #5e4d34 100%);
+    position: relative; overflow: hidden;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.18);
+  }
+  .p1-img::after {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(circle at 30% 50%, rgba(255,220,180,0.22), transparent 60%);
+  }
+  .p1-img.v2 { background: linear-gradient(135deg, #b8a585 0%, #7a6444 50%, #4a3a25 100%); }
+  .p1-img.v3 { background: linear-gradient(135deg, #d4c4a8 0%, #9a8463 50%, #6a5536 100%); }
+  .p1-img.v4 { background: linear-gradient(135deg, #beae90 0%, #816b48 50%, #564228 100%); }
+  .p1-caption {
+    margin-top: 16px;
+    display: flex; justify-content: space-between;
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--fg-soft); font-weight: 500;
+  }
+
+  /* ============================================================
+     PROJECT 2 — PINNED ZOOM + SHARDS
+     ============================================================ */
+  .p2 { height: 250vh; position: relative; }
+  .p2-pin {
+    height: 100vh; position: relative; overflow: hidden;
+    display: grid; place-items: center;
+  }
+  .p2-stage {
+    position: relative; width: 100%; height: 100%;
+    display: grid; place-items: center;
+  }
+  .p2-main {
+    width: clamp(280px, 50vw, 720px);
+    aspect-ratio: 16/10;
+    background: linear-gradient(135deg, #f8f1e3 0%, #e3d6bc 100%);
+    border-radius: 4px;
+    position: relative; z-index: 3;
+    box-shadow: 0 60px 120px rgba(0,0,0,0.35);
+    overflow: hidden;
+    will-change: transform;
+  }
+  .p2-main::before {
+    content: 'aurasjobs.';
+    position: absolute; top: 24px; left: 28px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #1a1812;
+    letter-spacing: -0.02em;
+  }
+  .p2-main::after {
+    content: '';
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60%; height: 60%;
+    background: linear-gradient(45deg, #c4753a, #e89568);
+    border-radius: 3px;
+  }
+  .shard {
+    position: absolute;
+    background: linear-gradient(135deg, rgba(255, 252, 244, 0.55), rgba(255, 252, 244, 0.15));
+    border: 1px solid rgba(28, 26, 22, 0.10);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 3px;
+    will-change: transform;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.08);
+  }
+  .p2-title {
+    position: absolute; bottom: 8vh; left: 50%; transform: translateX(-50%);
+    text-align: center; z-index: 4;
+  }
+  .p2-title .num {
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px; letter-spacing: 0.3em; color: var(--fg-soft);
+  }
+  .p2-title .name {
+    font-size: clamp(36px, 6vw, 88px);
+    font-weight: 400;
+    line-height: 1; letter-spacing: -0.04em;
+    margin-top: 8px;
+  }
+  .p2-title .name .soft { color: var(--fg-soft); font-weight: 300; }
+
+  /* ============================================================
+     PROJECT 3 — SPLIT SCROLL
+     ============================================================ */
+  .p3 {
+    min-height: 200vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    padding: 0 clamp(20px, 4vw, 56px);
+  }
+  .p3-left { padding: 20vh 6vw 20vh 0; }
+  .p3-left .num {
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px; letter-spacing: 0.25em; color: var(--fg-soft); font-weight: 500;
+  }
+  .p3-left h3 {
+    font-size: clamp(40px, 5.5vw, 86px);
+    font-weight: 400;
+    line-height: 1; letter-spacing: -0.04em;
+    margin: 20px 0 32px;
+  }
+  .p3-left h3 .soft { color: var(--fg-soft); font-weight: 300; }
+  .p3-left .blurbs p {
+    font-size: clamp(16px, 1.3vw, 19px);
+    line-height: 1.55;
+    margin-bottom: 28px;
+    max-width: 36ch;
+    color: var(--fg); opacity: 0.85;
+  }
+  .p3-right { position: relative; }
+  .p3-pin {
+    position: sticky; top: 0;
+    height: 100vh;
+    display: grid; place-items: center;
+  }
+  .p3-cube {
+    width: clamp(220px, 30vw, 380px);
+    aspect-ratio: 1;
+    position: relative;
+    transform-style: preserve-3d;
+    will-change: transform;
+  }
+  .face {
+    position: absolute; inset: 0;
+    border: 1px solid var(--fg-line);
+    background: rgba(255, 252, 244, 0.5);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: grid; place-items: center;
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--fg); opacity: 0.85;
+  }
+  .face.f1 { transform: translateZ(150px); }
+  .face.f2 { transform: rotateY(90deg) translateZ(150px); }
+  .face.f3 { transform: rotateY(180deg) translateZ(150px); }
+  .face.f4 { transform: rotateY(-90deg) translateZ(150px); }
+  .face.f5 { transform: rotateX(90deg) translateZ(150px); }
+  .face.f6 { transform: rotateX(-90deg) translateZ(150px); }
+  @media (max-width: 768px) {
+    .p3 { grid-template-columns: 1fr; padding: 0 clamp(20px, 4vw, 56px); }
+    .p3-left { padding: 12vh 0 4vh; }
+    .p3-pin { height: 70vh; }
+    .p3-cube { width: 240px; }
+    .face.f1 { transform: translateZ(120px); }
+    .face.f2 { transform: rotateY(90deg) translateZ(120px); }
+    .face.f3 { transform: rotateY(180deg) translateZ(120px); }
+    .face.f4 { transform: rotateY(-90deg) translateZ(120px); }
+    .face.f5 { transform: rotateX(90deg) translateZ(120px); }
+    .face.f6 { transform: rotateX(-90deg) translateZ(120px); }
+  }
+
+  /* ============================================================
+     PROJECT 4 — LETTER EXPLODE
+     ============================================================ */
+  .p4 {
+    min-height: 110vh;
+    padding: 12vh clamp(20px, 4vw, 56px);
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .p4-num {
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px; letter-spacing: 0.25em; color: var(--fg-soft); margin-bottom: 24px; font-weight: 500;
+  }
+  .p4-title {
+    font-size: clamp(58px, 14vw, 220px);
+    line-height: 0.88;
+    font-weight: 400;
+    letter-spacing: -0.055em;
+  }
+  .p4-title .soft { color: var(--fg-soft); font-weight: 300; }
+  .p4-title .char {
+    display: inline-block;
+    transform-origin: center;
+    will-change: transform, opacity;
+  }
+  .p4-after {
+    margin-top: 64px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 56px;
+    max-width: 880px;
+  }
+  .p4-after p {
+    font-size: clamp(14px, 1.1vw, 17px);
+    line-height: 1.55;
+    color: var(--fg); opacity: 0.8;
+  }
+  @media (max-width: 720px) {
+    .p4-after { grid-template-columns: 1fr; gap: 24px; }
+  }
+
+  /* ============================================================
+     PROJECT 5 — CHROMATIC GLITCH
+     ============================================================ */
+  .p5 {
+    min-height: 110vh;
+    padding: 12vh clamp(20px, 4vw, 56px);
+    position: relative;
+  }
+  .p5-num {
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px; letter-spacing: 0.25em; color: var(--fg-soft); font-weight: 500;
+  }
+  .p5-title {
+    font-size: clamp(48px, 9vw, 160px);
+    line-height: 0.95;
+    font-weight: 400;
+    letter-spacing: -0.05em;
+    margin: 20px 0 48px;
+  }
+  .p5-title .soft { color: var(--fg-soft); font-weight: 300; }
+  .p5-stage {
+    position: relative;
+    aspect-ratio: 16/9;
+    max-width: 1100px;
+    margin: 0 auto;
+    border-radius: 4px;
+    overflow: hidden;
+    background: #1a1611;
+    box-shadow: 0 40px 100px rgba(0,0,0,0.22);
+  }
+  .p5-stage .layer {
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, #2a2017 0%, #5a4530 40%, #9a7548 100%);
+    mix-blend-mode: screen;
+  }
+  .p5-stage .layer.r { background: linear-gradient(135deg, transparent, #d27050); mix-blend-mode: screen; opacity: 0.7; }
+  .p5-stage .layer.g { background: linear-gradient(135deg, transparent, #6ab098); mix-blend-mode: screen; opacity: 0.45; }
+  .p5-stage .layer.b { background: linear-gradient(135deg, transparent, #7090d8); mix-blend-mode: screen; opacity: 0.55; }
+  .p5-stage .scanline {
+    position: absolute; left: 0; right: 0; height: 1px;
+    background: rgba(245,240,225,0.5);
+    top: 30%;
+    box-shadow: 0 0 12px rgba(245,240,225,0.5);
+  }
+  .p5-stage .stage-tag {
+    position: absolute; bottom: 24px; left: 24px;
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: rgba(245,240,225,0.75);
+    font-weight: 500;
+  }
+
+  /* ============================================================
+     STUDIO
+     ============================================================ */
+  .studio {
+    padding: 18vh clamp(20px, 4vw, 56px);
+  }
+  .studio-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+  }
+  @media (max-width: 800px) {
+    .studio-grid { grid-template-columns: 1fr; gap: 40px; }
+  }
+  .studio-title {
+    font-size: clamp(40px, 6vw, 96px);
+    line-height: 0.95;
+    font-weight: 500;
+    letter-spacing: -0.045em;
+  }
+  .studio-title .soft { color: var(--fg-soft); font-weight: 300; }
+  .studio-list { list-style: none; }
+  .studio-list li {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 28px 0;
+    border-bottom: 1px solid var(--fg-line);
+    font-size: clamp(18px, 1.6vw, 26px);
+    font-weight: 400;
+    transition: padding-left 0.4s var(--easing);
+  }
+  .studio-list li:first-child { border-top: 1px solid var(--fg-line); }
+  .studio-list li:hover { padding-left: 16px; }
+  .studio-list .idx {
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px; letter-spacing: 0.3em; color: var(--fg-soft);
+    font-weight: 500;
+  }
+
+  /* ============================================================
+     STORY — with photo (b + c treatment)
+     ============================================================ */
+  .story {
+    padding: 22vh clamp(20px, 4vw, 56px);
+  }
+  .story-layout {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: clamp(40px, 6vw, 96px);
+    align-items: start;
+    max-width: 1400px;
+  }
+  @media (max-width: 900px) {
+    .story-layout { grid-template-columns: 1fr; gap: 56px; }
+  }
+  .story-text { padding-top: 48px; }
+  .story-h {
+    font-size: clamp(36px, 5vw, 76px);
+    line-height: 1.06;
+    font-weight: 400;
+    letter-spacing: -0.04em;
+  }
+  .story-h .soft { color: var(--fg-soft); font-weight: 300; }
+  .story-p {
+    margin-top: 32px;
+    font-size: clamp(16px, 1.2vw, 19px);
+    line-height: 1.6;
+    max-width: 56ch;
+    color: var(--fg); opacity: 0.88;
+  }
+  .story-p:first-of-type { margin-top: 56px; }
+
+  .story-photo {
+    position: relative;
+    margin: 0;
+    padding-top: 48px;
+  }
+  .photo-mask {
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+    border-radius: 3px;
+    position: relative;
+    clip-path: inset(100% 0 0 0);
+    will-change: clip-path;
+    background: #c4b294;
+  }
+  .photo-mask img,
+  .photo-mask .photo-placeholder {
+    width: 100%;
+    height: 110%;
+    object-fit: cover;
+    object-position: center;
+    will-change: transform;
+    /* b+c treatment: subtle desaturation + warmth + blend */
+    filter: grayscale(0.35) contrast(1.05) brightness(0.95) sepia(0.06);
+    mix-blend-mode: multiply;
+  }
+  .photo-placeholder {
+    display: grid; place-items: center;
+    background:
+      radial-gradient(circle at 35% 30%, rgba(255, 220, 180, 0.3), transparent 50%),
+      radial-gradient(circle at 70% 70%, rgba(120, 90, 60, 0.4), transparent 60%),
+      linear-gradient(135deg, #a89274 0%, #6e5a40 50%, #463726 100%);
+  }
+  .photo-placeholder span {
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px; letter-spacing: 0.25em; text-transform: uppercase;
+    color: rgba(255, 250, 235, 0.65);
+    text-align: center;
+    padding: 0 24px;
+  }
+  .photo-caption {
+    margin-top: 18px;
+    display: flex; justify-content: space-between;
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px; letter-spacing: 0.25em; text-transform: uppercase;
+    color: var(--fg-soft); font-weight: 500;
+  }
+
+  /* ============================================================
+     FOOTER
+     ============================================================ */
+  .footer {
+    padding: 14vh clamp(20px, 4vw, 56px) 4vh;
+    border-top: 1px solid var(--fg-line);
+    margin-top: 12vh;
+  }
+  .footer-h {
+    font-size: clamp(54px, 12vw, 180px);
+    line-height: 0.9;
+    font-weight: 400;
+    letter-spacing: -0.05em;
+  }
+  .footer-h .soft { color: var(--fg-soft); font-weight: 300; }
+  .footer-h a {
+    background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px no-repeat;
+    transition: background-size 0.6s var(--easing);
+    padding-bottom: 6px;
+  }
+  .footer-h a:hover { background-size: 100% 1px; }
+  .footer-cta-row {
+    margin-top: 56px;
+    display: flex; gap: 16px; flex-wrap: wrap;
+  }
+  .footer-grid {
+    margin-top: 12vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 40px;
+    border-top: 1px solid var(--fg-line);
+    padding-top: 32px;
+  }
+  @media (max-width: 720px) {
+    .footer-grid { grid-template-columns: 1fr; }
+  }
+  .footer-col h4 {
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px; letter-spacing: 0.25em; text-transform: uppercase;
+    color: var(--fg-soft); margin-bottom: 16px;
+    font-weight: 500;
+  }
+  .footer-col a, .footer-col span {
+    display: block;
+    font-size: 15px;
+    line-height: 1.8;
+    font-weight: 400;
+  }
+  .footer-bottom {
+    margin-top: 8vh;
+    display: flex; justify-content: space-between;
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px; letter-spacing: 0.25em; text-transform: uppercase;
+    color: var(--fg-soft); font-weight: 500;
+  }
+
+  /* ============================================================
+     SOUND TOGGLE
+     ============================================================ */
+  .sound-toggle {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    z-index: 40;
+    padding: 11px 18px;
+    border: 1px solid rgba(28, 26, 22, 0.18);
+    border-radius: 100px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    background: rgba(243, 238, 228, 0.45);
+    display: flex; align-items: center; gap: 10px;
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--fg);
+    font-weight: 500;
+    transition: background-color 0.6s ease, border-color 0.6s ease, color 0.6s ease;
+  }
+  body.fg-light .sound-toggle {
+    background: rgba(28, 26, 22, 0.5);
+    border-color: rgba(240, 234, 216, 0.2);
+    color: #f0ead8;
+  }
+  .sound-bars { display: flex; gap: 2px; align-items: center; height: 12px; }
+  .sound-bars span {
+    width: 2px; background: currentColor;
+    animation: bars 0.9s ease-in-out infinite;
+  }
+  .sound-bars span:nth-child(1) { height: 30%; animation-delay: 0.0s; }
+  .sound-bars span:nth-child(2) { height: 60%; animation-delay: 0.15s; }
+  .sound-bars span:nth-child(3) { height: 90%; animation-delay: 0.3s; }
+  .sound-bars span:nth-child(4) { height: 50%; animation-delay: 0.45s; }
+  .sound-toggle.off .sound-bars span { animation-play-state: paused; height: 30%; opacity: 0.4; }
+  @keyframes bars {
+    0%, 100% { transform: scaleY(0.4); }
+    50% { transform: scaleY(1); }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div class="loader" id="loader">
+  <div class="loader-bar"></div>
+  <div class="loader-text">Pregătesc · Chromatic Drift</div>
+</div>
+
+<!-- CUSTOM CURSOR -->
+<div class="cursor" id="cursor"></div>
+<div class="cursor-trail" id="cursor-trail"></div>
+
+<!-- WEBGL SHADER BACKGROUND -->
+<canvas class="canvas-bg" id="canvas-bg"></canvas>
+
+<!-- 3D FOREGROUND (icosahedron) -->
+<canvas class="canvas-3d" id="canvas-3d"></canvas>
+
+<!-- GLASS BLUR LAYER -->
+<div class="glass"></div>
+
+<!-- TRANSITION FLASH OVERLAY -->
+<div class="transition-flash" id="flash"></div>
+
+<!-- SCROLL PROGRESS -->
+<div class="progress" id="progress"></div>
+
+<!-- NAV -->
+<header class="nav">
+  <a href="#" aria-label="Acasă">
+    <span class="nav-cc" id="nav-cc">CC</span>
+  </a>
+  <div class="nav-right">
+    <span class="nav-meta hide-mobile">CONSTANȚA · 2026</span>
+    <button class="menu-btn" id="menu-btn" aria-label="Meniu">
+      <span></span><span></span>
+    </button>
+  </div>
+</header>
+
+<!-- MENU OVERLAY -->
+<nav class="menu-overlay" id="menu-overlay">
+  <ul class="menu-items">
+    <li><a href="#projects">Proiecte</a></li>
+    <li><a href="#studio">Studio</a></li>
+    <li><a href="#story">Despre</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+</nav>
+
+<!-- SOUND TOGGLE -->
+<button class="sound-toggle off" id="sound-toggle">
+  <div class="sound-bars"><span></span><span></span><span></span><span></span></div>
+  <span id="sound-label">Sound off</span>
+</button>
+
+<!-- MAIN -->
+<main class="shell">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-top">
+      <div class="eyebrow">FREELANCE · DEVELOPER · CONSTANȚA</div>
+
+      <div class="hero-name-wrap" id="hero-name-wrap">
+        <h1 class="hero-name" id="hero-name" aria-label="Claudiu Comșa"></h1>
+      </div>
+
+      <p class="hero-sub">
+        Construiesc <span class="accent">experiențe web</span> care lasă urme.
+      </p>
+    </div>
+
+    <div class="hero-bottom">
+      <p class="hero-bio">
+        Web developer independent. Lucrez la intersecția dintre cod curat și
+        regie cinematică — interfețe care nu doar funcționează, ci se țin minte.
+      </p>
+      <a href="#projects" class="btn-wow magnetic" data-magnetic>
+        <span class="btn-text">
+          <span class="l1">Vezi proiecte</span>
+          <span class="l2">Vezi proiecte</span>
+        </span>
+        <span class="btn-arrow">→</span>
+      </a>
+      <div class="scroll-hint">
+        <span>Scroll</span>
+        <span class="line-down"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- MANIFESTO -->
+  <section class="intro">
+    <span class="section-tag">01 — Manifesto</span>
+    <p class="intro-text" id="intro-text">
+      Site-urile nu trebuie să fie zgomotoase ca să fie memorabile. Liniștea bine făcută rămâne mai mult în cap decât <span class="soft">orice efect ieftin</span>.
+    </p>
+  </section>
+
+  <!-- PROJECTS HEADER -->
+  <section id="projects">
+    <div class="projects-header">
+      <h2 class="projects-title">Lucrări <span class="soft">selectate</span></h2>
+      <div class="projects-meta">
+        <span>2024 — 2026</span>
+        <span>05</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROJECT 1 — horizontal scroll -->
+  <section class="p1">
+    <div class="p1-track" id="p1-track">
+      <div class="p1-card">
+        <div class="p1-intro">
+          <span class="p1-num">01 / Banciu Photo</span>
+          <h3 class="p1-title">Lumină <span class="soft">brută</span>, fără explicații.</h3>
+          <p class="p1-sub">Portofoliu cinematic pentru un fotograf care nu are nevoie de words wrappers. Imaginile vorbesc, codul tace.</p>
+        </div>
+      </div>
+      <div class="p1-card">
+        <div class="p1-img"></div>
+        <div class="p1-caption"><span>S01 · Editorial</span><span>2026</span></div>
+      </div>
+      <div class="p1-card">
+        <div class="p1-img v2"></div>
+        <div class="p1-caption"><span>S02 · Personal</span><span>2025</span></div>
+      </div>
+      <div class="p1-card">
+        <div class="p1-img v3"></div>
+        <div class="p1-caption"><span>S03 · Comercial</span><span>2025</span></div>
+      </div>
+      <div class="p1-card">
+        <div class="p1-img v4"></div>
+        <div class="p1-caption"><span>S04 · Travel</span><span>2024</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROJECT 2 — pinned zoom + shards -->
+  <section class="p2">
+    <div class="p2-pin">
+      <div class="p2-stage" id="p2-stage">
+        <div class="shard" style="width: 220px; height: 140px; top: 18%; left: 12%;" data-x="-360" data-y="-120"></div>
+        <div class="shard" style="width: 160px; height: 100px; top: 60%; left: 8%;" data-x="-280" data-y="160"></div>
+        <div class="shard" style="width: 180px; height: 120px; top: 22%; right: 14%;" data-x="320" data-y="-100"></div>
+        <div class="shard" style="width: 200px; height: 130px; top: 64%; right: 10%;" data-x="340" data-y="180"></div>
+        <div class="shard" style="width: 140px; height: 90px; top: 8%; left: 50%; transform: translateX(-50%);" data-x="0" data-y="-220"></div>
+        <div class="shard" style="width: 160px; height: 100px; bottom: 6%; left: 50%; transform: translateX(-50%);" data-x="0" data-y="220"></div>
+        <div class="p2-main" id="p2-main"></div>
+      </div>
+      <div class="p2-title">
+        <div class="num">02 / Aurasjobs</div>
+        <div class="name">Recrutare, <span class="soft">fără frecvenț.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROJECT 3 — split scroll -->
+  <section class="p3">
+    <div class="p3-left">
+      <span class="num">03 / Stereocad</span>
+      <h3>Plan, <span class="soft">volum</span>, decizie.</h3>
+      <div class="blurbs">
+        <p>Un atelier de proiectare care lucra cu zeci de fișiere 3D pe lună. Le-am construit o vitrină în care fiecare proiect respiră.</p>
+        <p>Componente reutilizabile, structură care suportă creșterea, viteză care nu cere scuze pe 4G.</p>
+        <p>Site-ul nu este un catalog. Este un proces vizualizat — de la primul render până la livrare.</p>
+        <p>Două luni de muncă, o pagină pe care arhitecții o țin deschisă în timpul ședințelor.</p>
+      </div>
+    </div>
+    <div class="p3-right">
+      <div class="p3-pin">
+        <div class="p3-cube" id="p3-cube">
+          <div class="face f1">Render</div>
+          <div class="face f2">Plan</div>
+          <div class="face f3">Detaliu</div>
+          <div class="face f4">Volum</div>
+          <div class="face f5">Material</div>
+          <div class="face f6">Livrare</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROJECT 4 — letter explode -->
+  <section class="p4">
+    <span class="p4-num">04 / Proiect confidențial</span>
+    <h3 class="p4-title" id="p4-title">Identitate <span class="soft">tăcută</span>.</h3>
+    <div class="p4-after">
+      <p>Brief sub NDA: o platformă internă pentru o echipă de produs din Cluj. Tipografie ca structură, nu ca decor.</p>
+      <p>Sistem de design construit pe variabile, animații care se opresc unde trebuie, microcopy în două limbi.</p>
+    </div>
+  </section>
+
+  <!-- PROJECT 5 — chromatic glitch -->
+  <section class="p5">
+    <span class="p5-num">05 / Atelier personal</span>
+    <h3 class="p5-title">Experimente <span class="soft">la marginea</span> ecranului.</h3>
+    <div class="p5-stage" id="p5-stage">
+      <div class="layer base"></div>
+      <div class="layer r"></div>
+      <div class="layer g"></div>
+      <div class="layer b"></div>
+      <div class="scanline" id="scanline"></div>
+      <div class="stage-tag">CRT · Shader · 2026</div>
+    </div>
+  </section>
+
+  <!-- STUDIO -->
+  <section class="studio" id="studio">
+    <span class="section-tag">02 — Studio</span>
+    <div class="studio-grid" style="margin-top: 48px;">
+      <h2 class="studio-title">Ce intră <span class="soft">în mână</span>.</h2>
+      <ul class="studio-list">
+        <li><span>Site-uri pe măsură</span><span class="idx">01</span></li>
+        <li><span>Identitate digitală</span><span class="idx">02</span></li>
+        <li><span>Animații &amp; interacțiuni</span><span class="idx">03</span></li>
+        <li><span>Performanță &amp; SEO tehnic</span><span class="idx">04</span></li>
+        <li><span>Mentenanță continuă</span><span class="idx">05</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- STORY -->
+  <section class="story" id="story">
+    <span class="section-tag">03 — Despre</span>
+    <div class="story-layout">
+      <div class="story-text">
+        <h2 class="story-h">
+          Lucrez singur, dar nu izolat. <span class="soft">Constanța, mare, monitor, cafea rece.</span>
+        </h2>
+        <p class="story-p">
+          Sunt Claudiu Comșa. Construiesc site-uri de aproape un deceniu — am început cu HTML
+          static într-o cameră de cămin și am ajuns să livrez aplicații pentru clienți care nu
+          se uită la preț, ci la timpul în care le rezolv problema.
+        </p>
+        <p class="story-p">
+          Nu vând "soluții digitale", vând site-uri care funcționează. Diferența e în detaliile
+          pe care nu le scrie nimeni în brief — animația care nu obosește, font-ul care se
+          încarcă înainte să-l observi, structura care suportă încă cinci pagini fără refactor.
+        </p>
+        <p class="story-p">
+          Dacă citești asta pe un telefon, e pentru că am scris site-ul de la telefon spre desktop.
+          Nu invers.
+        </p>
+      </div>
+      <figure class="story-photo">
+        <div class="photo-mask" id="photo-mask">
+          <div class="photo-placeholder" id="photo-placeholder">
+            <span>Loc pentru fotografie<br/>Trimite poza și o pun aici</span>
+          </div>
+        </div>
+        <figcaption class="photo-caption">
+          <span>Claudiu Comșa</span>
+          <span>Constanța · 2026</span>
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer" id="contact">
+    <h2 class="footer-h">
+      <span class="soft">Hai să</span><br/>
+      construim<br/>
+      <a href="mailto:hello@claudiucomsa.com">ceva.</a>
+    </h2>
+    <div class="footer-cta-row">
+      <a href="mailto:hello@claudiucomsa.com" class="btn-wow magnetic" data-magnetic>
+        <span class="btn-text">
+          <span class="l1">Scrie-mi pe email</span>
+          <span class="l2">hello@claudiucomsa.com</span>
+        </span>
+        <span class="btn-arrow">→</span>
+      </a>
+      <a href="#" class="btn-wow magnetic" data-magnetic>
+        <span class="btn-text">
+          <span class="l1">Stabilește un call</span>
+          <span class="l2">15 minute · gratuit</span>
+        </span>
+        <span class="btn-arrow">→</span>
+      </a>
+    </div>
+    <div class="footer-grid">
+      <div class="footer-col">
+        <h4>Contact</h4>
+        <a href="mailto:hello@claudiucomsa.com">hello@claudiucomsa.com</a>
+        <a href="tel:+40000000000">+40 · pe cerere</a>
+        <span>Constanța · România</span>
+      </div>
+      <div class="footer-col">
+        <h4>Social</h4>
+        <a href="#">LinkedIn</a>
+        <a href="#">GitHub</a>
+        <a href="#">Are.na</a>
+        <a href="#">Read.cv</a>
+      </div>
+      <div class="footer-col">
+        <h4>Disponibilitate</h4>
+        <span>Proiecte noi · Q3 2026</span>
+        <span>Răspund în 24h</span>
+        <span>RO · EN</span>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Claudiu Comșa</span>
+      <span>Built · Constanța</span>
+    </div>
+  </footer>
+
+</main>
+
+<!-- LIBS -->
+<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+<script src="https://unpkg.com/lenis@1.0.42/dist/lenis.min.js"></script>
+
+<script>
+/* =====================================================
+   CHROMATIC DRIFT v2 — preview prototype
+   ===================================================== */
+
+gsap.registerPlugin(ScrollTrigger);
+
+/* ============================================================
+   LOADER
+   ============================================================ */
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    document.getElementById('loader').classList.add('done');
+    setTimeout(() => ScrollTrigger.refresh(), 200);
+  }, 1700);
+});
+
+/* ============================================================
+   LENIS SMOOTH SCROLL
+   ============================================================ */
+const lenis = new Lenis({
+  duration: 1.15,
+  easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+  smoothWheel: true,
+  smoothTouch: false,
+});
+lenis.on('scroll', ScrollTrigger.update);
+gsap.ticker.add((time) => lenis.raf(time * 1000));
+gsap.ticker.lagSmoothing(0);
+
+/* ============================================================
+   CUSTOM CURSOR
+   ============================================================ */
+const cursor = document.getElementById('cursor');
+const trail = document.getElementById('cursor-trail');
+let cx = 0, cy = 0, tx = 0, ty = 0;
+window.addEventListener('mousemove', (e) => {
+  cx = e.clientX; cy = e.clientY;
+  cursor.style.transform = `translate(${cx}px, ${cy}px) translate(-50%, -50%)`;
+});
+function trailLoop() {
+  tx += (cx - tx) * 0.12;
+  ty += (cy - ty) * 0.12;
+  trail.style.transform = `translate(${tx}px, ${ty}px) translate(-50%, -50%)`;
+  requestAnimationFrame(trailLoop);
+}
+trailLoop();
+document.querySelectorAll('a, button, .menu-btn, .sound-toggle').forEach((el) => {
+  el.addEventListener('mouseenter', () => cursor.classList.add('hover'));
+  el.addEventListener('mouseleave', () => cursor.classList.remove('hover'));
+});
+
+/* ============================================================
+   WEBGL SHADER BACKGROUND
+   ============================================================ */
+const canvas = document.getElementById('canvas-bg');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: false });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
+renderer.setSize(window.innerWidth, window.innerHeight);
+
+const scene = new THREE.Scene();
+const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+const vertexShader = `
+  varying vec2 vUv;
+  void main() {
+    vUv = uv;
+    gl_Position = vec4(position, 1.0);
+  }
+`;
+
+const fragmentShader = `
+  precision highp float;
+  varying vec2 vUv;
+  uniform float uTime;
+  uniform float uScroll;
+  uniform vec2 uResolution;
+  uniform vec3 uBase;
+  uniform vec3 uAccent;
+
+  // Simplex 3D noise — Ashima Arts
+  vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+  vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+  vec4 permute(vec4 x) { return mod289(((x*34.0)+1.0)*x); }
+  vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
+
+  float snoise(vec3 v) {
+    const vec2 C = vec2(1.0/6.0, 1.0/3.0);
+    const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);
+    vec3 i = floor(v + dot(v, C.yyy));
+    vec3 x0 = v - i + dot(i, C.xxx);
+    vec3 g = step(x0.yzx, x0.xyz);
+    vec3 l = 1.0 - g;
+    vec3 i1 = min(g.xyz, l.zxy);
+    vec3 i2 = max(g.xyz, l.zxy);
+    vec3 x1 = x0 - i1 + C.xxx;
+    vec3 x2 = x0 - i2 + C.yyy;
+    vec3 x3 = x0 - D.yyy;
+    i = mod289(i);
+    vec4 p = permute(permute(permute(
+              i.z + vec4(0.0, i1.z, i2.z, 1.0))
+            + i.y + vec4(0.0, i1.y, i2.y, 1.0))
+            + i.x + vec4(0.0, i1.x, i2.x, 1.0));
+    float n_ = 0.142857142857;
+    vec3 ns = n_ * D.wyz - D.xzx;
+    vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
+    vec4 x_ = floor(j * ns.z);
+    vec4 y_ = floor(j - 7.0 * x_);
+    vec4 x = x_ *ns.x + ns.yyyy;
+    vec4 y = y_ *ns.x + ns.yyyy;
+    vec4 h = 1.0 - abs(x) - abs(y);
+    vec4 b0 = vec4(x.xy, y.xy);
+    vec4 b1 = vec4(x.zw, y.zw);
+    vec4 s0 = floor(b0)*2.0 + 1.0;
+    vec4 s1 = floor(b1)*2.0 + 1.0;
+    vec4 sh = -step(h, vec4(0.0));
+    vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy;
+    vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww;
+    vec3 p0 = vec3(a0.xy, h.x);
+    vec3 p1 = vec3(a0.zw, h.y);
+    vec3 p2 = vec3(a1.xy, h.z);
+    vec3 p3 = vec3(a1.zw, h.w);
+    vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2,p2), dot(p3,p3)));
+    p0 *= norm.x; p1 *= norm.y; p2 *= norm.z; p3 *= norm.w;
+    vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
+    m = m * m;
+    return 42.0 * dot(m*m, vec4(dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3)));
+  }
+
+  void main() {
+    vec2 uv = vUv;
+    vec2 p = uv * 2.0 - 1.0;
+    p.x *= uResolution.x / uResolution.y;
+
+    float t = uTime * 0.04;
+
+    float n1 = snoise(vec3(p * 0.85, t));
+    float n2 = snoise(vec3(p * 2.0 + n1 * 0.5, t * 1.3 + 10.0));
+    float n3 = snoise(vec3(p * 0.5 - n2 * 0.3, t * 0.7 + 100.0));
+
+    float mask = smoothstep(-0.5, 0.6, n1 + n2 * 0.4);
+    float accent = smoothstep(0.1, 0.9, n2 * 0.7 + n3 * 0.4);
+
+    vec3 color = mix(uBase, uAccent, mask * 0.55);
+    color = mix(color, uAccent * 1.08, accent * 0.32);
+
+    // Chromatic aberration radial — subtle
+    float dist = length(p);
+    color.r += dist * 0.02 * (1.0 + n2 * 0.4);
+    color.b -= dist * 0.014;
+
+    // Vignette
+    color *= 1.0 - dist * 0.18;
+
+    // Film grain
+    float grain = fract(sin(dot(uv * uResolution, vec2(12.9898, 78.233)) + uTime) * 43758.5453);
+    color += (grain - 0.5) * 0.03;
+
+    gl_FragColor = vec4(color, 1.0);
+  }
+`;
+
+// Palette stops — bej / alb / grii / warm-dark
+const stops = [
+  { base: new THREE.Color(0.96, 0.94, 0.89), accent: new THREE.Color(0.65, 0.65, 0.67) }, // Cream + cool gray
+  { base: new THREE.Color(0.91, 0.85, 0.74), accent: new THREE.Color(0.42, 0.39, 0.34) }, // Bej sand + taupe
+  { base: new THREE.Color(0.88, 0.80, 0.66), accent: new THREE.Color(0.78, 0.50, 0.30) }, // Bej cu portocaliu
+  { base: new THREE.Color(0.16, 0.14, 0.11), accent: new THREE.Color(0.85, 0.70, 0.48) }, // Charcoal warm + gold cream
+];
+
+const uniforms = {
+  uTime: { value: 0 },
+  uScroll: { value: 0 },
+  uResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
+  uBase: { value: stops[0].base.clone() },
+  uAccent: { value: stops[0].accent.clone() },
+};
+
+const material = new THREE.ShaderMaterial({ vertexShader, fragmentShader, uniforms });
+const plane = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material);
+scene.add(plane);
+
+const clock = new THREE.Clock();
+function renderBg() {
+  uniforms.uTime.value = clock.getElapsedTime();
+  renderer.render(scene, camera);
+}
+
+window.addEventListener('resize', () => {
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
+});
+
+/* ============================================================
+   3D FOREGROUND SCENE — icosahedron
+   ============================================================ */
+const canvas3d = document.getElementById('canvas-3d');
+const renderer3d = new THREE.WebGLRenderer({ canvas: canvas3d, antialias: true, alpha: true });
+renderer3d.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+function resize3d() {
+  const w = canvas3d.clientWidth || window.innerWidth;
+  const h = canvas3d.clientHeight || window.innerHeight;
+  renderer3d.setSize(w, h, false);
+  camera3d.aspect = w / h;
+  camera3d.updateProjectionMatrix();
+}
+
+const scene3d = new THREE.Scene();
+const camera3d = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+camera3d.position.z = 4;
+
+const iso = new THREE.Mesh(
+  new THREE.IcosahedronGeometry(1.3, 1),
+  new THREE.MeshBasicMaterial({
+    color: 0x2a2520,
+    wireframe: true,
+    transparent: true,
+    opacity: 0.65,
+  })
+);
+const isoInner = new THREE.Mesh(
+  new THREE.IcosahedronGeometry(0.85, 0),
+  new THREE.MeshBasicMaterial({
+    color: 0x5a4a36,
+    wireframe: true,
+    transparent: true,
+    opacity: 0.4,
+  })
+);
+scene3d.add(iso, isoInner);
+
+resize3d();
+window.addEventListener('resize', resize3d);
+
+function render3d() {
+  iso.rotation.x += 0.002;
+  iso.rotation.y += 0.0014;
+  isoInner.rotation.x -= 0.003;
+  isoInner.rotation.y -= 0.0022;
+  renderer3d.render(scene3d, camera3d);
+}
+
+/* combined render loop */
+function loop() {
+  renderBg();
+  render3d();
+  requestAnimationFrame(loop);
+}
+loop();
+
+/* ============================================================
+   PALETTE LERP + TEXT COLOR + 3D ON SCROLL
+   ============================================================ */
+function lerpStops(t) {
+  const segs = stops.length - 1;
+  const seg = Math.min(Math.floor(t * segs), segs - 1);
+  const local = t * segs - seg;
+  const smooth = local * local * (3 - 2 * local);
+  const a = stops[seg], b = stops[seg + 1];
+  return {
+    base: a.base.clone().lerp(b.base, smooth),
+    accent: a.accent.clone().lerp(b.accent, smooth),
+  };
+}
+
+const canvas3dEl = document.getElementById('canvas-3d');
+
+ScrollTrigger.create({
+  trigger: document.body,
+  start: 'top top',
+  end: 'bottom bottom',
+  onUpdate: (self) => {
+    const p = self.progress;
+    const { base, accent } = lerpStops(p);
+    uniforms.uBase.value.copy(base);
+    uniforms.uAccent.value.copy(accent);
+    uniforms.uScroll.value = p;
+
+    document.getElementById('progress').style.width = (p * 100) + '%';
+    document.body.classList.toggle('scrolled', p > 0.04);
+
+    // Text color flip when entering deep dark final palette
+    document.body.classList.toggle('fg-light', p > 0.82);
+
+    // 3D iso color follows accent
+    iso.material.color.copy(accent).multiplyScalar(0.6);
+    isoInner.material.color.copy(accent).multiplyScalar(0.9);
+
+    // 3D opacity ramp — visible from after hero condense
+    canvas3dEl.classList.toggle('show', p > 0.08 && p < 0.92);
+  }
+});
+
+/* ============================================================
+   HERO NAME — letter cascade in + scroll condense to CC
+   ============================================================ */
+const heroName = document.getElementById('hero-name');
+const heroNameWrap = document.getElementById('hero-name-wrap');
+const navCC = document.getElementById('nav-cc');
+
+const fullName = 'CLAUDIU COMȘA';
+// Build letter spans, mark Cs
+heroName.innerHTML = '';
+let cCount = 0;
+for (const ch of fullName) {
+  if (ch === ' ') {
+    const sp = document.createElement('span');
+    sp.className = 'ltr ltr-space';
+    sp.innerHTML = '&nbsp;';
+    heroName.appendChild(sp);
+    continue;
+  }
+  const sp = document.createElement('span');
+  sp.className = 'ltr';
+  if (ch === 'C') {
+    sp.classList.add('ltr-c');
+    sp.dataset.cIndex = cCount++;
+  } else {
+    sp.classList.add('ltr-mid');
+  }
+  sp.textContent = ch;
+  heroName.appendChild(sp);
+}
+
+// Initial reveal — letters drop in from below
+gsap.from('.hero-name .ltr', {
+  y: '110%',
+  opacity: 0,
+  duration: 1.2,
+  ease: 'expo.out',
+  stagger: 0.04,
+  delay: 1.9,
+});
+gsap.from('.eyebrow, .hero-sub, .hero-bio, .scroll-hint, .nav, .btn-wow', {
+  opacity: 0,
+  y: 14,
+  duration: 1,
+  ease: 'power2.out',
+  stagger: 0.08,
+  delay: 2.6,
+});
+
+// Scroll condense: middle letters collapse toward nearest C, then CC migrates to nav
+function condenseTimeline() {
+  const mids = document.querySelectorAll('.hero-name .ltr-mid');
+  const cs = document.querySelectorAll('.hero-name .ltr-c');
+  const space = document.querySelector('.hero-name .ltr-space');
+
+  // Pin hero so the condense plays during scroll
+  const tl = gsap.timeline({
+    scrollTrigger: {
+      trigger: '.hero',
+      start: 'top top',
+      end: '+=120%',
+      pin: true,
+      scrub: 1,
+      anticipatePin: 1,
+    }
+  });
+
+  // Phase A — middle letters collapse to the nearest C
+  mids.forEach((mid) => {
+    // Find nearest C: letters at index 1-6 (LAUDIU) go to C1 (index 0), letters at index 8-12 (OMȘA) go to C2
+    const idx = Array.from(heroName.children).indexOf(mid);
+    const targetC = idx < 7 ? cs[0] : cs[1];
+    const midRect = mid.getBoundingClientRect();
+    const tgtRect = targetC.getBoundingClientRect();
+    const dx = tgtRect.left - midRect.left;
+    tl.to(mid, {
+      x: dx,
+      scaleX: 0.001,
+      opacity: 0,
+      duration: 0.4,
+      ease: 'power3.in',
+    }, 0);
+  });
+
+  // Collapse the space gap
+  if (space) {
+    tl.to(space, { width: 0, duration: 0.4, ease: 'power3.in' }, 0);
+  }
+
+  // Phase B — CC pair scales down + migrates to top-left nav position
+  tl.to(heroNameWrap, {
+    scale: 0.13,
+    x: () => {
+      const navRect = navCC.getBoundingClientRect();
+      const wrapRect = heroNameWrap.getBoundingClientRect();
+      return navRect.left - wrapRect.left;
+    },
+    y: () => {
+      const navRect = navCC.getBoundingClientRect();
+      const wrapRect = heroNameWrap.getBoundingClientRect();
+      return navRect.top - wrapRect.top - 8;
+    },
+    ease: 'power2.inOut',
+    duration: 0.6,
+  }, 0.35);
+
+  // Reveal the actual nav CC at the end so it persists when hero unpins
+  tl.to(heroNameWrap, { opacity: 0, duration: 0.1 }, 0.92);
+  tl.to(navCC, { opacity: 1, duration: 0.15, onStart: () => navCC.classList.add('show') }, 0.92);
+}
+// Wait a frame so layout is settled before measuring
+setTimeout(() => condenseTimeline(), 100);
+
+/* ============================================================
+   TRANSITION FLASH between sections
+   ============================================================ */
+const flashEl = document.getElementById('flash');
+function fireFlash() {
+  flashEl.classList.remove('fire');
+  // force reflow to restart animation
+  void flashEl.offsetWidth;
+  flashEl.classList.add('fire');
+}
+document.querySelectorAll('.intro, .p1, .p2, .p3, .p4, .p5, .studio, .story, .footer').forEach((s) => {
+  ScrollTrigger.create({
+    trigger: s,
+    start: 'top 70%',
+    onEnter: fireFlash,
+    onEnterBack: fireFlash,
+  });
+});
+
+/* ============================================================
+   MANIFESTO — letter cascade on scroll
+   ============================================================ */
+const introText = document.getElementById('intro-text');
+(function splitIntroText() {
+  const nodes = Array.from(introText.childNodes);
+  introText.innerHTML = '';
+  nodes.forEach((node) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const words = node.textContent.split(/(\s+)/);
+      words.forEach((w) => {
+        if (/^\s+$/.test(w)) {
+          introText.appendChild(document.createTextNode(' '));
+        } else {
+          const ws = document.createElement('span');
+          ws.className = 'word';
+          for (const c of w) {
+            const cs = document.createElement('span');
+            cs.className = 'char';
+            cs.textContent = c;
+            ws.appendChild(cs);
+          }
+          introText.appendChild(ws);
+        }
+      });
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      const wrap = document.createElement('span');
+      wrap.className = node.className;
+      const inner = node.textContent;
+      const words = inner.split(/(\s+)/);
+      words.forEach((w) => {
+        if (/^\s+$/.test(w)) {
+          wrap.appendChild(document.createTextNode(' '));
+        } else {
+          const ws = document.createElement('span');
+          ws.className = 'word';
+          for (const c of w) {
+            const cs = document.createElement('span');
+            cs.className = 'char';
+            cs.textContent = c;
+            ws.appendChild(cs);
+          }
+          wrap.appendChild(ws);
+        }
+      });
+      introText.appendChild(wrap);
+    }
+  });
+})();
+gsap.to('#intro-text .char', {
+  y: '0%',
+  duration: 0.9,
+  ease: 'expo.out',
+  stagger: 0.012,
+  scrollTrigger: {
+    trigger: '.intro',
+    start: 'top 70%',
+    end: 'top 20%',
+    scrub: 0.8,
+  }
+});
+
+/* ============================================================
+   PROJECT 1 — HORIZONTAL SCROLL
+   ============================================================ */
+const p1Track = document.getElementById('p1-track');
+ScrollTrigger.matchMedia({
+  '(min-width: 768px)': function() {
+    gsap.to(p1Track, {
+      x: () => -(p1Track.scrollWidth - window.innerWidth),
+      ease: 'none',
+      scrollTrigger: {
+        trigger: '.p1',
+        pin: true,
+        scrub: 1,
+        start: 'top top',
+        end: () => '+=' + (p1Track.scrollWidth - window.innerWidth),
+        invalidateOnRefresh: true,
+      }
+    });
+  },
+  '(max-width: 767px)': function() {
+    p1Track.style.overflowX = 'auto';
+    document.querySelector('.p1').style.height = 'auto';
+    document.querySelector('.p1').style.overflowX = 'hidden';
+  }
+});
+
+/* ============================================================
+   PROJECT 2 — PINNED ZOOM + SHARDS
+   ============================================================ */
+const p2tl = gsap.timeline({
+  scrollTrigger: {
+    trigger: '.p2',
+    start: 'top top',
+    end: 'bottom bottom',
+    scrub: 1,
+    pin: '.p2-pin',
+  }
+});
+p2tl.from('#p2-main', { scale: 0.35, opacity: 0, ease: 'power2.out' }, 0)
+    .from('.shard', {
+      x: (i, el) => el.dataset.x,
+      y: (i, el) => el.dataset.y,
+      opacity: 0,
+      stagger: 0.06,
+      ease: 'power2.out',
+    }, 0)
+    .from('.p2-title', { opacity: 0, y: 20, ease: 'power1.out' }, 0.4);
+
+/* ============================================================
+   PROJECT 3 — CUBE ROTATION
+   ============================================================ */
+gsap.to('#p3-cube', {
+  rotateY: 720,
+  rotateX: 180,
+  ease: 'none',
+  scrollTrigger: {
+    trigger: '.p3',
+    start: 'top top',
+    end: 'bottom bottom',
+    scrub: 1,
+  }
+});
+
+/* ============================================================
+   PROJECT 4 — LETTER EXPLODE
+   ============================================================ */
+const p4Title = document.getElementById('p4-title');
+(function splitP4() {
+  const nodes = Array.from(p4Title.childNodes);
+  p4Title.innerHTML = '';
+  nodes.forEach((node) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      for (const c of node.textContent) {
+        const sp = document.createElement('span');
+        sp.className = 'char';
+        sp.innerHTML = c === ' ' ? '&nbsp;' : c;
+        p4Title.appendChild(sp);
+      }
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      const wrap = document.createElement(node.tagName);
+      wrap.className = node.className;
+      for (const c of node.textContent) {
+        const sp = document.createElement('span');
+        sp.className = 'char';
+        sp.innerHTML = c === ' ' ? '&nbsp;' : c;
+        wrap.appendChild(sp);
+      }
+      p4Title.appendChild(wrap);
+    }
+  });
+})();
+gsap.from('#p4-title .char', {
+  scrollTrigger: {
+    trigger: '.p4',
+    start: 'top 80%',
+    end: 'top 30%',
+    scrub: 1,
+  },
+  y: () => gsap.utils.random(80, 220),
+  opacity: 0,
+  rotate: () => gsap.utils.random(-25, 25),
+  scale: () => gsap.utils.random(0.6, 1.4),
+  stagger: { each: 0.018, from: 'random' },
+  ease: 'power2.out',
+});
+
+/* ============================================================
+   PROJECT 5 — CHROMATIC GLITCH
+   ============================================================ */
+gsap.to('.p5-stage .layer.r', {
+  x: -12,
+  scrollTrigger: { trigger: '.p5', start: 'top 70%', end: 'bottom top', scrub: 1 }
+});
+gsap.to('.p5-stage .layer.b', {
+  x: 12,
+  scrollTrigger: { trigger: '.p5', start: 'top 70%', end: 'bottom top', scrub: 1 }
+});
+gsap.to('.p5-stage .layer.g', {
+  y: 6,
+  scrollTrigger: { trigger: '.p5', start: 'top 70%', end: 'bottom top', scrub: 1 }
+});
+ScrollTrigger.create({
+  trigger: '.p5-stage',
+  start: 'top 60%',
+  onEnter: () => {
+    const stage = document.getElementById('p5-stage');
+    gsap.fromTo(stage,
+      { filter: 'hue-rotate(0deg) contrast(1) brightness(1)' },
+      {
+        keyframes: [
+          { filter: 'hue-rotate(120deg) contrast(1.4) brightness(1.2)', duration: 0.04 },
+          { filter: 'hue-rotate(-60deg) contrast(0.8) brightness(0.8)', duration: 0.04 },
+          { filter: 'hue-rotate(240deg) contrast(1.2) brightness(1.1)', duration: 0.04 },
+          { filter: 'hue-rotate(0deg) contrast(1) brightness(1)', duration: 0.06 },
+        ]
+      }
+    );
+  }
+});
+gsap.to('#scanline', {
+  top: '95%',
+  ease: 'none',
+  scrollTrigger: { trigger: '.p5', start: 'top top', end: 'bottom bottom', scrub: 1 }
+});
+
+/* ============================================================
+   STUDIO LIST REVEAL
+   ============================================================ */
+gsap.from('.studio-list li', {
+  opacity: 0, y: 30,
+  duration: 0.7, ease: 'power2.out',
+  stagger: 0.08,
+  scrollTrigger: { trigger: '.studio', start: 'top 70%' }
+});
+
+/* ============================================================
+   STORY — paragraphs + photo reveal + parallax
+   ============================================================ */
+gsap.from('.story-h', {
+  opacity: 0, y: 24,
+  duration: 0.9, ease: 'power2.out',
+  scrollTrigger: { trigger: '.story', start: 'top 70%' }
+});
+gsap.from('.story-p', {
+  opacity: 0, y: 24,
+  duration: 0.9, ease: 'power2.out',
+  stagger: 0.12,
+  scrollTrigger: { trigger: '.story', start: 'top 60%' }
+});
+
+// Photo mask reveal (b + c treatment)
+const photoMask = document.getElementById('photo-mask');
+ScrollTrigger.create({
+  trigger: '.story',
+  start: 'top 65%',
+  onEnter: () => {
+    gsap.to(photoMask, {
+      clipPath: 'inset(0% 0 0 0)',
+      duration: 1.6,
+      ease: 'expo.out'
+    });
+  },
+  onLeaveBack: () => {
+    gsap.to(photoMask, {
+      clipPath: 'inset(100% 0 0 0)',
+      duration: 0.8,
+      ease: 'expo.in'
+    });
+  }
+});
+
+// Photo internal parallax — image translates slightly slower than container
+gsap.to('.photo-mask img, .photo-mask .photo-placeholder', {
+  yPercent: -9,
+  ease: 'none',
+  scrollTrigger: {
+    trigger: '.story',
+    start: 'top bottom',
+    end: 'bottom top',
+    scrub: 1
+  }
+});
+
+/* ============================================================
+   MAGNETIC BUTTONS
+   ============================================================ */
+document.querySelectorAll('[data-magnetic]').forEach((btn) => {
+  btn.addEventListener('mousemove', (e) => {
+    const r = btn.getBoundingClientRect();
+    const x = (e.clientX - r.left - r.width / 2) * 0.35;
+    const y = (e.clientY - r.top - r.height / 2) * 0.35;
+    gsap.to(btn, { x, y, duration: 0.4, ease: 'power2.out' });
+  });
+  btn.addEventListener('mouseleave', () => {
+    gsap.to(btn, { x: 0, y: 0, duration: 0.6, ease: 'elastic.out(1, 0.5)' });
+  });
+});
+
+/* ============================================================
+   MENU
+   ============================================================ */
+const menuBtn = document.getElementById('menu-btn');
+const menuOverlay = document.getElementById('menu-overlay');
+let menuOpen = false;
+menuBtn.addEventListener('click', () => {
+  menuOpen = !menuOpen;
+  menuBtn.classList.toggle('open', menuOpen);
+  menuOverlay.classList.toggle('open', menuOpen);
+  if (menuOpen) lenis.stop(); else lenis.start();
+});
+document.querySelectorAll('.menu-items a').forEach((a) => {
+  a.addEventListener('click', (e) => {
+    e.preventDefault();
+    const id = a.getAttribute('href');
+    menuBtn.classList.remove('open');
+    menuOverlay.classList.remove('open');
+    menuOpen = false;
+    lenis.start();
+    setTimeout(() => {
+      const el = document.querySelector(id);
+      if (el) lenis.scrollTo(el, { duration: 1.5 });
+    }, 700);
+  });
+});
+
+/* ============================================================
+   SOUND TOGGLE (UI only, no audio in preview)
+   ============================================================ */
+const soundBtn = document.getElementById('sound-toggle');
+const soundLabel = document.getElementById('sound-label');
+let soundOn = false;
+soundBtn.addEventListener('click', () => {
+  soundOn = !soundOn;
+  soundBtn.classList.toggle('off', !soundOn);
+  soundLabel.textContent = soundOn ? 'Sound on' : 'Sound off';
+});
+
+/* ============================================================
+   REFRESH ScrollTrigger after layout settles
+   ============================================================ */
+setTimeout(() => ScrollTrigger.refresh(), 2200);
+</script>
+
+</body>
+</html>
